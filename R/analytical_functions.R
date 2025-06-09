@@ -112,7 +112,23 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
 #' @param delete.upper.tri defines whether the upper triangle of the matrix is to be deleted. This results in speed gains.
 #' @return segment.list returns a list of cliques for each level. The row indices correspond to the first level aka. the rows from mx.
 #' @return mat.list returns a list with a mobility table for each level with the number of rows and columns corresponding to the number of segments for each level
-#' @seealso \link{find.segments}, \link{moneca.plot}
+#' @seealso \link{find.segments}, \link{plot_moneca_ggraph}, \link{moneca.plot}
+#' @examples
+#' # Generate synthetic mobility data
+#' mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
+#' 
+#' # Run MONECA analysis
+#' seg <- moneca(mobility_data, segment.levels = 3)
+#' print(seg)
+#' 
+#' # Examine segment membership
+#' membership <- segment.membership(seg)
+#' print(membership)
+#' 
+#' # Visualize with modern plotting
+#' \dontrun{
+#' plot_moneca_ggraph(seg, node_color = "segment", title = "MONECA Clustering")
+#' }
 #' @export
 
 moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.upper.tri=TRUE, small.cell.reduction=0){

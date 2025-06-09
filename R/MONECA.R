@@ -47,15 +47,22 @@
 #' @aliases MONECA-package
 #' 
 #' @examples 
-#' # Load example data
-#' data(occupations)
+#' # Generate synthetic mobility data
+#' mobility_data <- generate_mobility_data(n_classes = 5, seed = 123)
 #' 
 #' # Run basic MONECA analysis
-#' seg <- moneca(occupations)
+#' seg <- moneca(mobility_data, segment.levels = 3)
 #' print(seg)
 #' 
-#' # Visualize results
+#' # Visualize results with modern ggraph plotting
 #' \dontrun{
+#' # Modern network visualization
+#' plot_moneca_ggraph(seg, title = "MONECA Network Analysis")
+#' 
+#' # Ego network analysis
+#' plot_ego_ggraph(seg, mobility_data, ego_id = 3)
+#' 
+#' # Legacy plotting (still available)
 #' moneca.plot(seg)
 #' gg.moneca(seg)
 #' }
