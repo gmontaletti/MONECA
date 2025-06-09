@@ -4,8 +4,10 @@
 \alias{first.level.summary}
 \title{First level summary}
 \usage{
-first.level.summary(segments,
-  small.cell.reduction = segments$small.cell.reduction)
+first.level.summary(
+  segments,
+  small.cell.reduction = segments$small.cell.reduction
+)
 }
 \description{
 First level summary

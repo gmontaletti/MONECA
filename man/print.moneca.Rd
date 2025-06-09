@@ -4,8 +4,7 @@
 \alias{print.moneca}
 \title{Print moneca descriptives}
 \usage{
-\method{print}{moneca}(segments,
-  small.cell.reduction = segments$small.cell.reduction)
+\method{print}{moneca}(segments, small.cell.reduction = segments$small.cell.reduction)
 }
 \description{
 Print moneca descriptives

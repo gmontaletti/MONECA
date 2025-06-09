@@ -4,8 +4,13 @@
 \alias{weight.matrix}
 \title{Weight.matrix}
 \usage{
-weight.matrix(mx, cut.off = 1, symmetric = TRUE, diagonal = NULL,
-  small.cell.reduction = 0)
+weight.matrix(
+  mx,
+  cut.off = 1,
+  symmetric = TRUE,
+  diagonal = NULL,
+  small.cell.reduction = 0
+)
 }
 \arguments{
 \item{mx}{}

@@ -4,8 +4,13 @@
 \alias{find.segments}
 \title{find.segments}
 \usage{
-find.segments(mat, cliques, cut.off = 1, mode = "symmetric",
-  delete.upper.tri = TRUE)
+find.segments(
+  mat,
+  cliques,
+  cut.off = 1,
+  mode = "symmetric",
+  delete.upper.tri = TRUE
+)
 }
 \arguments{
 \item{mat}{is the mobility table with row and column margins}

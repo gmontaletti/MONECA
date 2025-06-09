@@ -4,10 +4,20 @@
 \alias{ego.plot}
 \title{Ego plots}
 \usage{
-ego.plot(segments, mxa.b, id = 1, lay = layout.matrix(segments),
-  edge.size = 0.8, border.padding = 1, title.line = TRUE,
-  vertex.size = "totals", small.cell.reduction = 5,
-  edge.weight = "discrete", color.scheme = "RdPu", ...)
+ego.plot(
+  segments,
+  mxa.b,
+  id = 1,
+  lay = layout.matrix(segments),
+  edge.size = 0.8,
+  border.padding = 1,
+  title.line = TRUE,
+  vertex.size = "totals",
+  small.cell.reduction = 5,
+  edge.weight = "discrete",
+  color.scheme = "RdPu",
+  ...
+)
 }
 \arguments{
 \item{vertex.size}{if "totals" the size of the vertices is derived from the totals in mxa.b. If any other value it is the row.value for id.}

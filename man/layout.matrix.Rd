@@ -4,10 +4,17 @@
 \alias{layout.matrix}
 \title{Layout matrix}
 \usage{
-layout.matrix(segments, attraction = c(320, 40, 10, 4, 2),
-  level = seq(segments$segment.list), mode = "directed",
-  weight.adjustment = 1, start.temp = 20, niter = 10000,
-  tie.adjustment = 0.4, ...)
+layout.matrix(
+  segments,
+  attraction = c(320, 40, 10, 4, 2),
+  level = seq(segments$segment.list),
+  mode = "directed",
+  weight.adjustment = 1,
+  start.temp = 20,
+  niter = 10000,
+  tie.adjustment = 0.4,
+  ...
+)
 }
 \arguments{
 \item{segments}{a segment object}

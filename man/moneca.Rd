@@ -4,8 +4,14 @@
 \alias{moneca}
 \title{moneca}
 \usage{
-moneca(mx = mx, segment.levels = 3, cut.off = 1, mode = "symmetric",
-  delete.upper.tri = TRUE, small.cell.reduction = 0)
+moneca(
+  mx = mx,
+  segment.levels = 3,
+  cut.off = 1,
+  mode = "symmetric",
+  delete.upper.tri = TRUE,
+  small.cell.reduction = 0
+)
 }
 \arguments{
 \item{mx}{is a raw mobility table with row and column margins}
@@ -26,6 +32,23 @@ mat.list returns a list with a mobility table for each level with the number of 
 \description{
 moneca
 }
+\examples{
+# Generate synthetic mobility data
+mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
+
+# Run MONECA analysis
+seg <- moneca(mobility_data, segment.levels = 3)
+print(seg)
+
+# Examine segment membership
+membership <- segment.membership(seg)
+print(membership)
+
+# Visualize with modern plotting
+\dontrun{
+plot_moneca_ggraph(seg, node_color = "segment", title = "MONECA Clustering")
+}
+}
 \seealso{
-\link{find.segments}, \link{moneca.plot}
+\link{find.segments}, \link{plot_moneca_ggraph}, \link{moneca.plot}
 }

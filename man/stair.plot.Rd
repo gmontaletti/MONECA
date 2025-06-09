@@ -4,22 +4,48 @@
 \alias{stair.plot}
 \title{Stair plot}
 \usage{
-stair.plot(segments, level = seq(segments$segment.list),
-  layout = layout.matrix(segments), edges = segment.edges(segments, cut.off
-  = 1, method = "all", segment.reduction = 0, level = 1), mode = "directed",
-  vertex.size = "total", vertex.alpha = 1, vertex.color = "black",
-  vertex.shape = 21, show.edges = TRUE, edge.size = 0.5,
-  edge.alpha = "weight", edge.color = "black", edge.line = "solid",
-  show.text = FALSE, text.size = 3, text.color = "black",
-  text.alpha = 1, text.vjust = 1.5, show.borders = TRUE,
-  border.size = 1, border.fill = NA, border.color = "black",
-  border.alpha = 1, border.padding = 1, border.text = TRUE,
-  border.labels = "segments", border.text.size = 4,
-  border.text.color = "black", border.text.vjust = -0.2,
-  border.text.hjust = 1, midpoints = TRUE, midpoint.arrow = arrow(angle =
-  20, length = unit(0.33, "cm"), ends = "last", type = "closed"),
-  edge.text = FALSE, edge.text.size = 3, edge.text.alpha = 0.9,
-  legend = "side", level.title = "Level")
+stair.plot(
+  segments,
+  level = seq(segments$segment.list),
+  layout = layout.matrix(segments),
+  edges = segment.edges(segments, cut.off = 1, method = "all", segment.reduction = 0,
+    level = 1),
+  mode = "directed",
+  vertex.size = "total",
+  vertex.alpha = 1,
+  vertex.color = "black",
+  vertex.shape = 21,
+  show.edges = TRUE,
+  edge.size = 0.5,
+  edge.alpha = "weight",
+  edge.color = "black",
+  edge.line = "solid",
+  show.text = FALSE,
+  text.size = 3,
+  text.color = "black",
+  text.alpha = 1,
+  text.vjust = 1.5,
+  show.borders = TRUE,
+  border.size = 1,
+  border.fill = NA,
+  border.color = "black",
+  border.alpha = 1,
+  border.padding = 1,
+  border.text = TRUE,
+  border.labels = "segments",
+  border.text.size = 4,
+  border.text.color = "black",
+  border.text.vjust = -0.2,
+  border.text.hjust = 1,
+  midpoints = TRUE,
+  midpoint.arrow = arrow(angle = 20, length = unit(0.33, "cm"), ends = "last", type =
+    "closed"),
+  edge.text = FALSE,
+  edge.text.size = 3,
+  edge.text.alpha = 0.9,
+  legend = "side",
+  level.title = "Level"
+)
 }
 \value{
 a list of ggplot2 objects

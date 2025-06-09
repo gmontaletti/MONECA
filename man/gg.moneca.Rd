@@ -4,21 +4,47 @@
 \alias{gg.moneca}
 \title{ggplots for moneca}
 \usage{
-gg.moneca(segments, level = seq(segments$segment.list),
-  layout = layout.matrix(segments), edges = log(segment.edges(segments) +
-  1), mode = "directed", vertex.size = "total", vertex.fill = "segment",
-  vertex.alpha = 1, vertex.color = "black", vertex.shape = 21,
-  show.edges = TRUE, edge.size = 1, edge.alpha = "weight",
-  edge.color = "weight", edge.line = "solid", show.text = TRUE,
-  text.size = 3, text.color = "black", text.alpha = 1, text.vjust = 1.5,
-  show.borders = TRUE, border.size = 1, border.fill = NA,
-  border.color = "black", border.alpha = 1, border.padding = 0.7,
-  border.text = TRUE, border.labels = "segments", border.text.size = 4,
-  border.text.color = "black", border.text.vjust = -0.2,
-  border.text.hjust = 1, midpoints = TRUE, midpoint.arrow = arrow(angle =
-  20, length = unit(0.33, "cm"), ends = "last", type = "closed"),
-  edge.text = FALSE, edge.text.size = 3, edge.text.alpha = 0.9,
-  legend = "side")
+gg.moneca(
+  segments,
+  level = seq(segments$segment.list),
+  layout = layout.matrix(segments),
+  edges = log(segment.edges(segments) + 1),
+  mode = "directed",
+  vertex.size = "total",
+  vertex.fill = "segment",
+  vertex.alpha = 1,
+  vertex.color = "black",
+  vertex.shape = 21,
+  show.edges = TRUE,
+  edge.size = 1,
+  edge.alpha = "weight",
+  edge.color = "weight",
+  edge.line = "solid",
+  show.text = TRUE,
+  text.size = 3,
+  text.color = "black",
+  text.alpha = 1,
+  text.vjust = 1.5,
+  show.borders = TRUE,
+  border.size = 1,
+  border.fill = NA,
+  border.color = "black",
+  border.alpha = 1,
+  border.padding = 0.7,
+  border.text = TRUE,
+  border.labels = "segments",
+  border.text.size = 4,
+  border.text.color = "black",
+  border.text.vjust = -0.2,
+  border.text.hjust = 1,
+  midpoints = TRUE,
+  midpoint.arrow = arrow(angle = 20, length = unit(0.33, "cm"), ends = "last", type =
+    "closed"),
+  edge.text = FALSE,
+  edge.text.size = 3,
+  edge.text.alpha = 0.9,
+  legend = "side"
+)
 }
 \description{
 Plotting of MONECA objects

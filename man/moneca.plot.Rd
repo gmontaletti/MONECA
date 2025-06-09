@@ -4,14 +4,26 @@
 \alias{moneca.plot}
 \title{Plot moneca}
 \usage{
-moneca.plot(segments, layout = layout.matrix(segments),
-  edges = segment.edges(segments), mode = "directed",
-  level = seq(segments$segment.list), vertex.size = 5,
-  vertex.frame.color = "black", edge.curved = FALSE,
-  vertex.color = "grey50", vertex.label.color = "black",
-  vertex.label.cex = 0.5, vertex.label.dist = 0.12, edge.arrow.size = 0.1,
-  mark.col = NULL, mark.expand = 10, border.col = "black",
-  edge.width = 1, edge.color = "black")
+moneca.plot(
+  segments,
+  layout = layout.matrix(segments),
+  edges = segment.edges(segments),
+  mode = "directed",
+  level = seq(segments$segment.list),
+  vertex.size = 5,
+  vertex.frame.color = "black",
+  edge.curved = FALSE,
+  vertex.color = "grey50",
+  vertex.label.color = "black",
+  vertex.label.cex = 0.5,
+  vertex.label.dist = 0.12,
+  edge.arrow.size = 0.1,
+  mark.col = NULL,
+  mark.expand = 10,
+  border.col = "black",
+  edge.width = 1,
+  edge.color = "black"
+)
 }
 \description{
 Plot the results from a moneca analysis
