@@ -158,7 +158,7 @@ seg$mat.list           <- segments$mat.list[level]
 
 
 mat.edges              <- edges
-gra.edges              <- graph.adjacency(mat.edges, mode=mode, weighted=TRUE, diag = FALSE)                     
+gra.edges              <- moneca_graph_from_adjacency(mat.edges, mode=mode, weighted=TRUE, diag = FALSE)                     
 
 scale_modifications    <- list()
 
@@ -398,7 +398,7 @@ p + scale_modifications
 edge.coord <- function(graph, layout){
   
   graph.names       <- V(graph)$name
-  el                <- data.frame(get.edgelist(graph))
+  el                <- data.frame(moneca_get_edgelist(graph))
   
   el.X1.levels.x    <- levels(el$X1)
   el.X1.levels.y    <- levels(el$X1)
@@ -501,7 +501,7 @@ ego.plot <- function(segments, mxa.b, id = 1,
   scales$guide_size        <- guides(size = guide_legend(override.aes = list(shape = 21)))
     
   if(identical(edge.weight, "discrete")){
-    gra.edges              <- graph.adjacency(EM, mode = "directed", weighted = TRUE, diag = NULL)                     
+    gra.edges              <- moneca_graph_from_adjacency(EM, mode = "directed", weighted = TRUE, diag = NULL)                     
     ew                     <- E(gra.edges)$weight
     edge.weight                         <- ew
     edge.weight[ew < 1.5]               <- "1-1.5"

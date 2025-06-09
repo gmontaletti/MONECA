@@ -6,10 +6,17 @@ Version: 0.1
 Maintainer: Anton Grau Larsen <agl.ioa@cbs.dk>
 Author: Jonas Touboel <jt@soc.ku.dk>
 Depends:
-  R (>= 3.0.0),
-  ggplot2,
+  R (>= 3.5.0)
+Imports:
+  ggplot2 (>= 3.4.0),
   grid,
-  igraph,
-  toOrdinal
+  igraph (>= 1.3.0),
+  toOrdinal,
+  RColorBrewer (>= 1.1-2),
+  scales (>= 1.2.0),
+  stats,
+  grDevices
+Suggests:
+  eliter
 License: GPL-3
 RoxygenNote: 6.0.1

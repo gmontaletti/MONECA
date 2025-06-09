@@ -43,15 +43,15 @@ print.moneca <- function(segments, small.cell.reduction=segments$small.cell.redu
   # Brug weight matrix istedet  
     mx.1 <- weight.matrix(mx, cut.off=1, small.cell.reduction=small.cell.reduction, symmetric=FALSE)
     mx.1[is.na(mx.1)]  <- 0   
-    gra.diag.null <- graph.adjacency(mx.1, weighted=TRUE, mode="directed", diag = FALSE)
-    gra.diag.true <- graph.adjacency(mx.1, weighted=TRUE, mode="directed")
+    gra.diag.null <- moneca_graph_from_adjacency(mx.1, weighted=TRUE, mode="directed", diag = FALSE)
+    gra.diag.true <- moneca_graph_from_adjacency(mx.1, weighted=TRUE, mode="directed")
     gra.diag.null <- simplify(gra.diag.null, remove.loops=TRUE, remove.multiple = FALSE)
     
     deg.all                <- degree(gra.diag.null, mode="all")
     deg.out                <- degree(gra.diag.null, mode="out")
     deg.in                 <- degree(gra.diag.null, mode="in")
     nodes                  <- vcount(gra.diag.null)
-    dens                   <- graph.density(gra.diag.null)
+    dens                   <- moneca_graph_density(gra.diag.null)
     isolates               <- sum(deg.all == 0)
     # Average weight
     #w <- E(gra.diag.null)$weight
@@ -209,7 +209,7 @@ segment.quality <- function(segments, final.solution = FALSE){
     mat.level      <- mat.level[-nrow(mat.level), -nrow(mat.level)]
     
     edge.matrix        <- segment.edges(segments, cut.off = 1 ,  level = 0, small.cell.reduction = 5, segment.reduction = 0)
-    net.edge           <- graph.adjacency(edge.matrix, weighted = TRUE) # Tjek mode og den slags på det her svin
+    net.edge           <- moneca_graph_from_adjacency(edge.matrix, weighted = TRUE) # Tjek mode og den slags på det her svin
       
     # Segment
     seg                <- rep(NA, length(names))
@@ -224,7 +224,7 @@ segment.quality <- function(segments, final.solution = FALSE){
     for (i in 1 : length(seg.list.level)) size[seg.list.level[[i]]] <- level.size[i]
     # Density
     level.density     <- rep(NA, length(names))
-    for (i in 1 : length(seg.list.level)) level.density[seg.list.level[[i]]] <- graph.density(net.edge - which(((1:vcount(net.edge) %in% seg.list.level[[i]]) == FALSE)))
+    for (i in 1 : length(seg.list.level)) level.density[seg.list.level[[i]]] <- moneca_graph_density(net.edge - which(((1:vcount(net.edge) %in% seg.list.level[[i]]) == FALSE)))
     # Nodes
     nodes              <- rep(NA, length(names))
     for (i in 1 : length(seg.list.level)) nodes[seg.list.level[[i]]] <- length(seg.list.level[[i]])
@@ -296,8 +296,8 @@ sum.1     # Summary of degrees on each level
 ###### Longest path and density
 m        <- weight.matrix(segments$mat.list[[1]], cut.off=1, small.cell.reduction=small.cell.reduction, symmetric=FALSE)
 m[is.na(m)] <- 0
-net.path <- graph.adjacency(m, mode="directed", weighted=TRUE, diag=FALSE) # Her er diag = NULL erstattet med FALSE
-sp       <- shortest.paths(net.path, weights=NA)
+net.path <- moneca_graph_from_adjacency(m, mode="directed", weighted=TRUE, diag=FALSE) # Her er diag = NULL erstattet med FALSE
+sp       <- moneca_shortest_paths(net.path, weights=NA)
 
 des <- list()
 for(niv in 2:length(segments$segment.list)){
@@ -313,12 +313,12 @@ for(niv in 2:length(segments$segment.list)){
     seg          <- seg.niv[[i]]
     max.path.global[i] <- max(sp[seg,seg])
     h            <- 1:vcount(net.path)
-    density[i]   <- graph.density(net.path - h[-seg])
-    clust[i]     <- max(clusters(net.path - h[-seg])$no)
-    max.clust[i] <- max(clusters(net.path - h[-seg])$csize)
+    density[i]   <- moneca_graph_density(net.path - h[-seg])
+    clust[i]     <- max(moneca_components(net.path - h[-seg])$no)
+    max.clust[i] <- max(moneca_components(net.path - h[-seg])$csize)
     size[i]      <- length(seg)
-    max.path[i]  <- max(shortest.paths(net.path - h[-seg], weights=NA))
-    av.path[i]   <- average.path.length(net.path - h[-seg])
+    max.path[i]  <- max(moneca_shortest_paths(net.path - h[-seg], weights=NA))
+    av.path[i]   <- moneca_average_path_length(net.path - h[-seg])
     
   }
     des[[niv]]   <- cbind(size,max.path.global, max.path, density=round(density,3), clusters=clust, max.clust, av.path)

@@ -132,7 +132,7 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
 
     mx.1i           <- weight.matrix(mx, cut.off, small.cell.reduction=small.cell.reduction)
     
-    gra.1ii         <- graph.adjacency(adjmatrix=mx.1i, mode="undirected")
+    gra.1ii         <- moneca_graph_from_adjacency(adjmatrix=mx.1i, mode="undirected")
     klike           <- cliques(gra.1ii)
     clust.1         <- find.segments(mx.1i, klike, cut.off=cut.off)
     
@@ -325,7 +325,7 @@ layout.matrix <- function(segments, attraction=c(320, 40, 10, 4, 2), level=seq(s
   mx.attract      <- weight.matrix(segments$mat.list[[1]], cut.off = 0, diagonal=TRUE, symmetric=FALSE)
   mx.attract      <- mx.attract ^ tie.adjustment
   
-  gra.lay         <- graph.adjacency(mx.attract, mode="directed", weighted=TRUE)
+  gra.lay         <- moneca_graph_from_adjacency(mx.attract, mode="directed", weighted=TRUE)
   
   
   assign.attraction <- function(mx.attract, segment, attract){
@@ -339,7 +339,7 @@ layout.matrix <- function(segments, attraction=c(320, 40, 10, 4, 2), level=seq(s
   }
   
   diag(mx.attract) <- 0
-  gra.lay          <- graph.adjacency(mx.attract, mode=mode, weighted=TRUE)
+  gra.lay          <- moneca_graph_from_adjacency(mx.attract, mode=mode, weighted=TRUE)
 
   # wm               <- weight.matrix(segments)
   # a                <- rowSums(wm)
@@ -348,7 +348,7 @@ layout.matrix <- function(segments, attraction=c(320, 40, 10, 4, 2), level=seq(s
   # start            <- norm_coords(start, xmin = -100, xmax = 100, ymin = -100, ymax = 100)
   # 
   layout           <- layout_with_fr(gra.lay, weights=E(gra.lay)$weight*weight.adjustment, niter = niter, start.temp = start.temp, ...)
-  layout[, 1:2]    <- norm_coords(layout[, 1:2], xmin = 1, xmax = 10^10, ymin = 1, ymax = 10^10)
+  layout[, 1:2]    <- moneca_norm_coords(layout[, 1:2], xmin = 1, xmax = 10^10, ymin = 1, ymax = 10^10)
   layout
 }
 
@@ -446,8 +446,8 @@ moneca.plot <- function(segments,
   segments               <- unlist(seg$segment.list, recursive=FALSE)
   
   mat.edges              <- edges
-  gra.edges              <- graph.adjacency(mat.edges, mode = mode, weighted = TRUE, diag = FALSE)                     
-  el                     <- get.edgelist(gra.edges, names=FALSE)
+  gra.edges              <- moneca_graph_from_adjacency(mat.edges, mode = mode, weighted = TRUE, diag = FALSE)                     
+  el                     <- moneca_get_edgelist(gra.edges, names=FALSE)
   # Edge colors
   if(is.matrix(edge.color) == TRUE){
     mat.color            <- edge.color
