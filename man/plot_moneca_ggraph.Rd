@@ -2,7 +2,7 @@
 % Please edit documentation in R/modern_plotting.R
 \name{plot_moneca_ggraph}
 \alias{plot_moneca_ggraph}
-\title{Plot MONECA results with ggraph}
+\title{Modern Network Visualization for MONECA Results}
 \usage{
 plot_moneca_ggraph(
   segments,
@@ -26,65 +26,129 @@ plot_moneca_ggraph(
 )
 }
 \arguments{
-\item{segments}{A MONECA object from \code{\link{moneca}}}
+\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
 
-\item{level}{Integer vector. Which segmentation levels to display (default: all except first)}
+\item{level}{Integer vector specifying which hierarchical levels to visualize.
+Default displays all levels except the first (which represents individual categories).}
 
-\item{layout}{Layout algorithm or matrix. Can be "fr", "kk", "dh", "mds", or a coordinate matrix}
+\item{layout}{Character string or matrix specifying the layout algorithm:
+\itemize{
+  \item "fr" (default): Fruchterman-Reingold force-directed layout
+  \item "kk": Kamada-Kawai layout
+  \item "dh": Davidson-Harel layout  
+  \item "mds": Multidimensional scaling
+  \item "stress": Stress majorization
+  \item Matrix: Custom coordinate matrix (n_nodes x 2)
+}}
 
-\item{edges}{Edge matrix or "auto" to use segment.edges()}
+\item{edges}{Edge matrix or "auto" to automatically generate using 
+\code{\link{segment.edges}}. Default is "auto".}
 
-\item{node_size}{Aesthetic for node size. Can be "total", "mobility", or numeric vector}
+\item{node_size}{Aesthetic mapping for node size:
+\itemize{
+  \item "total": Size by total mobility volume (default)
+  \item "mobility": Size by off-diagonal mobility rate
+  \item Numeric vector: Custom sizes for each node
+  \item Single numeric: Fixed size for all nodes
+}}
 
-\item{node_color}{Aesthetic for node color. Can be "segment", "mobility", or color vector}
+\item{node_color}{Aesthetic mapping for node color:
+\itemize{
+  \item "segment" (default): Color by segment membership
+  \item "mobility": Color by mobility rate
+  \item Character vector: Custom colors for each node
+  \item Single color: Fixed color for all nodes
+}}
 
-\item{node_alpha}{Numeric. Node transparency (0-1, default: 0.8)}
+\item{node_alpha}{Numeric value (0-1) for node transparency. Default is 0.8.}
 
-\item{edge_width}{Aesthetic for edge width. Can be "weight" or numeric}
+\item{edge_width}{Aesthetic for edge width:
+\itemize{
+  \item "weight" (default): Width proportional to edge weight
+  \item Numeric: Fixed width for all edges
+}}
 
-\item{edge_color}{Color for edges (default: "grey50")}
+\item{edge_color}{Color for edges. Default is "grey50".}
 
-\item{edge_alpha}{Numeric. Edge transparency (0-1, default: 0.6)}
+\item{edge_alpha}{Numeric value (0-1) for edge transparency. Default is 0.6.}
 
-\item{show_labels}{Logical. Whether to show node labels (default: TRUE)}
+\item{show_labels}{Logical indicating whether to display node labels. Default is TRUE.}
 
-\item{label_size}{Numeric. Size of node labels (default: 3)}
+\item{label_size}{Numeric size for node labels. Default is 3.}
 
-\item{show_segments}{Logical. Whether to show segment boundaries (default: TRUE)}
+\item{show_segments}{Logical indicating whether to highlight segment boundaries.
+Default is TRUE.}
 
-\item{segment_alpha}{Numeric. Segment boundary transparency (0-1, default: 0.3)}
+\item{segment_alpha}{Numeric value (0-1) for segment boundary transparency.
+Default is 0.3.}
 
-\item{color_palette}{Character. Color palette name for segments (default: "Set3")}
+\item{color_palette}{Character string specifying the color palette for segments.
+Can be any RColorBrewer palette name. Default is "Set3".}
 
-\item{theme_style}{Character. Plot theme: "minimal", "void", or "classic" (default: "void")}
+\item{theme_style}{Character string specifying the plot theme:
+\itemize{
+  \item "void" (default): Clean background with no axes
+  \item "minimal": Minimal theme with subtle gridlines
+  \item "classic": Traditional ggplot2 theme
+}}
 
-\item{title}{Character. Plot title (optional)}
+\item{title}{Character string for plot title. Default is NULL (no title).}
 
-\item{...}{Additional arguments passed to ggraph}
+\item{...}{Additional arguments passed to ggraph layout functions.}
 }
 \value{
-A ggplot object
+A ggplot2 object that can be further customized or displayed.
 }
 \description{
-Creates modern network visualizations of MONECA clustering results using
-ggraph and ggplot2. This function replaces the old gg.moneca function
-with improved performance and customization options.
+Creates sophisticated network visualizations of MONECA clustering results using
+ggraph and ggplot2. This function provides modern, highly customizable plots
+with support for multiple layout algorithms, node aesthetics, and segment highlighting.
+}
+\details{
+This function creates publication-quality network visualizations with extensive
+customization options. It automatically handles node positioning, edge rendering,
+and segment highlighting. The resulting plot can be further modified using
+standard ggplot2 syntax.
+
+For interactive exploration, different layout algorithms may work better with
+different network structures. Force-directed layouts ("fr") work well for most
+cases, while "stress" layouts often produce cleaner results for dense networks.
 }
 \examples{
-\dontrun{
-# Basic plot
-data <- generate_mobility_data(n_classes = 6, seed = 123)
-seg <- moneca(data, segment.levels = 3)
+# Generate synthetic data and run MONECA
+mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+seg <- moneca(mobility_data, segment.levels = 3)
+
+# Basic network plot
 plot_moneca_ggraph(seg)
 
-# Customized plot
+# Customized plot with different aesthetics
 plot_moneca_ggraph(seg,
-  layout = "kk",
-  node_color = "segment",
+  layout = "stress",
+  node_color = "mobility",
   edge_width = "weight",
   color_palette = "Spectral",
-  title = "Social Mobility Network"
+  title = "Social Mobility Network",
+  show_segments = FALSE
 )
-}
 
+# Plot with custom node sizes and colors
+custom_plot <- plot_moneca_ggraph(seg,
+  node_size = c(8, 6, 10, 4, 7, 5),
+  node_color = "red",
+  edge_color = "darkblue",
+  theme_style = "minimal"
+)
+
+# Further customize with ggplot2
+custom_plot + 
+  ggplot2::labs(subtitle = "Custom subtitle") +
+  ggplot2::theme(plot.title = ggplot2::element_text(size = 16))
+
+}
+\seealso{
+\code{\link{moneca}} for the main analysis function,
+\code{\link{plot_ego_ggraph}} for ego network visualization,
+\code{\link{plot_stair_ggraph}} for multi-level visualization,
+\code{\link{segment.edges}} for edge matrix generation
 }

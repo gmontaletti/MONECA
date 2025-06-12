@@ -1,6 +1,56 @@
-#' Print moneca descriptives
+#' Print Method for MONECA Objects
+#'
+#' Provides a comprehensive summary of MONECA analysis results including mobility
+#' statistics, network properties, and segmentation quality measures across all
+#' hierarchical levels.
+#'
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param small.cell.reduction Numeric threshold for small cell handling. If NULL,
+#'   uses the value from the MONECA object.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return Invisibly returns a list of descriptive statistics, but primarily called
+#'   for its side effect of printing a formatted summary.
+#'
+#' @details
+#' The print method calculates and displays several key statistics:
+#' 
+#' \strong{Mobility Statistics:}
+#' \itemize{
+#'   \item Total mobility rate (proportion of off-diagonal movement)
+#'   \item Diagonal mobility (immobility) by level
+#'   \item Mobility captured by significant edges
+#' }
+#' 
+#' \strong{Network Properties:}
+#' \itemize{
+#'   \item Node degrees (in, out, total) by level
+#'   \item Network density by level
+#'   \item Number of isolated nodes
+#'   \item Edge weight distributions
+#' }
+#' 
+#' \strong{Segmentation Quality:}
+#' \itemize{
+#'   \item Number of segments per level
+#'   \item Proportion of mobility within vs. between segments
+#'   \item Network coherence measures
+#' }
+#'
+#' @examples
+#' # Generate data and run analysis
+#' mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
+#' seg <- moneca(mobility_data, segment.levels = 3)
+#' 
+#' # Print comprehensive summary
+#' print(seg)
+#' 
+#' # The summary includes mobility rates, network statistics, and
+#' # segmentation quality measures for each hierarchical level
+#'
+#' @seealso \code{\link{moneca}}, \code{\link{summary.moneca}}
 #' @export
-print.moneca <- function(segments, small.cell.reduction=segments$small.cell.reduction){
+print.moneca <- function(segments, small.cell.reduction=segments$small.cell.reduction, ...){
   
   # Hvor mange procent flytter sig i det hele taget?
   mx            <- segments$mat.list[[1]]
@@ -28,11 +78,21 @@ print.moneca <- function(segments, small.cell.reduction=segments$small.cell.redu
     wm               <- weight.matrix(mx=segments$mat.list[[i]], cut.off=1, diagonal=TRUE, symmetric=FALSE, small.cell.reduction=0)
     mm               <- segments$mat.list[[i]]
     l                <- nrow(mm)
-    row.margin       <- rowSums(mm[-l,-l])
-    mm               <- mm[-l,-l]
-    mm[is.na(wm)]    <- 0
-    rs               <- rowSums(mm)
-    mob.in.edges[i]  <- sum(rs)/sum(row.margin)
+    
+    # Handle case where matrix is too small
+    if (l <= 2) {
+      mob.in.edges[i] <- 1  # All mobility is in edges for tiny matrices
+    } else {
+      mm.reduced       <- mm[-l,-l]
+      # Ensure mm.reduced is a matrix
+      if (!is.matrix(mm.reduced)) {
+        mm.reduced <- as.matrix(mm.reduced)
+      }
+      row.margin       <- rowSums(mm.reduced)
+      mm.reduced[is.na(wm)]    <- 0
+      rs               <- rowSums(mm.reduced)
+      mob.in.edges[i]  <- sum(rs)/sum(row.margin)
+    }
   }
   
   samlet.oversandsynlighed <- mob.in.edges
@@ -76,10 +136,29 @@ print.moneca <- function(segments, small.cell.reduction=segments$small.cell.redu
   MONECA:::print.descriptive.moneca(out)
 }
 
-#' Print descriptive moneca
-#' 
-
-print.descriptive.moneca <- function(x){
+#' Print Method for Descriptive MONECA Statistics
+#'
+#' Internal function that formats and displays the detailed statistics calculated
+#' by the \code{print.moneca} method. This function creates formatted tables showing
+#' network properties and mobility statistics across hierarchical levels.
+#'
+#' @param x A descriptive.moneca object containing calculated statistics.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return NULL (called for side effects - printing formatted output).
+#'
+#' @details
+#' This internal function is responsible for the formatted display of MONECA
+#' analysis results. It creates several summary tables:
+#' \itemize{
+#'   \item Degree distributions (all, in, out) for each level
+#'   \item Edge weight distributions for each level
+#'   \item Diagonal mobility percentages
+#'   \item Network density and connectivity statistics
+#' }
+#'
+#' @keywords internal
+print.descriptive.moneca <- function(x, ...){
   
   # Out matrice
   

@@ -2,7 +2,7 @@
 % Please edit documentation in R/analytical_functions.R
 \name{moneca}
 \alias{moneca}
-\title{moneca}
+\title{MONECA - Mobility Network Clustering Analysis}
 \usage{
 moneca(
   mx = mx,
@@ -14,23 +14,52 @@ moneca(
 )
 }
 \arguments{
-\item{mx}{is a raw mobility table with row and column margins}
+\item{mx}{A mobility table (square matrix) with row and column totals in the last
+row/column. Row names should identify the categories/classes.}
 
-\item{segment.levels}{defines the number levels of nested segments to be returned}
+\item{segment.levels}{Integer specifying the number of hierarchical segmentation 
+levels to compute. Default is 3. The algorithm may return fewer levels if no
+further meaningful segmentation is possible.}
 
-\item{cut.off}{is the minimum weight or relative risk accepted as a network tie}
+\item{cut.off}{Numeric threshold for the minimum relative risk to be considered
+a significant tie. Default is 1 (no mobility above random expectation required).}
 
-\item{mode}{defines whether mat is symmetric. If mode is "Mutual" - ties are only created for mutual relations. If mode is "Unmutual", relations are not required to be mutual to result in a tie.}
+\item{mode}{Character string specifying edge mode ("symmetric", "Mutual", or 
+"Unmutual"). Currently not fully implemented - uses symmetric mode.}
 
-\item{delete.upper.tri}{defines whether the upper triangle of the matrix is to be deleted. This results in speed gains.}
+\item{delete.upper.tri}{Logical indicating whether to use only lower triangle 
+for efficiency. Default is TRUE.}
+
+\item{small.cell.reduction}{Numeric value to handle small cell counts. Cells with
+counts below this threshold are set to 0. Default is 0 (no reduction).}
 }
 \value{
-segment.list returns a list of cliques for each level. The row indices correspond to the first level aka. the rows from mx.
-
-mat.list returns a list with a mobility table for each level with the number of rows and columns corresponding to the number of segments for each level
+An object of class "moneca" containing:
+  \describe{
+    \item{segment.list}{A list of segment memberships for each hierarchical level.
+      Each element is a list of vectors containing the original row indices.}
+    \item{mat.list}{A list of aggregated mobility matrices for each level, where
+      rows/columns represent segments instead of original categories.}
+    \item{small.cell.reduction}{The small cell reduction parameter used.}
+  }
 }
 \description{
-moneca
+Main function for performing hierarchical clustering analysis on mobility tables.
+MONECA creates weighted networks from mobility data and uses cliques to identify
+discrete and nested clusters of positions with high internal mobility.
+}
+\details{
+MONECA implements an iterative algorithm that:
+\enumerate{
+  \item Converts the mobility table to a relative risk matrix
+  \item Identifies network cliques based on the threshold
+  \item Groups nodes into segments using the clique structure
+  \item Aggregates the mobility table by segments
+  \item Repeats the process for the specified number of levels
+}
+
+The algorithm stops early if no further segmentation is possible (e.g., all
+nodes collapse into a single segment).
 }
 \examples{
 # Generate synthetic mobility data
@@ -48,7 +77,16 @@ print(membership)
 \dontrun{
 plot_moneca_ggraph(seg, node_color = "segment", title = "MONECA Clustering")
 }
+
+}
+\references{
+Toubøl, J., & Larsen, A. G. (2017). Mapping the Social Class Structure: 
+From Occupational Mobility to Social Class Categories Using Network Analysis.
+Sociology, 51(6), 1257-1276.
 }
 \seealso{
-\link{find.segments}, \link{plot_moneca_ggraph}, \link{moneca.plot}
+\code{\link{find.segments}} for the core segmentation algorithm,
+\code{\link{weight.matrix}} for relative risk calculation,
+\code{\link{plot_moneca_ggraph}} for modern visualization,
+\code{\link{segment.membership}} for extracting memberships
 }

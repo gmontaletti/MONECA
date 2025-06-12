@@ -2,7 +2,7 @@
 % Please edit documentation in R/analytical_functions.R
 \name{find.segments}
 \alias{find.segments}
-\title{find.segments}
+\title{Find Segments in Mobility Networks}
 \usage{
 find.segments(
   mat,
@@ -13,21 +13,43 @@ find.segments(
 )
 }
 \arguments{
-\item{mat}{is the mobility table with row and column margins}
+\item{mat}{A weighted adjacency matrix representing mobility flows or relationships.
+Should include row and column names representing the categories/classes.}
 
-\item{cliques}{is a list of cliques}
+\item{cliques}{A list of cliques (complete subgraphs) in the network, typically
+obtained from \code{igraph::cliques()}.}
 
-\item{cut.off}{is the minimum weight or relative risk accepted as a network tie}
+\item{cut.off}{Numeric threshold for minimum weight or relative risk to be 
+considered a network tie. Default is 1.}
 
-\item{mode}{defines whether mat is symmetric. If mode is "Mutual" - ties are only created for mutual relations. If mode is "Unmutual", relations are not required to be mutual to result in a tie.}
+\item{mode}{Character string specifying how to handle asymmetric relationships:
+\itemize{
+  \item "symmetric" (default): Standard symmetric treatment
+  \item "Mutual": Only mutual ties (bidirectional) are considered
+  \item "Unmutual": Unidirectional ties are allowed
+}}
 
-\item{delete.upper.tri}{defines whether the upper triangle of the matrix is to be deleted. This results in speed gains.}
+\item{delete.upper.tri}{Logical indicating whether to process only the lower 
+triangle of the matrix for efficiency. Default is TRUE.}
 }
 \value{
-membership - a numeric vector with discrete group memberships for each row in the matrix.
-
-cliques a list of row indices for each clique
+A list with two components:
+  \describe{
+    \item{membership}{A factor indicating segment membership for each node}
+    \item{cliques}{A list where each element contains the indices of nodes 
+      belonging to that segment}
+  }
 }
 \description{
-An algorithm for creating discrete groups or segments on the basis of a weighted network and a mobility table
+Identifies discrete groups or segments based on a weighted network matrix using a 
+clique-based algorithm. This function implements the core segmentation algorithm
+that iteratively assigns nodes to segments based on network ties.
+}
+\details{
+The algorithm works by iteratively examining the strongest remaining ties in the
+network and assigning nodes to segments based on clique membership. It uses a
+greedy approach that prioritizes stronger connections and larger existing segments.
+}
+\seealso{
+\code{\link{moneca}} for the main analysis function
 }

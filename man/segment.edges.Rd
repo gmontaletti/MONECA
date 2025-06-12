@@ -2,7 +2,7 @@
 % Please edit documentation in R/analytical_functions.R
 \name{segment.edges}
 \alias{segment.edges}
-\title{Segment edges}
+\title{Extract Segment Edge Matrix}
 \usage{
 segment.edges(
   segments,
@@ -16,6 +16,42 @@ segment.edges(
   small.cell.reduction = 0
 )
 }
+\arguments{
+\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+
+\item{cut.off}{Numeric threshold for minimum relative risk to include an edge.
+Default is 1.}
+
+\item{mode}{Character string specifying the graph mode ("directed" or "undirected").
+Default is "directed".}
+
+\item{level}{Integer vector specifying which hierarchical levels to include.
+Default includes all levels.}
+
+\item{segment.reduction}{Integer vector specifying levels for which to remove
+internal segment edges. Default includes all levels.}
+
+\item{method}{Character string specifying edge filtering method:
+\itemize{
+  \item "all" (default): Include all edges above threshold
+  \item "top.out": Keep only the top outgoing edges per node
+  \item "top.in": Keep only the top incoming edges per node
+}}
+
+\item{top}{Integer specifying how many top edges to keep when using 
+"top.out" or "top.in" methods. Default is 3.}
+
+\item{diagonal}{Controls diagonal values. If NULL (default), diagonal is zeroed.}
+
+\item{small.cell.reduction}{Numeric threshold for small cell handling.}
+}
+\value{
+A square matrix representing edge weights between nodes/segments.
+}
 \description{
-The coordinates of the edges
+Creates an adjacency matrix representing edges between segments based on
+mobility flows. This function is used for network visualization and analysis.
+}
+\seealso{
+\code{\link{plot_moneca_ggraph}}, \code{\link{moneca.plot}}
 }

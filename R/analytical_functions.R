@@ -1,16 +1,39 @@
 ###################################
 
-#' find.segments
+#' Find Segments in Mobility Networks
 #' 
-#' An algorithm for creating discrete groups or segments on the basis of a weighted network and a mobility table
+#' Identifies discrete groups or segments based on a weighted network matrix using a 
+#' clique-based algorithm. This function implements the core segmentation algorithm
+#' that iteratively assigns nodes to segments based on network ties.
 #' 
-#' @param mat is the mobility table with row and column margins
-#' @param cliques is a list of cliques
-#' @param cut.off is the minimum weight or relative risk accepted as a network tie
-#' @param mode defines whether mat is symmetric. If mode is "Mutual" - ties are only created for mutual relations. If mode is "Unmutual", relations are not required to be mutual to result in a tie.
-#' @param delete.upper.tri defines whether the upper triangle of the matrix is to be deleted. This results in speed gains.
-#' @return membership - a numeric vector with discrete group memberships for each row in the matrix.
-#' @return cliques a list of row indices for each clique
+#' @param mat A weighted adjacency matrix representing mobility flows or relationships.
+#'   Should include row and column names representing the categories/classes.
+#' @param cliques A list of cliques (complete subgraphs) in the network, typically
+#'   obtained from \code{igraph::cliques()}.
+#' @param cut.off Numeric threshold for minimum weight or relative risk to be 
+#'   considered a network tie. Default is 1.
+#' @param mode Character string specifying how to handle asymmetric relationships:
+#'   \itemize{
+#'     \item "symmetric" (default): Standard symmetric treatment
+#'     \item "Mutual": Only mutual ties (bidirectional) are considered
+#'     \item "Unmutual": Unidirectional ties are allowed
+#'   }
+#' @param delete.upper.tri Logical indicating whether to process only the lower 
+#'   triangle of the matrix for efficiency. Default is TRUE.
+#' 
+#' @return A list with two components:
+#'   \describe{
+#'     \item{membership}{A factor indicating segment membership for each node}
+#'     \item{cliques}{A list where each element contains the indices of nodes 
+#'       belonging to that segment}
+#'   }
+#' 
+#' @details
+#' The algorithm works by iteratively examining the strongest remaining ties in the
+#' network and assigning nodes to segments based on clique membership. It uses a
+#' greedy approach that prioritizes stronger connections and larger existing segments.
+#' 
+#' @seealso \code{\link{moneca}} for the main analysis function
 #' @export
 
 find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.upper.tri = TRUE){
@@ -53,7 +76,17 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
   #############################################################
   # Progress bar
   loop.length           <-  sum(mat > cut.off, na.rm=TRUE)
-  pb                    <- txtProgressBar(min = 1, max = loop.length, style=3)
+  
+  # Skip if no edges meet the cut-off criterion
+  if (loop.length == 0) {
+    # Return empty result
+    out <- list()
+    out$membership   <- as.factor(rep(1, nrow(mat)))
+    out$cliques      <- list(1:nrow(mat))
+    return(out)
+  }
+  
+  pb                    <- txtProgressBar(min = 1, max = max(loop.length, 2), style=3)
   for (i in 1:loop.length){
     
     setTxtProgressBar(pb, i, label=paste(round(i/loop.length*100, 0), "% ready!"))
@@ -103,16 +136,48 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
   return(out)
 }
 
-#' moneca
+#' MONECA - Mobility Network Clustering Analysis
 #'
-#' @param mx is a raw mobility table with row and column margins
-#' @param segment.levels defines the number levels of nested segments to be returned
-#' @param cut.off is the minimum weight or relative risk accepted as a network tie
-#' @param mode defines whether mat is symmetric. If mode is "Mutual" - ties are only created for mutual relations. If mode is "Unmutual", relations are not required to be mutual to result in a tie.
-#' @param delete.upper.tri defines whether the upper triangle of the matrix is to be deleted. This results in speed gains.
-#' @return segment.list returns a list of cliques for each level. The row indices correspond to the first level aka. the rows from mx.
-#' @return mat.list returns a list with a mobility table for each level with the number of rows and columns corresponding to the number of segments for each level
-#' @seealso \link{find.segments}, \link{plot_moneca_ggraph}, \link{moneca.plot}
+#' Main function for performing hierarchical clustering analysis on mobility tables.
+#' MONECA creates weighted networks from mobility data and uses cliques to identify
+#' discrete and nested clusters of positions with high internal mobility.
+#'
+#' @param mx A mobility table (square matrix) with row and column totals in the last
+#'   row/column. Row names should identify the categories/classes.
+#' @param segment.levels Integer specifying the number of hierarchical segmentation 
+#'   levels to compute. Default is 3. The algorithm may return fewer levels if no
+#'   further meaningful segmentation is possible.
+#' @param cut.off Numeric threshold for the minimum relative risk to be considered
+#'   a significant tie. Default is 1 (no mobility above random expectation required).
+#' @param mode Character string specifying edge mode ("symmetric", "Mutual", or 
+#'   "Unmutual"). Currently not fully implemented - uses symmetric mode.
+#' @param delete.upper.tri Logical indicating whether to use only lower triangle 
+#'   for efficiency. Default is TRUE.
+#' @param small.cell.reduction Numeric value to handle small cell counts. Cells with
+#'   counts below this threshold are set to 0. Default is 0 (no reduction).
+#' 
+#' @return An object of class "moneca" containing:
+#'   \describe{
+#'     \item{segment.list}{A list of segment memberships for each hierarchical level.
+#'       Each element is a list of vectors containing the original row indices.}
+#'     \item{mat.list}{A list of aggregated mobility matrices for each level, where
+#'       rows/columns represent segments instead of original categories.}
+#'     \item{small.cell.reduction}{The small cell reduction parameter used.}
+#'   }
+#' 
+#' @details
+#' MONECA implements an iterative algorithm that:
+#' \enumerate{
+#'   \item Converts the mobility table to a relative risk matrix
+#'   \item Identifies network cliques based on the threshold
+#'   \item Groups nodes into segments using the clique structure
+#'   \item Aggregates the mobility table by segments
+#'   \item Repeats the process for the specified number of levels
+#' }
+#' 
+#' The algorithm stops early if no further segmentation is possible (e.g., all
+#' nodes collapse into a single segment).
+#' 
 #' @examples
 #' # Generate synthetic mobility data
 #' mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
@@ -129,6 +194,18 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
 #' \dontrun{
 #' plot_moneca_ggraph(seg, node_color = "segment", title = "MONECA Clustering")
 #' }
+#' 
+#' @references
+#' Toubøl, J., & Larsen, A. G. (2017). Mapping the Social Class Structure: 
+#' From Occupational Mobility to Social Class Categories Using Network Analysis.
+#' Sociology, 51(6), 1257-1276.
+#' 
+#' @seealso 
+#' \code{\link{find.segments}} for the core segmentation algorithm,
+#' \code{\link{weight.matrix}} for relative risk calculation,
+#' \code{\link{plot_moneca_ggraph}} for modern visualization,
+#' \code{\link{segment.membership}} for extracting memberships
+#' 
 #' @export
 
 moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.upper.tri=TRUE, small.cell.reduction=0){
@@ -148,7 +225,12 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
 
     mx.1i           <- weight.matrix(mx, cut.off, small.cell.reduction=small.cell.reduction)
     
-    gra.1ii         <- moneca_graph_from_adjacency(adjmatrix=mx.1i, mode="undirected")
+    # Ensure matrix is symmetric for undirected graph
+    # Replace NAs with 0 for graph creation
+    mx.1i.graph     <- mx.1i
+    mx.1i.graph[is.na(mx.1i.graph)] <- 0
+    
+    gra.1ii         <- moneca_graph_from_adjacency(adjmatrix=mx.1i.graph, mode="undirected", weighted=TRUE, diag=FALSE)
     klike           <- cliques(gra.1ii)
     clust.1         <- find.segments(mx.1i, klike, cut.off=cut.off)
     
@@ -172,6 +254,11 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
     
     ud <- list()
     
+    # Return empty list if no valid segments
+    if(length(niv.nu) == 0) {
+      return(ud)
+    }
+    
     for(i in 1:length(niv.nu)){
       d                 <- niv.nu[[i]]
       ud[[i]]           <- unlist(niv.ned[d])
@@ -190,10 +277,16 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
     a               <- unlist(lapply(niv.nu, length))
     seg.list[[2]]   <- niv.nu[a>1]
     
-    for (n in 2:segment.levels){
+    # Adjust for actual number of levels available
+    actual.levels <- min(segment.levels, length(out.put))
+    
+    for (n in 2:actual.levels){
       
       nu  <- n
       ned <- n
+      
+      # Check if level exists in output
+      if(nu > length(out.put)) break
       
       niv.nu     <- out.put[[nu]]$segments$cliques
       niv.ned    <- out.put[[n-1]]$segments$cliques
@@ -203,7 +296,10 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
         niv.ned <- out.put[[ned]]$segments$cliques
         niv.nu  <- level.down(niv.nu, niv.ned)  
       }
-      seg.list[[n+1]] <- niv.nu
+      # Only add non-empty levels
+      if (length(niv.nu) > 0) {
+        seg.list[[n+1]] <- niv.nu
+      }
     }
     return(seg.list)
   }
@@ -223,6 +319,11 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
     mx.2g           <- segment.matrix(mx.2g, segments)
     mat.list[[i+1]] <- mx.2g
     out.put[[i]]    <- list(segments=segments, mat=mx.2g)
+    
+    # Stop if only one segment remains
+    if(length(segments$cliques) <= 1) {
+      break
+    }
   }
   
   
@@ -238,14 +339,50 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
   return(out)
 }
 
-#############################################
-#' Weight.matrix
+#' Calculate Relative Risk Weight Matrix
 #' 
-#' Creates a matrix of weights for the \link{find.segments} function.
-#' @param mx 
-#' @param cut.off is the minimum weight allowed for a tie between nodes
-#' @param symmetric defines whether the matrix is forced into symmetry
-#' @return a matrix of relative risks
+#' Converts a mobility table into a relative risk matrix by comparing observed
+#' mobility flows to expected flows under independence. This matrix forms the
+#' basis for network construction in MONECA analysis.
+#' 
+#' @param mx A mobility table (square matrix) with row and column totals in the 
+#'   last row/column.
+#' @param cut.off Numeric threshold for minimum relative risk. Values below this
+#'   are set to NA. Default is 1.
+#' @param symmetric Logical indicating whether to force the matrix to be symmetric
+#'   by adding it to its transpose. Default is TRUE.
+#' @param diagonal Controls diagonal values. If NULL (default), diagonal is set 
+#'   to NA. Otherwise, diagonal values are preserved.
+#' @param small.cell.reduction Numeric value for handling small cells. Cells with
+#'   counts below this threshold are set to 0 before calculating relative risks.
+#'   Default is 0.
+#' 
+#' @return A matrix of relative risks where:
+#'   \itemize{
+#'     \item Values > 1 indicate mobility above expected levels
+#'     \item Values < 1 indicate mobility below expected levels  
+#'     \item Values below cut.off are set to NA
+#'   }
+#' 
+#' @details
+#' The relative risk for cell (i,j) is calculated as:
+#' \deqn{RR_{ij} = O_{ij} / E_{ij}}
+#' where \eqn{O_{ij}} is the observed count and \eqn{E_{ij}} is the expected
+#' count under independence: \eqn{E_{ij} = (n_i * n_j) / N}
+#' 
+#' @examples
+#' # Create a simple mobility table
+#' mob_table <- matrix(c(100, 20, 10, 130,
+#'                       15, 80, 25, 120,  
+#'                       5,  10, 50,  65,
+#'                       120, 110, 85, 315), 
+#'                     nrow = 4, byrow = TRUE)
+#' rownames(mob_table) <- colnames(mob_table) <- c("A", "B", "C", "Total")
+#' 
+#' # Calculate relative risk matrix
+#' rr_matrix <- weight.matrix(mob_table, cut.off = 1.5)
+#' 
+#' @seealso \code{\link{moneca}} for the main analysis function
 #' @export
 
 weight.matrix <- function(mx, cut.off = 1, symmetric = TRUE, diagonal = NULL, small.cell.reduction = 0){
@@ -279,11 +416,20 @@ weight.matrix <- function(mx, cut.off = 1, symmetric = TRUE, diagonal = NULL, sm
 #########################################################################
 # Plotting
 
-#' Segment colors
+#' Generate Colors for Segments
 #' 
-#' Creates a grey scale for the segments
+#' Creates a grayscale color scheme for MONECA segments based on internal
+#' mobility rates. Darker colors indicate higher immobility (lower internal mobility).
 #' 
-#' @param segments
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' 
+#' @return A list of color vectors, one for each hierarchical level.
+#' 
+#' @details
+#' This function calculates grayscale colors where the intensity reflects
+#' the immobility rate within each segment. Segments with higher immobility
+#' (more stable positions) receive darker colors.
+#' 
 #' @export
 
 segment.colors <- function(segments){
@@ -368,9 +514,34 @@ layout.matrix <- function(segments, attraction=c(320, 40, 10, 4, 2), level=seq(s
   layout
 }
 
-#' Segment edges
+#' Extract Segment Edge Matrix
 #' 
-#' The coordinates of the edges
+#' Creates an adjacency matrix representing edges between segments based on
+#' mobility flows. This function is used for network visualization and analysis.
+#' 
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param cut.off Numeric threshold for minimum relative risk to include an edge.
+#'   Default is 1.
+#' @param mode Character string specifying the graph mode ("directed" or "undirected").
+#'   Default is "directed".
+#' @param level Integer vector specifying which hierarchical levels to include.
+#'   Default includes all levels.
+#' @param segment.reduction Integer vector specifying levels for which to remove
+#'   internal segment edges. Default includes all levels.
+#' @param method Character string specifying edge filtering method:
+#'   \itemize{
+#'     \item "all" (default): Include all edges above threshold
+#'     \item "top.out": Keep only the top outgoing edges per node
+#'     \item "top.in": Keep only the top incoming edges per node
+#'   }
+#' @param top Integer specifying how many top edges to keep when using 
+#'   "top.out" or "top.in" methods. Default is 3.
+#' @param diagonal Controls diagonal values. If NULL (default), diagonal is zeroed.
+#' @param small.cell.reduction Numeric threshold for small cell handling.
+#' 
+#' @return A square matrix representing edge weights between nodes/segments.
+#' 
+#' @seealso \code{\link{plot_moneca_ggraph}}, \code{\link{moneca.plot}}
 #' @export
 segment.edges <- function(segments, cut.off=1, mode="directed", level=seq(segments$segment.list), segment.reduction=seq(segments$segment.list), method="all", top=3, diagonal=NULL, small.cell.reduction=0){
   
@@ -431,9 +602,38 @@ segment.edges <- function(segments, cut.off=1, mode="directed", level=seq(segmen
 }
 
 
-#' Plot moneca
+#' Legacy Network Plot for MONECA Results
 #' 
-#' Plot the results from a moneca analysis
+#' Creates a network visualization of MONECA segmentation results using base
+#' graphics and igraph. For modern visualizations, use \code{\link{plot_moneca_ggraph}}.
+#' 
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param layout A matrix of node coordinates, typically from \code{\link{layout.matrix}}.
+#' @param edges An adjacency matrix of edges, typically from \code{\link{segment.edges}}.
+#' @param mode Character string specifying graph mode ("directed" or "undirected").
+#' @param level Integer vector of hierarchical levels to visualize.
+#' @param vertex.size Numeric value for vertex size. Default is 5.
+#' @param vertex.frame.color Color for vertex borders. Default is "black".
+#' @param edge.curved Logical for curved edges. Default is FALSE.
+#' @param vertex.color Color for vertices. Default is "grey50".
+#' @param vertex.label.color Color for vertex labels. Default is "black".
+#' @param vertex.label.cex Size multiplier for labels. Default is 0.5.
+#' @param vertex.label.dist Distance of labels from vertices. Default is 0.12.
+#' @param edge.arrow.size Size of edge arrows. Default is 0.1.
+#' @param mark.col Color for segment markers. Default is NULL.
+#' @param mark.expand Expansion factor for segment boundaries. Default is 10.
+#' @param border.col Color for segment borders. Default is "black".
+#' @param edge.width Width of edges. Default is 1.
+#' @param edge.color Color for edges. Can be a color name or matrix. Default is "black".
+#' 
+#' @return NULL (creates a plot as side effect).
+#' 
+#' @details
+#' This function provides backward compatibility with earlier versions of MONECA.
+#' For new analyses, consider using \code{\link{plot_moneca_ggraph}} which offers
+#' more modern styling and customization options.
+#' 
+#' @seealso \code{\link{plot_moneca_ggraph}} for modern plotting
 #' @export
 
 moneca.plot <- function(segments,
@@ -482,9 +682,40 @@ moneca.plot <- function(segments,
 ###############################################################################
 #### Segment membership
 
-#' Segment membership
+#' Extract Segment Membership Information
 #' 
-#' A dataframe with the segment membership for each category
+#' Returns a data frame showing which segment each original category belongs to
+#' across the specified hierarchical levels of a MONECA analysis.
+#' 
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param level Integer vector specifying which hierarchical levels to include.
+#'   Default includes all available levels.
+#' 
+#' @return A data frame with two columns:
+#'   \describe{
+#'     \item{name}{Character vector of original category names}
+#'     \item{membership}{Character vector indicating segment membership, formatted
+#'       as "level.segment" (e.g., "2.1" for level 2, segment 1)}
+#'   }
+#' 
+#' @details
+#' The membership strings indicate both the hierarchical level and the specific
+#' segment within that level. For example, "2.3" means the category belongs to
+#' segment 3 at level 2 of the hierarchy.
+#' 
+#' @examples
+#' # Generate data and run analysis
+#' mob_data <- generate_mobility_data(n_classes = 5, seed = 42)
+#' seg <- moneca(mob_data, segment.levels = 3)
+#' 
+#' # Get membership information
+#' membership <- segment.membership(seg)
+#' print(membership)
+#' 
+#' # Get membership for specific levels only
+#' membership_level2 <- segment.membership(seg, level = 2)
+#' 
+#' @seealso \code{\link{moneca}}, \code{\link{plot_moneca_ggraph}}
 #' @export
 
 segment.membership <- function(segments, level=seq(segments$segment.list)){
@@ -493,10 +724,17 @@ org.name <- rownames(segments$mat.list[[1]])
 org.name <- org.name[-length(org.name)]
 
 position <- vector(length=length(org.name))
-for (niv in level){
+
+# Ensure we only process levels that actually exist
+actual.levels <- intersect(level, seq_along(segments$segment.list))
+
+for (niv in actual.levels){
 seg.niv <- segments$segment.list[[niv]]
-for (i in 1:length(seg.niv)){
-position[seg.niv[[i]]] <- rep(paste(niv, i, sep="."), length(seg.niv[[i]]))
+# Skip if this level is empty
+if (length(seg.niv) > 0) {
+  for (i in 1:length(seg.niv)){
+    position[seg.niv[[i]]] <- rep(paste(niv, i, sep="."), length(seg.niv[[i]]))
+  }
 }
 }
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/synthetic_data.R
 \name{generate_mobility_data}
 \alias{generate_mobility_data}
-\title{Generate synthetic mobility data}
+\title{Generate Realistic Synthetic Mobility Data}
 \usage{
 generate_mobility_data(
   n_classes = 10,
@@ -15,46 +15,108 @@ generate_mobility_data(
 )
 }
 \arguments{
-\item{n_classes}{Integer. Number of social classes/occupations (default: 10)}
+\item{n_classes}{Integer specifying the number of social classes or occupational
+categories. Must be at least 2. Default is 10.}
 
-\item{n_total}{Integer. Total number of individuals in the sample (default: 10000)}
+\item{n_total}{Integer specifying the total sample size (number of individuals).
+Must be at least as large as n_classes. Default is 10000.}
 
-\item{immobility_strength}{Numeric. Strength of diagonal immobility (0-1, default: 0.6)}
+\item{immobility_strength}{Numeric value (0-1) controlling the strength of
+diagonal immobility (tendency to remain in origin class). Higher values create
+more rigid class structures. Default is 0.6.}
 
-\item{class_clustering}{Numeric. Tendency for adjacent classes to exchange (0-1, default: 0.3)}
+\item{class_clustering}{Numeric value (0-1) controlling the tendency for mobility
+between adjacent classes in the social hierarchy. Higher values create more
+gradual, short-distance mobility. Default is 0.3.}
 
-\item{noise_level}{Numeric. Amount of random mobility (0-1, default: 0.1)}
+\item{noise_level}{Numeric value (0-1) controlling the amount of random mobility
+between non-adjacent classes. Higher values create more chaotic mobility patterns.
+Default is 0.1.}
 
-\item{class_names}{Character vector. Names for the classes (optional)}
+\item{class_names}{Character vector of names for the social classes. If NULL,
+classes are named "Class 1", "Class 2", etc. Length must equal n_classes.}
 
-\item{seed}{Integer. Random seed for reproducibility (optional)}
+\item{seed}{Integer for random seed to ensure reproducible results. Default is NULL
+(no seed set).}
 }
 \value{
-A mobility matrix with row and column totals in the format expected by MONECA
+A square matrix in MONECA format with:
+  \describe{
+    \item{Core matrix}{Upper-left (n_classes x n_classes) contains mobility flows}
+    \item{Row margins}{Last column contains origin class totals}
+    \item{Column margins}{Last row contains destination class totals}
+    \item{Grand total}{Bottom-right cell contains total sample size}
+  }
+  The matrix includes row and column names for easy interpretation.
 }
 \description{
-Creates synthetic social mobility data for demonstrations and testing.
-The function generates a mobility table with realistic patterns including
-diagonal dominance (immobility) and class-based clustering.
+Creates synthetic social mobility tables with configurable patterns that mimic
+real-world mobility structures. This function is essential for testing MONECA
+algorithms, creating examples, and understanding how different mobility patterns
+affect segmentation results.
+}
+\details{
+This function generates mobility data using a hierarchical model that reflects
+common patterns in social mobility research:
+
+\enumerate{
+  \item \strong{Diagonal Dominance}: Most people remain in their origin class
+  \item \strong{Distance Effects}: Mobility is more likely between adjacent classes
+  \item \strong{Marginal Heterogeneity}: Class sizes vary realistically
+  \item \strong{Random Component}: Some unpredictable mobility occurs
+}
+
+The generated data can be used to test how different mobility regimes affect
+MONECA segmentation and to create realistic examples for demonstrations.
+
+Parameter combinations:
+\itemize{
+  \item High immobility + low clustering = rigid class boundaries
+  \item Low immobility + high clustering = fluid but structured mobility
+  \item High noise = chaotic mobility patterns
+  \item Balanced parameters = realistic social mobility
+}
 }
 \examples{
-# Basic synthetic data
-mob_data <- generate_mobility_data()
-print(mob_data)
+# Basic synthetic data with default parameters
+basic_data <- generate_mobility_data()
+print(basic_data[1:6, 1:6])  # Show first 5 classes plus totals
 
-# Smaller example with custom parameters
-small_data <- generate_mobility_data(
+# Small example for quick testing
+test_data <- generate_mobility_data(
   n_classes = 5,
   n_total = 1000,
   immobility_strength = 0.7,
-  class_clustering = 0.2
+  class_clustering = 0.2,
+  seed = 42
 )
 
-# With custom class names
+# Professional class structure with custom names
 professional_data <- generate_mobility_data(
   n_classes = 6,
-  class_names = c("Upper", "Upper-Middle", "Middle", "Lower-Middle", "Working", "Lower"),
+  n_total = 5000,
+  class_names = c("Upper", "Upper-Middle", "Middle", 
+                  "Lower-Middle", "Working", "Lower"),
+  immobility_strength = 0.5,
+  class_clustering = 0.4,
   seed = 123
 )
 
+# Highly fluid mobility regime
+fluid_data <- generate_mobility_data(
+  n_classes = 8,
+  immobility_strength = 0.3,
+  class_clustering = 0.1,
+  noise_level = 0.3
+)
+
+# Use in MONECA analysis
+seg <- moneca(test_data, segment.levels = 3)
+plot_moneca_ggraph(seg, title = "Synthetic Mobility Analysis")
+
+}
+\seealso{
+\code{\link{moneca}} for analyzing the generated data,
+\code{\link{generate_example_datasets}} for predefined examples,
+\code{\link{plot_moneca_ggraph}} for visualizing results
 }

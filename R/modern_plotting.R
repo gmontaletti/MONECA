@@ -7,50 +7,114 @@
 #' @name modern_plotting
 NULL
 
-#' Plot MONECA results with ggraph
+#' Modern Network Visualization for MONECA Results
 #'
-#' Creates modern network visualizations of MONECA clustering results using
-#' ggraph and ggplot2. This function replaces the old gg.moneca function
-#' with improved performance and customization options.
+#' Creates sophisticated network visualizations of MONECA clustering results using
+#' ggraph and ggplot2. This function provides modern, highly customizable plots
+#' with support for multiple layout algorithms, node aesthetics, and segment highlighting.
 #'
-#' @param segments A MONECA object from \code{\link{moneca}}
-#' @param level Integer vector. Which segmentation levels to display (default: all except first)
-#' @param layout Layout algorithm or matrix. Can be "fr", "kk", "dh", "mds", or a coordinate matrix
-#' @param edges Edge matrix or "auto" to use segment.edges()
-#' @param node_size Aesthetic for node size. Can be "total", "mobility", or numeric vector
-#' @param node_color Aesthetic for node color. Can be "segment", "mobility", or color vector
-#' @param node_alpha Numeric. Node transparency (0-1, default: 0.8)
-#' @param edge_width Aesthetic for edge width. Can be "weight" or numeric
-#' @param edge_color Color for edges (default: "grey50")
-#' @param edge_alpha Numeric. Edge transparency (0-1, default: 0.6)
-#' @param show_labels Logical. Whether to show node labels (default: TRUE)
-#' @param label_size Numeric. Size of node labels (default: 3)
-#' @param show_segments Logical. Whether to show segment boundaries (default: TRUE)
-#' @param segment_alpha Numeric. Segment boundary transparency (0-1, default: 0.3)
-#' @param color_palette Character. Color palette name for segments (default: "Set3")
-#' @param theme_style Character. Plot theme: "minimal", "void", or "classic" (default: "void")
-#' @param title Character. Plot title (optional)
-#' @param ... Additional arguments passed to ggraph
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param level Integer vector specifying which hierarchical levels to visualize.
+#'   Default displays all levels except the first (which represents individual categories).
+#' @param layout Character string or matrix specifying the layout algorithm:
+#'   \itemize{
+#'     \item "fr" (default): Fruchterman-Reingold force-directed layout
+#'     \item "kk": Kamada-Kawai layout
+#'     \item "dh": Davidson-Harel layout  
+#'     \item "mds": Multidimensional scaling
+#'     \item "stress": Stress majorization
+#'     \item Matrix: Custom coordinate matrix (n_nodes x 2)
+#'   }
+#' @param edges Edge matrix or "auto" to automatically generate using 
+#'   \code{\link{segment.edges}}. Default is "auto".
+#' @param node_size Aesthetic mapping for node size:
+#'   \itemize{
+#'     \item "total": Size by total mobility volume (default)
+#'     \item "mobility": Size by off-diagonal mobility rate
+#'     \item Numeric vector: Custom sizes for each node
+#'     \item Single numeric: Fixed size for all nodes
+#'   }
+#' @param node_color Aesthetic mapping for node color:
+#'   \itemize{
+#'     \item "segment" (default): Color by segment membership
+#'     \item "mobility": Color by mobility rate
+#'     \item Character vector: Custom colors for each node
+#'     \item Single color: Fixed color for all nodes
+#'   }
+#' @param node_alpha Numeric value (0-1) for node transparency. Default is 0.8.
+#' @param edge_width Aesthetic for edge width:
+#'   \itemize{
+#'     \item "weight" (default): Width proportional to edge weight
+#'     \item Numeric: Fixed width for all edges
+#'   }
+#' @param edge_color Color for edges. Default is "grey50".
+#' @param edge_alpha Numeric value (0-1) for edge transparency. Default is 0.6.
+#' @param show_labels Logical indicating whether to display node labels. Default is TRUE.
+#' @param label_size Numeric size for node labels. Default is 3.
+#' @param show_segments Logical indicating whether to highlight segment boundaries.
+#'   Default is TRUE.
+#' @param segment_alpha Numeric value (0-1) for segment boundary transparency.
+#'   Default is 0.3.
+#' @param color_palette Character string specifying the color palette for segments.
+#'   Can be any RColorBrewer palette name. Default is "Set3".
+#' @param theme_style Character string specifying the plot theme:
+#'   \itemize{
+#'     \item "void" (default): Clean background with no axes
+#'     \item "minimal": Minimal theme with subtle gridlines
+#'     \item "classic": Traditional ggplot2 theme
+#'   }
+#' @param title Character string for plot title. Default is NULL (no title).
+#' @param ... Additional arguments passed to ggraph layout functions.
 #'
-#' @return A ggplot object
+#' @return A ggplot2 object that can be further customized or displayed.
+#'
+#' @details
+#' This function creates publication-quality network visualizations with extensive
+#' customization options. It automatically handles node positioning, edge rendering,
+#' and segment highlighting. The resulting plot can be further modified using
+#' standard ggplot2 syntax.
+#' 
+#' For interactive exploration, different layout algorithms may work better with
+#' different network structures. Force-directed layouts ("fr") work well for most
+#' cases, while "stress" layouts often produce cleaner results for dense networks.
 #'
 #' @examples
-#' \dontrun{
-#' # Basic plot
-#' data <- generate_mobility_data(n_classes = 6, seed = 123)
-#' seg <- moneca(data, segment.levels = 3)
+#' # Generate synthetic data and run MONECA
+#' mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+#' seg <- moneca(mobility_data, segment.levels = 3)
+#' 
+#' # Basic network plot
 #' plot_moneca_ggraph(seg)
-#'
-#' # Customized plot
+#' 
+#' # Customized plot with different aesthetics
 #' plot_moneca_ggraph(seg,
-#'   layout = "kk",
-#'   node_color = "segment",
+#'   layout = "stress",
+#'   node_color = "mobility",
 #'   edge_width = "weight",
 #'   color_palette = "Spectral",
-#'   title = "Social Mobility Network"
+#'   title = "Social Mobility Network",
+#'   show_segments = FALSE
 #' )
-#' }
-#'
+#' 
+#' # Plot with custom node sizes and colors
+#' custom_plot <- plot_moneca_ggraph(seg,
+#'   node_size = c(8, 6, 10, 4, 7, 5),
+#'   node_color = "red",
+#'   edge_color = "darkblue",
+#'   theme_style = "minimal"
+#' )
+#' 
+#' # Further customize with ggplot2
+#' custom_plot + 
+#'   ggplot2::labs(subtitle = "Custom subtitle") +
+#'   ggplot2::theme(plot.title = ggplot2::element_text(size = 16))
+#' 
+#' @seealso 
+#' \code{\link{moneca}} for the main analysis function,
+#' \code{\link{plot_ego_ggraph}} for ego network visualization,
+#' \code{\link{plot_stair_ggraph}} for multi-level visualization,
+#' \code{\link{segment.edges}} for edge matrix generation
+#' 
 #' @export
 plot_moneca_ggraph <- function(segments,
                               level = seq(segments$segment.list)[-1],
@@ -158,7 +222,7 @@ plot_moneca_ggraph <- function(segments,
       arrow = ggplot2::arrow(length = ggplot2::unit(0.3, "cm"), type = "closed"),
       end_cap = ggraph::circle(0.1, "cm")
     ) +
-    ggplot2::scale_edge_width_continuous(range = c(0.2, 2), guide = "none")
+    ggraph::scale_edge_width_continuous(range = c(0.2, 2), guide = "none")
   } else {
     edge_width_val <- if (is.numeric(edge_width)) edge_width else 0.5
     p <- p + ggraph::geom_edge_link(
@@ -235,31 +299,75 @@ plot_moneca_ggraph <- function(segments,
   return(p)
 }
 
-#' Create ego network plot with ggraph
+#' Ego Network Visualization with ggraph
 #'
-#' Visualizes the mobility patterns from a single node (occupation/class)
-#' using modern ggraph plotting.
+#' Creates focused visualizations of mobility patterns from a single focal node
+#' (ego). This function shows all incoming and outgoing mobility flows for a
+#' specific category, making it ideal for understanding individual position dynamics.
 #'
-#' @param segments A MONECA object
-#' @param mobility_matrix The original mobility matrix
-#' @param ego_id Integer or character. The ID or name of the focal node
-#' @param layout Layout for the network (default: "stress")
-#' @param highlight_color Color for the ego node (default: "red")
-#' @param flow_color Color scheme for mobility flows (default: "viridis")
-#' @param node_size_range Numeric vector of length 2. Range for node sizes
-#' @param edge_width_range Numeric vector of length 2. Range for edge widths
-#' @param title Character. Plot title (optional)
-#' @param ... Additional arguments
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param mobility_matrix The original mobility matrix used in the MONECA analysis.
+#'   Should include row and column totals.
+#' @param ego_id Integer or character specifying the focal node. Can be:
+#'   \itemize{
+#'     \item Integer: Row/column index in the mobility matrix
+#'     \item Character: Row/column name from the mobility matrix
+#'   }
+#' @param layout Character string specifying the layout algorithm. Default is "stress"
+#'   which often works well for ego networks. Other options include "fr", "kk", "dh".
+#' @param highlight_color Color for the ego (focal) node. Default is "red".
+#' @param flow_color Character string specifying the color scheme for mobility flows.
+#'   Default is "viridis". Can be any viridis variant ("viridis", "plasma", "inferno", etc.).
+#' @param node_size_range Numeric vector of length 2 specifying the range for node sizes.
+#'   Default is c(3, 12).
+#' @param edge_width_range Numeric vector of length 2 specifying the range for edge widths.
+#'   Default is c(0.5, 3).
+#' @param title Character string for plot title. Default is NULL.
+#' @param ... Additional arguments passed to the ggraph layout function.
 #'
-#' @return A ggplot object
+#' @return A ggplot2 object showing the ego network visualization.
+#'
+#' @details
+#' Ego networks are particularly useful for understanding the mobility patterns
+#' of specific social positions. The visualization highlights:
+#' \itemize{
+#'   \item The focal position (ego) in a distinct color
+#'   \item Incoming mobility flows (edges pointing to ego)
+#'   \item Outgoing mobility flows (edges from ego)
+#'   \item The relative strength of different flows through edge width and color
+#' }
+#' 
+#' Only non-zero mobility flows are displayed to reduce visual clutter.
+#' Edge colors and widths are scaled to represent the volume of mobility flows.
 #'
 #' @examples
-#' \dontrun{
-#' data <- generate_mobility_data(n_classes = 6, seed = 123)
-#' seg <- moneca(data, segment.levels = 3)
-#' plot_ego_ggraph(seg, data, ego_id = 3, title = "Mobility from Class 3")
+#' # Generate synthetic data and run MONECA
+#' mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+#' seg <- moneca(mobility_data, segment.levels = 3)
+#' 
+#' # Ego network for the middle category (index 3)
+#' plot_ego_ggraph(seg, mobility_data, ego_id = 3, 
+#'                 title = "Mobility from Middle Class")
+#' 
+#' # Ego network using category name (if available)
+#' if (!is.null(rownames(mobility_data))) {
+#'   plot_ego_ggraph(seg, mobility_data, ego_id = rownames(mobility_data)[1])
 #' }
-#'
+#' 
+#' # Customized ego plot
+#' plot_ego_ggraph(seg, mobility_data, 
+#'                 ego_id = 2,
+#'                 layout = "fr",
+#'                 highlight_color = "orange",
+#'                 flow_color = "plasma",
+#'                 edge_width_range = c(1, 5),
+#'                 title = "Professional Class Mobility")
+#' 
+#' @seealso 
+#' \code{\link{plot_moneca_ggraph}} for full network visualization,
+#' \code{\link{plot_stair_ggraph}} for multi-level visualization,
+#' \code{\link{moneca}} for the main analysis function
+#' 
 #' @export
 plot_ego_ggraph <- function(segments,
                            mobility_matrix,
@@ -297,18 +405,19 @@ plot_ego_ggraph <- function(segments,
   ego_matrix[ego_id, ] <- core_matrix[ego_id, ]  # Outflows
   ego_matrix[, ego_id] <- core_matrix[, ego_id]  # Inflows
   
-  # Remove zero-flow edges for cleaner visualization
-  ego_matrix[ego_matrix == 0] <- NA
-  
-  # Create graph
+  # Create graph (keep zeros for now, filter later)
   g <- moneca_graph_from_adjacency(ego_matrix, mode = "directed", weighted = TRUE)
+  
+  # Convert to tidygraph and filter out zero-weight edges
   tg <- tidygraph::as_tbl_graph(g)
+  tg <- tg %>% 
+    tidygraph::activate(edges) %>%
+    dplyr::filter(weight > 0)
   
   # Add node attributes
   node_names <- V(g)$name
   if (is.null(node_names)) {
     node_names <- rownames(core_matrix)
-    V(g)$name <- node_names
   }
   
   # Node sizes based on total mobility
@@ -330,8 +439,8 @@ plot_ego_ggraph <- function(segments,
     arrow = ggplot2::arrow(length = ggplot2::unit(0.3, "cm"), type = "closed"),
     end_cap = ggraph::circle(0.15, "cm")
   ) +
-  ggplot2::scale_edge_width_continuous(range = edge_width_range, guide = "none") +
-  ggplot2::scale_edge_color_viridis_c(name = "Flow Volume")
+  ggraph::scale_edge_width_continuous(range = edge_width_range, guide = "none") +
+  ggraph::scale_edge_color_viridis(name = "Flow Volume")
   
   # Add nodes
   p <- p + ggraph::geom_node_point(
@@ -364,26 +473,81 @@ plot_ego_ggraph <- function(segments,
   return(p)
 }
 
-#' Create stair plot showing segmentation levels
+#' Multi-Level Segmentation Visualization (Stair Plot)
 #'
-#' Creates a series of plots showing how segmentation changes across levels
-#' using modern ggraph visualization.
+#' Creates a series of network plots showing how segmentation evolves across
+#' hierarchical levels in a MONECA analysis. This "stair plot" provides insight
+#' into the progressive clustering of social positions.
 #'
-#' @param segments A MONECA object
-#' @param levels Integer vector. Which levels to show (default: all)
-#' @param layout Layout to use across all plots for consistency
-#' @param ncol Integer. Number of columns in the plot grid (default: 2)
-#' @param ... Additional arguments passed to plot_moneca_ggraph
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param levels Integer vector specifying which hierarchical levels to visualize.
+#'   Default includes all levels except the first (individual categories).
+#' @param layout Layout specification for consistency across plots. Can be:
+#'   \itemize{
+#'     \item NULL (default): Use layout.matrix() for consistent positioning
+#'     \item Character string: Layout algorithm name ("fr", "kk", "stress", etc.)
+#'     \item Matrix: Custom coordinate matrix for node positions
+#'   }
+#' @param ncol Integer specifying the number of columns in the plot grid.
+#'   Default is 2. Set to 1 for vertical arrangement.
+#' @param combine_plots Logical indicating whether to combine plots into a single
+#'   grid (TRUE) or return a list of individual plots (FALSE). Default is TRUE.
+#' @param ... Additional arguments passed to \code{\link{plot_moneca_ggraph}}.
 #'
-#' @return A list of ggplot objects or a combined plot grid
+#' @return 
+#' If \code{combine_plots = TRUE}, returns a combined plot grid object.
+#' If \code{combine_plots = FALSE}, returns a list of ggplot objects, one for each level.
+#'
+#' @details
+#' The stair plot helps visualize the hierarchical nature of MONECA segmentation
+#' by showing how larger segments at higher levels break down into smaller, more
+#' specific segments at lower levels. This is particularly useful for:
+#' \itemize{
+#'   \item Understanding the segmentation process
+#'   \item Identifying optimal levels of analysis
+#'   \item Presenting results to different audiences
+#'   \item Comparing segmentation stability across levels
+#' }
+#' 
+#' When using a consistent layout across all plots, the relative positions of
+#' nodes remain the same, making it easier to track how segments evolve.
 #'
 #' @examples
+#' # Generate synthetic data and run MONECA
+#' mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+#' seg <- moneca(mobility_data, segment.levels = 4)
+#' 
+#' # Basic stair plot
+#' stair_plots <- plot_stair_ggraph(seg)
+#' 
+#' # Customized stair plot with specific levels
+#' custom_stair <- plot_stair_ggraph(seg, 
+#'                                  levels = c(2, 3),
+#'                                  layout = "stress",
+#'                                  ncol = 1,
+#'                                  node_color = "mobility")
+#' 
+#' # Return individual plots for further customization
+#' plot_list <- plot_stair_ggraph(seg, combine_plots = FALSE)
+#' # Modify individual plots
+#' plot_list[[1]] <- plot_list[[1]] + ggplot2::labs(subtitle = "Level 2")
+#' 
 #' \dontrun{
-#' data <- generate_mobility_data(n_classes = 6, seed = 123)
-#' seg <- moneca(data, segment.levels = 4)
-#' plots <- plot_stair_ggraph(seg)
+#' # Display the combined plot
+#' print(stair_plots)
+#' 
+#' # Save individual plots
+#' for (i in seq_along(plot_list)) {
+#'   ggplot2::ggsave(paste0("level_", i, ".png"), plot_list[[i]])
 #' }
-#'
+#' }
+#' 
+#' @seealso 
+#' \code{\link{plot_moneca_ggraph}} for single-level visualization,
+#' \code{\link{plot_ego_ggraph}} for ego network analysis,
+#' \code{\link{layout.matrix}} for consistent layouts,
+#' \code{\link{moneca}} for the main analysis function
+#' 
 #' @export
 plot_stair_ggraph <- function(segments,
                              levels = seq_along(segments$segment.list)[-1],

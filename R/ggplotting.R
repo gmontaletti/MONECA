@@ -45,51 +45,81 @@
 # border.text.color  = "black"
 # border.text.vjust  = -0.2
 
-#' ggplots for moneca
+#' Legacy ggplot2 Visualization for MONECA Objects
 #' 
-#' Plotting of MONECA objects
+#' Creates network visualizations of MONECA clustering results using ggplot2.
+#' This function provides extensive customization options but has been superseded
+#' by \code{\link{plot_moneca_ggraph}} for most use cases.
 #' 
-#' @param level
-#' @param layout
-#' @param edges
-#' @param mode
-#' @param vertex.size
-#' @param vertex.fill
-#' @param vertex.alpha
-#' @param vertex.color
-#' @param vertex.shape
-#' @param show.edges
-#' @param edge.size
-#' @param edge.alpha
-#' @param edge.color
-#' @param edge.line
-#' @param show.text
-#' @param text.size
-#' @param text.color
-#' @param text.alpha
-#' @param text.vjust
-#' @param show.borders
-#' @param border.size
-#' @param border.fill
-#' @param border.color
-#' @param border.alpha
-#' @param border.padding
-#' @param border.text
-#' @param border.labels
-#' @param border.text.size
-#' @param border.text.color
-#' @param border.text.vjust
-#' @param border.text.hjust
-#' @param midpoints
-#' @param midpoint.arrow
-#' @param edge.text
-#' @param edge.text.size
-#' @param edge.text.alpha
-#' @param legend
-#' @export
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param level Integer vector specifying which hierarchical levels to display.
+#' @param layout Matrix of node coordinates or layout function result.
+#' @param edges Edge matrix or transformed edge weights for visualization.
+#' @param mode Character string specifying graph mode ("directed" or "undirected").
+#' @param vertex.size Aesthetic for vertex size. Can be "total", "mobility", or numeric.
+#' @param vertex.fill Aesthetic for vertex fill color. Can be "segment" or color specification.
+#' @param vertex.alpha Numeric value (0-1) for vertex transparency.
+#' @param vertex.color Color for vertex borders.
+#' @param vertex.shape Numeric code for vertex shape (see ggplot2 shapes).
+#' @param show.edges Logical indicating whether to display edges.
+#' @param edge.size Size specification for edges.
+#' @param edge.alpha Transparency for edges. Can be "weight" or numeric.
+#' @param edge.color Color specification for edges. Can be "weight" or color name.
+#' @param edge.line Line type for edges ("solid", "dashed", etc.).
+#' @param show.text Logical indicating whether to show vertex labels.
+#' @param text.size Numeric size for vertex labels.
+#' @param text.color Color for vertex labels.
+#' @param text.alpha Transparency for vertex labels.
+#' @param text.vjust Vertical adjustment for labels.
+#' @param show.borders Logical indicating whether to show segment boundaries.
+#' @param border.size Size for segment borders.
+#' @param border.fill Fill color for segment boundaries.
+#' @param border.color Color for segment border lines.
+#' @param border.alpha Transparency for segment borders.
+#' @param border.padding Padding around segment boundaries.
+#' @param border.text Logical indicating whether to show segment labels.
+#' @param border.labels Character vector of custom segment labels.
+#' @param border.text.size Size for segment labels.
+#' @param border.text.color Color for segment labels.
+#' @param border.text.vjust Vertical adjustment for segment labels.
+#' @param border.text.hjust Horizontal adjustment for segment labels.
+#' @param midpoints Logical indicating whether to show edge midpoints.
+#' @param midpoint.arrow Logical indicating whether to show arrows at midpoints.
+#' @param edge.text Logical indicating whether to show edge labels.
+#' @param edge.text.size Size for edge labels.
+#' @param edge.text.alpha Transparency for edge labels.
+#' @param legend Position for legend ("side", "bottom", "none", etc.).
+#' 
+#' @return A ggplot2 object.
+#' 
+#' @details
+#' This function provides a highly customizable but complex interface for creating
+#' MONECA visualizations. It requires the eliter package for some functionality.
+#' For most users, \code{\link{plot_moneca_ggraph}} offers a more modern and
+#' user-friendly interface with better defaults.
+#' 
+#' \strong{Note}: This function is maintained for backward compatibility but
+#' is no longer actively developed. New features are added to the ggraph-based
+#' plotting functions instead.
+#' 
 #' @examples 
+#' \dontrun{
+#' # Requires eliter package
 #' data(occupations)
 #' gg.moneca(mob.seg)
+#' 
+#' # Custom styling
+#' gg.moneca(mob.seg, 
+#'          vertex.fill = "red",
+#'          edge.color = "blue",
+#'          show.borders = FALSE)
+#' }
+#' 
+#' @seealso 
+#' \code{\link{plot_moneca_ggraph}} for modern ggraph-based plotting,
+#' \code{\link{moneca.plot}} for base graphics plotting
+#' 
+#' @export
 gg.moneca               <- function(segments,
                                    level             = seq(segments$segment.list),
                                    layout             = layout.matrix(segments),
@@ -434,24 +464,65 @@ vertex.coord <- function(graph, layout=layout.fruchterman.reingold(graph)){
   layout
 }
 
-#' Ego plots
+#' Legacy Ego Network Visualization
 #'
-#' Plots of the connections and movements from a single node
-#' @param segments
-#' @param mxa.b
-#' @param id
-#' @param lay
-#' @param edge.color
-#' @param edge.size
-#' @param border.padding
-#' @param title.line
-#' @param vertex.size if "totals" the size of the vertices is derived from the totals in mxa.b. If any other value it is the row.value for id.
-#' @param small.cell.reduction vertices with movements below this cutpoint are given a different shape.
-#' @param ...
-#' @export
+#' Creates ego network plots showing mobility patterns from a single focal position
+#' using the legacy ggplot2 plotting system. For modern ego network analysis,
+#' use \code{\link{plot_ego_ggraph}}.
+#'
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param mxa.b The original mobility matrix used in the MONECA analysis.
+#' @param id Integer or character specifying the focal node (ego) for the analysis.
+#' @param lay Layout matrix for node positioning, typically from \code{\link{layout.matrix}}.
+#' @param edge.size Numeric value for edge thickness. Default is 0.8.
+#' @param border.padding Numeric value for segment boundary padding. Default is 1.
+#' @param title.line Logical indicating whether to add a title line. Default is TRUE.
+#' @param vertex.size Specification for vertex sizes. If "totals", sizes are derived
+#'   from row/column totals in the mobility matrix. Otherwise, uses the specified values.
+#' @param small.cell.reduction Numeric threshold below which vertices receive different
+#'   shapes to indicate low mobility volumes. Default is 5.
+#' @param edge.weight Character string specifying edge weight display. "discrete"
+#'   creates categorical edge weights, otherwise uses continuous weights.
+#' @param color.scheme Character string specifying the RColorBrewer color scheme
+#'   for the visualization. Default is "RdPu".
+#' @param ... Additional arguments passed to \code{\link{gg.moneca}}.
+#'
+#' @return A ggplot2 object showing the ego network.
+#'
+#' @details
+#' This function creates a focused view of mobility patterns from a single position
+#' in the social structure. It highlights both incoming and outgoing mobility flows
+#' and uses different visual elements to represent:
+#' \itemize{
+#'   \item Edge colors/weights for relative risk levels
+#'   \item Node sizes for total mobility volumes
+#'   \item Node shapes for positions with low mobility
+#'   \item Node colors for mobility share proportions
+#' }
+#' 
+#' \strong{Note}: This function is maintained for backward compatibility.
+#' For new analyses, consider using \code{\link{plot_ego_ggraph}} which offers
+#' better performance and more modern styling options.
+#'
 #' @examples
+#' \dontrun{
+#' # Requires legacy data and eliter package
 #' data(occupations)
 #' ego.plot(mob.seg, mob.mat, id = 2)
+#' 
+#' # Customized ego plot
+#' ego.plot(mob.seg, mob.mat, 
+#'          id = 3,
+#'          edge.size = 1.2,
+#'          color.scheme = "Blues",
+#'          small.cell.reduction = 10)
+#' }
+#' 
+#' @seealso 
+#' \code{\link{plot_ego_ggraph}} for modern ego network visualization,
+#' \code{\link{gg.moneca}} for the underlying plotting function
+#' 
+#' @export
 
 ego.plot <- function(segments, mxa.b, id = 1,
                      lay         = layout.matrix(segments),
@@ -527,51 +598,82 @@ ego.plot <- function(segments, mxa.b, id = 1,
   p.ego + ggtitle(rownames(wm)[id]) 
 }
 
-#' Stair plot
+#' Legacy Multi-Level Stair Plot
 #' 
-#' Plots the change in segmentation for each level in a MONECA analysis
-#' @param level
-#' @param layout
-#' @param edges
-#' @param mode
-#' @param vertex.size
-#' @param vertex.alpha
-#' @param vertex.color
-#' @param vertex.shape
-#' @param show.edges
-#' @param edge.size
-#' @param edge.alpha
-#' @param edge.color
-#' @param edge.line
-#' @param show.text
-#' @param text.size
-#' @param text.color
-#' @param text.alpha
-#' @param text.vjust
-#' @param show.borders
-#' @param border.size
-#' @param border.fill
-#' @param border.color
-#' @param border.alpha
-#' @param border.padding
-#' @param border.text
-#' @param border.labels
-#' @param border.text.size
-#' @param border.text.color
-#' @param border.text.vjust
-#' @param border.text.hjust
-#' @param midpoints
-#' @param midpoint.arrow
-#' @param edge.text
-#' @param edge.text.size
-#' @param edge.text.alpha
-#' @param legend
-#' @param level.title
-#' @return a list of ggplot2 objects
-#' @export
+#' Creates a series of plots showing how segmentation evolves across hierarchical
+#' levels using the legacy ggplot2 system. For modern stair plots, use
+#' \code{\link{plot_stair_ggraph}}.
+#' 
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param level Integer vector specifying which levels to include in the stair plot.
+#' @param layout Layout matrix for consistent node positioning across plots.
+#' @param edges Edge matrix or specification for network edges.
+#' @param mode Character string specifying graph mode ("directed" or "undirected").
+#' @param vertex.size Specification for vertex sizes ("total" or numeric).
+#' @param vertex.alpha Numeric transparency for vertices (0-1).
+#' @param vertex.color Color specification for vertex borders.
+#' @param vertex.shape Numeric shape code for vertices.
+#' @param show.edges Logical indicating whether to display edges.
+#' @param edge.size Numeric size for edges.
+#' @param edge.alpha Transparency for edges ("weight" or numeric).
+#' @param edge.color Color specification for edges.
+#' @param edge.line Line type for edges ("solid", "dashed", etc.).
+#' @param show.text Logical indicating whether to show vertex labels.
+#' @param text.size Numeric size for text labels.
+#' @param text.color Color for text labels.
+#' @param text.alpha Transparency for text labels.
+#' @param text.vjust Vertical adjustment for text labels.
+#' @param show.borders Logical indicating whether to show segment boundaries.
+#' @param border.size Size for segment borders.
+#' @param border.fill Fill color for segment boundaries.
+#' @param border.color Color for segment border lines.
+#' @param border.alpha Transparency for segment borders.
+#' @param border.padding Padding around segment boundaries.
+#' @param border.text Logical indicating whether to show segment labels.
+#' @param border.labels Specification for segment labels.
+#' @param border.text.size Size for segment labels.
+#' @param border.text.color Color for segment labels.
+#' @param border.text.vjust Vertical adjustment for segment labels.
+#' @param border.text.hjust Horizontal adjustment for segment labels.
+#' @param midpoints Logical indicating whether to show edge midpoints.
+#' @param midpoint.arrow Logical indicating whether to show arrows at midpoints.
+#' @param edge.text Logical indicating whether to show edge labels.
+#' @param edge.text.size Size for edge labels.
+#' @param edge.text.alpha Transparency for edge labels.
+#' @param legend Position specification for legend.
+#' @param level.title Specification for level titles.
+#' 
+#' @return A list of ggplot2 objects, one for each segmentation level.
+#' 
+#' @details
+#' This function creates multiple plots showing the progression of segmentation
+#' across hierarchical levels. Each plot uses the same layout to maintain
+#' consistency, making it easy to see how segments merge or split across levels.
+#' 
+#' \strong{Note}: This function is maintained for backward compatibility and
+#' requires the eliter package. For new analyses, use \code{\link{plot_stair_ggraph}}
+#' which offers better performance and modern styling.
+#' 
 #' @examples
+#' \dontrun{
+#' # Requires legacy data and eliter package
 #' data(occupations)
-#' stair.plot(mob.seg)[[2]]
+#' plots <- stair.plot(mob.seg)
+#' plots[[2]]  # Display second level
+#' 
+#' # Customized stair plot
+#' custom_stairs <- stair.plot(mob.seg,
+#'                            level = c(2, 3, 4),
+#'                            vertex.size = "total",
+#'                            show.borders = TRUE,
+#'                            border.text.size = 5)
+#' }
+#' 
+#' @seealso 
+#' \code{\link{plot_stair_ggraph}} for modern stair plots,
+#' \code{\link{gg.moneca}} for the underlying plotting function
+#' 
+#' @export
 stair.plot              <- function(segments,
                                     level             = seq(segments$segment.list),
                                     layout             = layout.matrix(segments),

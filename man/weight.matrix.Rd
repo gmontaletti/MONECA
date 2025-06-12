@@ -2,7 +2,7 @@
 % Please edit documentation in R/analytical_functions.R
 \name{weight.matrix}
 \alias{weight.matrix}
-\title{Weight.matrix}
+\title{Calculate Relative Risk Weight Matrix}
 \usage{
 weight.matrix(
   mx,
@@ -13,15 +13,54 @@ weight.matrix(
 )
 }
 \arguments{
-\item{mx}{}
+\item{mx}{A mobility table (square matrix) with row and column totals in the 
+last row/column.}
 
-\item{cut.off}{is the minimum weight allowed for a tie between nodes}
+\item{cut.off}{Numeric threshold for minimum relative risk. Values below this
+are set to NA. Default is 1.}
 
-\item{symmetric}{defines whether the matrix is forced into symmetry}
+\item{symmetric}{Logical indicating whether to force the matrix to be symmetric
+by adding it to its transpose. Default is TRUE.}
+
+\item{diagonal}{Controls diagonal values. If NULL (default), diagonal is set 
+to NA. Otherwise, diagonal values are preserved.}
+
+\item{small.cell.reduction}{Numeric value for handling small cells. Cells with
+counts below this threshold are set to 0 before calculating relative risks.
+Default is 0.}
 }
 \value{
-a matrix of relative risks
+A matrix of relative risks where:
+  \itemize{
+    \item Values > 1 indicate mobility above expected levels
+    \item Values < 1 indicate mobility below expected levels  
+    \item Values below cut.off are set to NA
+  }
 }
 \description{
-Creates a matrix of weights for the \link{find.segments} function.
+Converts a mobility table into a relative risk matrix by comparing observed
+mobility flows to expected flows under independence. This matrix forms the
+basis for network construction in MONECA analysis.
+}
+\details{
+The relative risk for cell (i,j) is calculated as:
+\deqn{RR_{ij} = O_{ij} / E_{ij}}
+where \eqn{O_{ij}} is the observed count and \eqn{E_{ij}} is the expected
+count under independence: \eqn{E_{ij} = (n_i * n_j) / N}
+}
+\examples{
+# Create a simple mobility table
+mob_table <- matrix(c(100, 20, 10, 130,
+                      15, 80, 25, 120,  
+                      5,  10, 50,  65,
+                      120, 110, 85, 315), 
+                    nrow = 4, byrow = TRUE)
+rownames(mob_table) <- colnames(mob_table) <- c("A", "B", "C", "Total")
+
+# Calculate relative risk matrix
+rr_matrix <- weight.matrix(mob_table, cut.off = 1.5)
+
+}
+\seealso{
+\code{\link{moneca}} for the main analysis function
 }
