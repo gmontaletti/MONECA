@@ -1,0 +1,366 @@
+* using log directory ‘/Users/giampaolomontaletti/Documents/progetti/MONECA/MONECA.Rcheck’
+* using R version 4.5.0 (2025-04-11)
+* using platform: aarch64-apple-darwin20
+* R was compiled by
+    Apple clang version 14.0.0 (clang-1400.0.29.202)
+    GNU Fortran (GCC) 14.2.0
+* running under: macOS Sequoia 15.5
+* using session charset: UTF-8
+* using option ‘--no-manual’
+* checking for file ‘MONECA/DESCRIPTION’ ... OK
+* this is package ‘MONECA’ version ‘0.1.3’
+* package encoding: UTF-8
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... NOTE
+Found the following hidden files and directories:
+  .claude
+These were most likely included in error. See section ‘Package
+structure’ in the ‘Writing R Extensions’ manual.
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘MONECA’ can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking ‘build’ directory ... OK
+* checking DESCRIPTION meta-information ... OK
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking code files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking dependencies in R code ... NOTE
+importazione '::' o ':::' non dichiarata da: ‘eliter’
+There are ::: calls to the package's namespace in its code. A package
+  almost never needs to use ::: for its own objects:
+  ‘print.descriptive.moneca’
+* checking S3 generic/method consistency ... WARNING
+print:
+  function(x, ...)
+print.moneca:
+  function(segments, small.cell.reduction, ...)
+
+print:
+  function(x, ...)
+print.first_level_summary:
+  function(out)
+See section ‘Generic functions and methods’ in the ‘Writing R
+Extensions’ manual.
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... NOTE
+ego.plot: possible error in scale_size_continuous(range = c(2, 8),
+  na.value = 8, name = "Antal"): argomento non utilizzato (na.value =
+  8)
+generate_dependency_report: no visible global function definition for
+  ‘analyze_igraph_usage’
+generate_mobility_data: no visible global function definition for
+  ‘rgamma’
+gg.moneca: no visible binding for global variable ‘row.total’
+gg.moneca : segment.circles.hull: no visible global function definition
+  for ‘chull’
+gg.moneca : segment.circles.hull: no visible global function definition
+  for ‘runif’
+gg.moneca: no visible global function definition for ‘runif’
+plot_ego_ggraph: no visible binding for global variable ‘weight’
+plot_ego_ggraph: no visible binding for global variable ‘nodes’
+plot_ego_ggraph: no visible binding for global variable ‘node_size’
+plot_ego_ggraph: no visible binding for global variable ‘is_ego’
+plot_ego_ggraph: no visible binding for global variable ‘node_name’
+plot_moneca_ggraph: no visible binding for global variable ‘nodes’
+plot_moneca_ggraph: no visible binding for global variable ‘weight’
+plot_moneca_ggraph: no visible binding for global variable ‘segment’
+plot_moneca_ggraph: no visible binding for global variable
+  ‘mobility_rate’
+plot_moneca_ggraph: no visible binding for global variable ‘name’
+test_igraph_compatibility: no visible global function definition for
+  ‘runif’
+Undefined global functions or variables:
+  analyze_igraph_usage chull is_ego mobility_rate name node_name
+  node_size nodes rgamma row.total runif segment weight
+Consider adding
+  importFrom("grDevices", "chull")
+  importFrom("stats", "rgamma", "runif")
+to your NAMESPACE file.
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd cross-references ... WARNING
+Missing link(s) in Rd file 'print.moneca.Rd':
+  ‘summary.moneca’
+
+Vedi sezione 'Cross-references' nel manuale 'Writing R Extensions'.
+* checking for missing documentation entries ... WARNING
+Dataset non documentati:
+  ‘mob.mat’ ‘mob.seg’
+All user-level objects in a package should have documentation entries.
+See chapter ‘Writing R documentation files’ in the ‘Writing R
+Extensions’ manual.
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... WARNING
+Undocumented arguments in Rd file 'first.level.summary.Rd'
+  ‘segments’ ‘small.cell.reduction’
+
+Undocumented arguments in Rd file 'force.segments.Rd'
+  ‘segments’ ‘variable’
+
+Undocumented arguments in Rd file 'layout.matrix.Rd'
+  ‘weight.adjustment’ ‘start.temp’ ‘niter’ ‘tie.adjustment’ ‘...’
+Documented arguments not in \usage in Rd file 'layout.matrix.Rd':
+  ‘area.size’
+
+Documented arguments not in \usage in Rd file 'plot_stair_ggraph.Rd':
+  ‘combine_plots’
+
+Undocumented arguments in Rd file 'print.first_level_summary.Rd'
+  ‘out’
+
+Undocumented arguments in Rd file 'segment.quality.Rd'
+  ‘segments’ ‘final.solution’
+
+Undocumented arguments in Rd file 'vertex.mobility.Rd'
+  ‘segments’
+
+Functions with \usage entries need to have the appropriate \alias
+entries, and all their arguments documented.
+The \usage entries must correspond to syntactically valid R code.
+See chapter ‘Writing R documentation files’ in the ‘Writing R
+Extensions’ manual.
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking contents of ‘data’ directory ... OK
+* checking data for non-ASCII characters ... WARNING
+  Warning: found non-ASCII strings
+  '7220: Grovsmede- og v<c3><a6>rkt<c3><b8>jsmagerarbejde' in object 'mob.mat'
+  '7433: Tekstil- og bekl<c3><a6>dningsarbejde, skind-, l<c3><a6>der- og skot<c3><b8>jsarbejde' in object 'mob.mat'
+  '8261: Betjening af maskiner inden for tekstil-, skind- og l<c3><a6>derindustri' in object 'mob.mat'
+  '8331: Arbejde med andre mobile maskiner og k<c3><b8>ret<c3><b8>jer' in object 'mob.mat'
+  '7220: Grovsmede- og v<c3><a6>rkt<c3><b8>jsmagerarbejde' in object 'mob.seg'
+  '7433: Tekstil- og bekl<c3><a6>dningsarbejde, skind-, l<c3><a6>der- og skot<c3><b8>jsarbejde' in object 'mob.seg'
+  '8261: Betjening af maskiner inden for tekstil-, skind- og l<c3><a6>derindustri' in object 'mob.seg'
+  '8331: Arbejde med andre mobile maskiner og k<c3><b8>ret<c3><b8>jer' in object 'mob.seg'
+* checking data for ASCII and uncompressed saves ... OK
+* checking installed files from ‘inst/doc’ ... OK
+* checking files in ‘vignettes’ ... OK
+* checking examples ... ERROR
+Running examples in ‘MONECA-Ex.R’ failed
+The error most likely occurred in:
+
+> ### Name: generate_mobility_data
+> ### Title: Generate Realistic Synthetic Mobility Data
+> ### Aliases: generate_mobility_data
+> 
+> ### ** Examples
+> 
+> # Basic synthetic data with default parameters
+> basic_data <- generate_mobility_data()
+> print(basic_data[1:6, 1:6])  # Show first 5 classes plus totals
+        Class 1 Class 2 Class 3 Class 4 Class 5 Class 6
+Class 1     266      65      31       6       4       7
+Class 2     248     971     226     132      16      15
+Class 3     131     219     863     212     124      12
+Class 4      12      69     113     546     111      73
+Class 5      13      15     137     284     920     248
+Class 6      10       6      10     101     150     626
+> 
+> # Small example for quick testing
+> test_data <- generate_mobility_data(
++   n_classes = 5,
++   n_total = 1000,
++   immobility_strength = 0.7,
++   class_clustering = 0.2,
++   seed = 42
++ )
+> 
+> # Professional class structure with custom names
+> professional_data <- generate_mobility_data(
++   n_classes = 6,
++   n_total = 5000,
++   class_names = c("Upper", "Upper-Middle", "Middle", 
++                   "Lower-Middle", "Working", "Lower"),
++   immobility_strength = 0.5,
++   class_clustering = 0.4,
++   seed = 123
++ )
+> 
+> # Highly fluid mobility regime
+> fluid_data <- generate_mobility_data(
++   n_classes = 8,
++   immobility_strength = 0.3,
++   class_clustering = 0.1,
++   noise_level = 0.3
++ )
+> 
+> # Use in MONECA analysis
+> seg <- moneca(test_data, segment.levels = 3)
+> plot_moneca_ggraph(seg, title = "Synthetic Mobility Analysis")
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Error in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  : 
+  invalid font type
+Calls: <Anonymous> ... drawDetails -> drawDetails.text -> grid.Call.graphics
+Execution halted
+* checking for unstated dependencies in ‘tests’ ... OK
+* checking tests ... ERROR
+  Running ‘testthat.R’
+Running the tests in ‘tests/testthat.R’ failed.
+Last 13 lines of output:
+  nrow(edges) not equal to 3.
+  1/1 mismatches
+  [1] 4 - 3 == 1
+  ── Failure ('test-moneca-core.R:101:3'): segment.edges produces valid edge matrices ──
+  ncol(edges) not equal to 3.
+  1/1 mismatches
+  [1] 4 - 3 == 1
+  ── Failure ('test-moneca-core.R:118:5'): moneca handles edge cases ─────────────
+  Expected `{ ... }` to run without any errors.
+  ℹ Actually got a <simpleError> with text:
+    attempt to select less than one element in get1index <real>
+  
+  [ FAIL 8 | WARN 0 | SKIP 1 | PASS 103 ]
+  Error: Test failures
+  Execution halted
+* checking for unstated dependencies in vignettes ... OK
+* checking package vignettes ... OK
+* checking re-building of vignette outputs ... OK
+* DONE
+Status: 2 ERRORs, 5 WARNINGs, 3 NOTEs

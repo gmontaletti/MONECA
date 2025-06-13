@@ -1,28 +1,43 @@
+# install.packages("MONECA_0.1.3.tar.gz")
+library(igraph)
 library(MONECA)
 library(eliter)
 
 data("occupations")
+lombardia <- read_rds("../centrality/data/g_dataframe_diag.rds")
+mob.mat <- as_adjacency_matrix(lombardia, attr = "weight", sparse = F )
+mob.mat <- addmargins(mob.mat)
 
-segments <- moneca(mob.mat, segment.levels = 3)
+seg <- moneca(mob.mat, segment.levels = 3, mode = "Mutual")
 
-segments
-MONECA::first.level.summary(segments)
-MONECA::layout.matrix(segments)
-MONECA::segment.colors(segments)
-MONECA::segment.edges(segments)
-MONECA::segment.edges(segments, cut.off = 1, method = "all", segment.reduction = 0, level = 1)
-MONECA::segment.membership(segments)
-MONECA::segment.quality(segments)
-MONECA::stair.plot(segments)
-MONECA::vertex.mobility(segments)
+plot_moneca_ggraph(seg)
+seg
+
+esempi <- MONECA::generate_example_datasets()
+
+# seg <- moneca(esempi$complex)
+plot_moneca_ggraph(seg)
+plot_stair_ggraph(seg)
+
+plot_ego_ggraph(segments = seg, mobility_matrix = mob.mat, ego_id = 33 )
+MONECA::first.level.summary(seg)
+MONECA::layout.matrix(seg)
+MONECA::segment.colors(seg)
+MONECA::segment.edges(seg)
+MONECA::segment.edges(seg, cut.off = 1, method = "all", segment.reduction = 0, level = 1)
+MONECA::segment.membership(seg)
+squal <- MONECA::segment.quality(seg)
+MONECA::stair.plot(seg)
+vmob <-MONECA::vertex.mobility(seg)
 MONECA::weight.matrix(mob.mat)
 
-MONECA::moneca.plot(segments)
+MONECA::moneca.plot(seg)
+# fix in moneca.plot(): Error in -l : invalid argument to unary operator
 
-MONECA::gg.moneca(segments) 
+MONECA::gg.moneca(seg) 
 
-gg.moneca(segments = segments,
-          edges = segment.edges(segments, cut.off = 1, method = "all", segment.reduction = 0, level = 1))
+gg.moneca(segments = seg,
+          edges = segment.edges(seg, cut.off = 1, method = "all", segment.reduction = 0, level = 1))
 
-segments
-MONECA::layout.matrix(segments)
+seg
+MONECA::layout.matrix(seg)

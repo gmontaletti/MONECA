@@ -1,0 +1,21 @@
+ego.plot                Ego plots
+find.segments           find.segments
+first.level.summary     First level summary
+force.segments          force.segments
+gg.moneca               ggplots for moneca
+layout.matrix           Layout matrix
+moneca                  moneca
+moneca.plot             Plot moneca
+occupations             Occupational mobility
+print.descriptive.moneca
+                        Print descriptive moneca
+print.first_level_summary
+                        Print first level summary
+print.moneca            Print moneca descriptives
+segment.colors          Segment colors
+segment.edges           Segment edges
+segment.membership      Segment membership
+segment.quality         Segment quality
+stair.plot              Stair plot
+vertex.mobility         Vertex mobility
+weight.matrix           Weight.matrix

@@ -7,7 +7,7 @@
 moneca.plot(
   segments,
   layout = layout.matrix(segments),
-  edges = NULL,
+  edges = segment.edges(segments),
   mode = "directed",
   level = seq(segments$segment.list),
   vertex.size = 5,

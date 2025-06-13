@@ -387,18 +387,7 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
 
 weight.matrix <- function(mx, cut.off = 1, symmetric = TRUE, diagonal = NULL, small.cell.reduction = 0){
 
-  # Input validation
-  if (!is.matrix(mx)) {
-    stop("Input must be a matrix")
-  }
-  
   l               <- nrow(mx)
-  
-  # Check if matrix has at least 2 rows/columns
-  if (l < 2) {
-    stop("Matrix must have at least 2 rows and columns")
-  }
-  
   o.r.s           <- mx[-l, l]
   o.c.s           <- mx[l, -l]
   total.total     <- mx[l,l]
@@ -556,14 +545,7 @@ layout.matrix <- function(segments, attraction=c(320, 40, 10, 4, 2), level=seq(s
 #' @export
 segment.edges <- function(segments, cut.off=1, mode="directed", level=seq(segments$segment.list), segment.reduction=seq(segments$segment.list), method="all", top=3, diagonal=NULL, small.cell.reduction=0){
   
-  # Always use the first matrix which contains the original data with totals
   mx                     <- segments$mat.list[[1]]
-  
-  # Validate that the matrix exists and has proper structure
-  if (is.null(mx) || !is.matrix(mx)) {
-    stop("segments$mat.list[[1]] must be a valid matrix")
-  }
-  
   seg                    <- segments
   seg$segment.list <- segments$segment.list[level]
   seg$mat.list     <- segments$mat.list[level]
@@ -656,7 +638,7 @@ segment.edges <- function(segments, cut.off=1, mode="directed", level=seq(segmen
 
 moneca.plot <- function(segments,
                        layout             = layout.matrix(segments),
-                       edges              = NULL,
+                       edges              = segment.edges(segments),
                        mode               = "directed",
                        level             = seq(segments$segment.list),
                        vertex.size        = 5,
@@ -672,11 +654,6 @@ moneca.plot <- function(segments,
                        border.col      = "black",
                        edge.width      = 1,
                        edge.color      = "black"){
-  
-  # Calculate edges first if not provided, before modifying segments
-  if (is.null(edges)) {
-    edges <- segment.edges(segments)
-  }
   
   level                 <- level[level != 1]
   seg                    <- segments

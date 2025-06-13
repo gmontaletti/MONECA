@@ -1,0 +1,407 @@
+---
+title: "Introduction to MONECA: Mobility Network Clustering Analysis"
+author: "Jonas Touboel and Anton Grau Larsen"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+    fig_width: 8
+    fig_height: 6
+vignette: >
+  %\VignetteIndexEntry{Introduction to MONECA: Mobility Network Clustering Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "figures/",
+  warning = FALSE,
+  message = FALSE
+)
+
+# Check if required packages are available
+required_packages <- c("ggplot2", "ggraph", "igraph", "dplyr", "tidygraph")
+missing_packages <- required_packages[!sapply(required_packages, requireNamespace, quietly = TRUE)]
+
+if (length(missing_packages) > 0) {
+  knitr::opts_chunk$set(eval = FALSE)
+  message("Some required packages are missing: ", paste(missing_packages, collapse = ", "))
+  message("Code examples will not be evaluated.")
+}
+```
+
+## Introduction
+
+MONECA (Mobility Network Clustering Analysis) is an R package that analyzes social mobility patterns through graph-theoretic approaches. The package creates weighted networks from mobility tables and uses cliques to identify discrete and nested clusters of positions with high internal mobility.
+
+### Key Features
+
+- **Network-based clustering** of mobility tables
+- **Hierarchical segmentation** at multiple levels
+- **Modern visualization** with ggplot2 and ggraph
+- **Quality metrics** for assessing segmentation performance
+- **Synthetic data generation** for testing and demonstrations
+
+## Basic Concepts
+
+Social mobility can be represented as a network where:
+
+- **Nodes** represent social positions (occupations, classes, etc.)
+- **Edges** represent mobility flows between positions
+- **Edge weights** represent the strength of mobility connections
+- **Clusters** represent groups of positions with high internal mobility
+
+MONECA identifies these clusters by:
+
+1. Converting mobility tables to relative risk matrices
+2. Finding cliques in the weighted network
+3. Iteratively aggregating positions into segments
+4. Creating hierarchical segmentation levels
+
+## Installation and Setup
+
+```{r installation, eval=FALSE}
+# Install from GitHub (when available)
+# devtools::install_github("antongrau/MONECA")
+
+# Load the package
+library(MONECA)
+
+# Load additional packages for visualization
+library(ggplot2)
+library(ggraph)
+```
+
+```{r load_package, echo=FALSE}
+# For vignette building
+library(MONECA)
+```
+
+## Working with Synthetic Data
+
+MONECA includes functions to generate synthetic mobility data for demonstrations and testing.
+
+### Creating Basic Synthetic Data
+
+```{r synthetic_basic}
+# Generate a simple 5-class mobility table
+basic_data <- generate_mobility_data(
+  n_classes = 5,
+  n_total = 2000,
+  immobility_strength = 0.7,
+  class_clustering = 0.2,
+  class_names = c("Upper", "Upper-Mid", "Middle", "Lower-Mid", "Working"),
+  seed = 42
+)
+
+# View the structure
+print(basic_data)
+```
+
+The mobility matrix shows:
+- **Rows**: Origin classes (where people start)
+- **Columns**: Destination classes (where people end up)
+- **Last row/column**: Marginal totals
+- **Diagonal**: Immobility (staying in same class)
+
+### Creating Different Mobility Scenarios
+
+```{r synthetic_scenarios}
+# Get multiple example datasets
+examples <- generate_example_datasets()
+names(examples)
+
+# Examine the rigid class system
+print("Rigid class system:")
+print(examples$rigid)
+
+# Examine the fluid (highly mobile) system
+print("Fluid mobility system:")
+print(examples$fluid)
+```
+
+## Running MONECA Analysis
+
+### Basic Analysis
+
+```{r basic_analysis}
+# Run MONECA on the basic dataset
+seg <- moneca(basic_data, segment.levels = 3)
+
+# View the results
+print(seg)
+```
+
+The MONECA object contains:
+- `segment.list`: Hierarchical clusters for each level
+- `mat.list`: Aggregated mobility matrices for each level
+
+### Understanding the Results
+
+```{r understand_results}
+# View segment membership
+membership <- segment.membership(seg)
+print(membership)
+
+# View the aggregated matrix for level 2
+print("Level 2 aggregated matrix:")
+print(seg$mat.list[[2]])
+```
+
+## Modern Visualization with ggraph
+
+MONECA now includes modern visualization functions using ggplot2 and ggraph.
+
+### Basic Network Plot
+
+```{r plot_basic, eval=TRUE}
+# Create a basic network plot
+p1 <- plot_moneca_ggraph(
+  seg,
+  title = "Basic MONECA Network",
+  node_color = "segment",
+  node_size = "total"
+)
+
+print(p1)
+```
+
+### Customized Visualization
+
+```{r plot_custom, eval=TRUE}
+# Create a customized plot with different layout and styling
+p2 <- plot_moneca_ggraph(
+  seg,
+  layout = "kk",  # Kamada-Kawai layout
+  node_color = "segment",
+  edge_width = "weight",
+  color_palette = "Spectral",
+  theme_style = "minimal",
+  title = "Customized MONECA Visualization",
+  show_labels = TRUE
+)
+
+print(p2)
+```
+
+### Ego Network Analysis
+
+Ego networks show mobility patterns from a single position:
+
+```{r ego_plot, eval=TRUE}
+# Create ego network for the middle class (position 3)
+p3 <- plot_ego_ggraph(
+  seg,
+  basic_data,
+  ego_id = 3,
+  title = "Mobility from Middle Class",
+  highlight_color = "red"
+)
+
+print(p3)
+```
+
+### Stair Plots: Visualizing Segmentation Levels
+
+```{r stair_plot, eval=TRUE}
+# Create stair plots showing different segmentation levels
+stair_plots <- plot_stair_ggraph(seg, levels = 2:3)
+
+# Display individual plots
+print(stair_plots$`Level 2`)
+print(stair_plots$`Level 3`)
+```
+
+## Advanced Analysis Examples
+
+### Comparing Different Mobility Regimes
+
+```{r compare_regimes}
+# Analyze the rigid class system
+rigid_seg <- moneca(examples$rigid, segment.levels = 3)
+
+# Analyze the fluid mobility system  
+fluid_seg <- moneca(examples$fluid, segment.levels = 3)
+
+# Compare segment memberships
+print("Rigid system segments:")
+print(segment.membership(rigid_seg))
+
+print("Fluid system segments:")
+print(segment.membership(fluid_seg))
+```
+
+### Visualizing Different Mobility Regimes
+
+```{r compare_plots, eval=TRUE}
+# Plot rigid system
+p_rigid <- plot_moneca_ggraph(
+  rigid_seg,
+  title = "Rigid Class System",
+  node_color = "segment",
+  color_palette = "Reds"
+)
+
+# Plot fluid system
+p_fluid <- plot_moneca_ggraph(
+  fluid_seg,
+  title = "Fluid Mobility System", 
+  node_color = "segment",
+  color_palette = "Blues"
+)
+
+print(p_rigid)
+print(p_fluid)
+```
+
+## Analytical Functions
+
+### Segment Quality Assessment
+
+```{r quality_assessment}
+# Assess the quality of segmentation
+# (Note: this function may need to be implemented)
+# quality_metrics <- segment.quality(seg)
+# print(quality_metrics)
+
+# Alternative: examine within vs. between segment mobility
+level2_matrix <- seg$mat.list[[2]]
+print("Level 2 mobility matrix (aggregated):")
+print(level2_matrix)
+
+# Calculate internal mobility rates
+internal_mobility <- diag(level2_matrix[-nrow(level2_matrix), -ncol(level2_matrix)])
+total_mobility <- level2_matrix[-nrow(level2_matrix), ncol(level2_matrix)]
+immobility_rates <- internal_mobility / total_mobility
+
+print("Immobility rates by segment:")
+print(immobility_rates)
+```
+
+### Edge Analysis
+
+```{r edge_analysis}
+# Examine edge weights between segments
+edges <- segment.edges(seg, level = 1)
+print("Edge weights matrix:")
+print(edges)
+
+# Focus on strongest connections
+strong_edges <- edges
+strong_edges[strong_edges < 2] <- NA
+print("Strong connections (relative risk > 2):")
+print(strong_edges)
+```
+
+## Working with Real Data
+
+When working with your own mobility data, ensure it follows the MONECA format:
+
+### Data Format Requirements
+
+```{r data_format}
+# Your data should be a matrix with:
+# - Rows: origin positions
+# - Columns: destination positions  
+# - Last row: column totals
+# - Last column: row totals
+# - Bottom-right cell: grand total
+
+# Example of properly formatted data structure:
+example_structure <- matrix(c(
+  100, 20, 10, 130,  # Origin 1: 100 stay, 20 to pos 2, 10 to pos 3, total 130
+  15, 200, 25, 240,  # Origin 2: 15 to pos 1, 200 stay, 25 to pos 3, total 240  
+  10, 30, 180, 220,  # Origin 3: 10 to pos 1, 30 to pos 2, 180 stay, total 220
+  125, 250, 215, 590 # Totals: 125 end in pos 1, 250 in pos 2, 215 in pos 3, grand total 590
+), nrow = 4, ncol = 4)
+
+rownames(example_structure) <- c("Class_A", "Class_B", "Class_C", "Total")
+colnames(example_structure) <- c("Class_A", "Class_B", "Class_C", "Total")
+
+print("Properly formatted mobility matrix:")
+print(example_structure)
+```
+
+### Data Validation
+
+```{r data_validation}
+# Check if your data is properly formatted
+validate_mobility_matrix <- function(mat) {
+  n <- nrow(mat) - 1
+  
+  # Check row totals
+  calculated_row_totals <- rowSums(mat[1:n, 1:n])
+  actual_row_totals <- mat[1:n, n + 1]
+  
+  # Check column totals  
+  calculated_col_totals <- colSums(mat[1:n, 1:n])
+  actual_col_totals <- mat[n + 1, 1:n]
+  
+  # Check grand total
+  calculated_grand_total <- sum(mat[1:n, 1:n])
+  actual_grand_total <- mat[n + 1, n + 1]
+  
+  list(
+    row_totals_match = all.equal(calculated_row_totals, actual_row_totals),
+    col_totals_match = all.equal(calculated_col_totals, actual_col_totals),
+    grand_total_matches = all.equal(calculated_grand_total, actual_grand_total)
+  )
+}
+
+# Validate our example
+validation <- validate_mobility_matrix(example_structure)
+print(validation)
+```
+
+## Best Practices and Tips
+
+### Choosing Parameters
+
+1. **Number of levels**: Start with 3-4 levels, adjust based on your data size
+2. **Cut-off values**: Default (1.0) works well for relative risk; adjust for sensitivity
+3. **Small cell reduction**: Use to handle sparse data in large matrices
+
+### Interpretation Guidelines
+
+1. **Segments represent groups** with high internal mobility
+2. **Hierarchical structure** shows nested clustering at different scales  
+3. **Edge weights** indicate relative risk compared to independence
+4. **Layout algorithms** can emphasize different network properties
+
+### Performance Considerations
+
+1. **Large matrices** (>50x50) may require increased computation time
+2. **Progress bars** show optimization progress for large datasets
+3. **Memory usage** grows with number of levels and matrix size
+
+## Conclusion
+
+MONECA provides a powerful framework for analyzing social mobility through network-based clustering. The combination of:
+
+- Flexible clustering algorithms
+- Modern visualization capabilities  
+- Hierarchical segmentation
+- Quality assessment tools
+
+Makes it suitable for exploring mobility patterns in diverse social contexts.
+
+### Further Reading
+
+- Original MONECA methodology papers
+- Network analysis in social mobility research
+- Graph-theoretic approaches to social structure
+
+### Getting Help
+
+- Use `?function_name` for detailed function documentation
+- Check the package website for updates and examples
+- Report issues on the GitHub repository
+
+```{r session_info}
+# Session information for reproducibility
+sessionInfo()
+```
