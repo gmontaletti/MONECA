@@ -1,14 +1,15 @@
-# install.packages("MONECA_0.1.3.tar.gz")
+# install.packages("MONECA_0.1.4.tar.gz")
 library(igraph)
 library(MONECA)
 library(eliter)
+packageVersion("MONECA")
 
-data("occupations")
+# data("occupations")
 lombardia <- read_rds("../centrality/data/g_dataframe_diag.rds")
 mob.mat <- as_adjacency_matrix(lombardia, attr = "weight", sparse = F )
 mob.mat <- addmargins(mob.mat)
 
-seg <- moneca(mob.mat, segment.levels = 3, mode = "Mutual")
+seg <- moneca(mob.mat, segment.levels = 3, mode = "Mutual", small.cell.reduction = 5)
 
 plot_moneca_ggraph(seg)
 seg
@@ -25,7 +26,7 @@ MONECA::layout.matrix(seg)
 MONECA::segment.colors(seg)
 MONECA::segment.edges(seg)
 MONECA::segment.edges(seg, cut.off = 1, method = "all", segment.reduction = 0, level = 1)
-MONECA::segment.membership(seg)
+membri <- MONECA::segment.membership(seg)
 squal <- MONECA::segment.quality(seg)
 MONECA::stair.plot(seg)
 vmob <-MONECA::vertex.mobility(seg)
