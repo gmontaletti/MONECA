@@ -196,7 +196,7 @@ plot_moneca_ggraph <- function(segments,
   }
   
   # Convert to tidygraph
-  graph_tbl <- tidygraph::as_tbl_graph(g)
+  tidy_graph <- tidygraph::as_tbl_graph(g)
   
   # Add node attributes
   mobility_matrix <- segments$mat.list[[1]]
@@ -206,19 +206,19 @@ plot_moneca_ggraph <- function(segments,
     node_totals <- (mobility_matrix[nrow(mobility_matrix), ] + 
                    mobility_matrix[, nrow(mobility_matrix)]) / 2
     node_totals <- node_totals[-length(node_totals)]
-    graph_tbl <- graph_tbl %>% tidygraph::activate(nodes) %>% 
+    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
           dplyr::mutate(node_size = node_totals)
   } else if (identical(node_size, "mobility")) {
     # Calculate mobility rates (off-diagonal mobility)
     mobility_rates <- 1 - diag(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)]) / 
                      rowSums(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)])
-    graph_tbl <- graph_tbl %>% tidygraph::activate(nodes) %>% 
+    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
           dplyr::mutate(node_size = mobility_rates)
   } else if (is.numeric(node_size) && length(node_size) == n_nodes) {
-    graph_tbl <- graph_tbl %>% tidygraph::activate(nodes) %>% 
+    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
           dplyr::mutate(node_size = node_size)
   } else {
-    graph_tbl <- graph_tbl %>% tidygraph::activate(nodes) %>% 
+    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
           dplyr::mutate(node_size = 5)
   }
   
@@ -233,7 +233,7 @@ plot_moneca_ggraph <- function(segments,
     node_level_names <- membership$level_name[match(node_names, membership$name)]
     node_level_names[is.na(node_level_names)] <- "Unassigned"
     
-    graph_tbl <- graph_tbl %>% tidygraph::activate(nodes) %>% 
+    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
           dplyr::mutate(
             segment = as.factor(node_segments),
             level_name = as.factor(node_level_names)
@@ -241,23 +241,23 @@ plot_moneca_ggraph <- function(segments,
   } else if (identical(node_color, "mobility")) {
     mobility_rates <- 1 - diag(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)]) / 
                      rowSums(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)])
-    graph_tbl <- graph_tbl %>% tidygraph::activate(nodes) %>% 
+    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
           dplyr::mutate(mobility_rate = mobility_rates)
   }
   
   # Create base plot with validation
   if (is.character(layout)) {
     # Validate that the graph has nodes
-    if (tidygraph::graph_order(graph_tbl) == 0) {
+    if (length(V(g)) == 0) {
       stop("Cannot create plot: graph has no nodes")
     }
-    p <- ggraph::ggraph(graph_tbl, layout = layout)
+    p <- ggraph::ggraph(tidy_graph, layout = layout)
   } else {
     # Validate layout matrix
     if (!is.matrix(layout) && !is.data.frame(layout)) {
       stop("Layout must be a matrix or data.frame with coordinates")
     }
-    if (nrow(layout) != tidygraph::graph_order(graph_tbl)) {
+    if (nrow(layout) != length(V(g))) {
       stop("Layout dimensions must match number of nodes in graph")
     }
     if (ncol(layout) < 2) {
@@ -282,7 +282,7 @@ plot_moneca_ggraph <- function(segments,
       y_coords <- y_coords + runif(length(y_coords), -0.1, 0.1)
     }
     
-    p <- ggraph::ggraph(graph_tbl, layout = "manual", x = x_coords, y = y_coords)
+    p <- ggraph::ggraph(tidy_graph, layout = "manual", x = x_coords, y = y_coords)
   }
   
   # Add edges
@@ -506,8 +506,8 @@ plot_ego_ggraph <- function(segments,
   g <- moneca_graph_from_adjacency(filtered_matrix, mode = "directed", weighted = TRUE)
   
   # Convert to tidygraph and filter out zero-weight edges
-  ego_graph <- tidygraph::as_tbl_graph(g)
-  ego_graph <- ego_graph %>% 
+  ego_network <- tidygraph::as_tbl_graph(g)
+  ego_network <- ego_network %>% 
     tidygraph::activate(edges) %>%
     dplyr::filter(weight > 0)
   
@@ -542,7 +542,7 @@ plot_ego_ggraph <- function(segments,
   # Get level names for connected nodes
   connected_level_names <- membership$level_name[connected_nodes]
   
-  ego_graph <- ego_graph %>% tidygraph::activate(nodes) %>%
+  ego_network <- ego_network %>% tidygraph::activate(nodes) %>%
         dplyr::mutate(
           node_size = node_totals,
           is_ego = 1:tidygraph::graph_order() == ego_position_in_filtered,
@@ -552,14 +552,14 @@ plot_ego_ggraph <- function(segments,
         )
   
   # Create plot with validation
-  if (tidygraph::graph_order(ego_graph) == 0) {
+  if (length(V(g)) == 0) {
     stop("Cannot create ego plot: no nodes connected to ego node")
   }
-  if (tidygraph::graph_size(ego_graph) == 0) {
+  if (length(E(g)) == 0) {
     warning("Ego plot has no edges - ego node may be isolated")
   }
   
-  p <- ggraph::ggraph(ego_graph, layout = layout)
+  p <- ggraph::ggraph(ego_network, layout = layout)
   
   # Add edges with width based on flow volume
   p <- p + ggraph::geom_edge_link(

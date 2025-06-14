@@ -1,61 +1,0 @@
-
-R version 4.5.0 (2025-04-11) -- "How About a Twenty-Six"
-Copyright (C) 2025 The R Foundation for Statistical Computing
-Platform: aarch64-apple-darwin20
-
-R is free software and comes with ABSOLUTELY NO WARRANTY.
-You are welcome to redistribute it under certain conditions.
-Type 'license()' or 'licence()' for distribution details.
-
-R is a collaborative project with many contributors.
-Type 'contributors()' for more information and
-'citation()' on how to cite R or R packages in publications.
-
-Type 'demo()' for some demos, 'help()' for on-line help, or
-'help.start()' for an HTML browser interface to help.
-Type 'q()' to quit R.
-
-> library(testthat)
-> library(MONECA)
-> 
-> test_check("MONECA")
-  |                                                                              |                                                                      |   0%  |                                                                              |                                                                      |   0%  |                                                                              |                                                                      |   0%  |                                                                              |                                                                      |   0%  |                                                                              |                                                                      |   0%  |                                                                              |                                                                      |   0%[ FAIL 8 | WARN 0 | SKIP 1 | PASS 103 ]
-
-══ Skipped tests (1) ═══════════════════════════════════════════════════════════
-• empty test (1): 'test-moneca-core.R:30:1'
-
-══ Failed tests ════════════════════════════════════════════════════════════════
-── Failure ('test-igraph-compatibility.R:83:3'): moneca_norm_coords handles edge cases ──
-`{ ... }` did not throw an error.
-── Failure ('test-moneca-core.R:61:3'): moneca function runs without errors ────
-length(seg$segment.list) not equal to 4.
-1/1 mismatches
-[1] 3 - 4 == -1
-── Failure ('test-moneca-core.R:62:3'): moneca function runs without errors ────
-length(seg$mat.list) not equal to 4.
-1/1 mismatches
-[1] 3 - 4 == -1
-── Failure ('test-moneca-core.R:73:3'): moneca produces hierarchical segmentation ──
-n_segments[1] not equal to 5.
-1/1 mismatches
-[1] 6 - 5 == 1
-── Failure ('test-moneca-core.R:90:3'): segment.membership produces valid membership data ──
-nrow(membership) not equal to 3.
-1/1 mismatches
-[1] 4 - 3 == 1
-── Failure ('test-moneca-core.R:100:3'): segment.edges produces valid edge matrices ──
-nrow(edges) not equal to 3.
-1/1 mismatches
-[1] 4 - 3 == 1
-── Failure ('test-moneca-core.R:101:3'): segment.edges produces valid edge matrices ──
-ncol(edges) not equal to 3.
-1/1 mismatches
-[1] 4 - 3 == 1
-── Failure ('test-moneca-core.R:118:5'): moneca handles edge cases ─────────────
-Expected `{ ... }` to run without any errors.
-ℹ Actually got a <simpleError> with text:
-  attempt to select less than one element in get1index <real>
-
-[ FAIL 8 | WARN 0 | SKIP 1 | PASS 103 ]
-Error: Test failures
-Execution halted

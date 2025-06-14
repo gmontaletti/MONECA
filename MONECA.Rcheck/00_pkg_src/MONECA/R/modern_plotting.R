@@ -313,6 +313,10 @@ plot_moneca_ggraph <- function(segments,
 #'     \item Integer: Row/column index in the mobility matrix
 #'     \item Character: Row/column name from the mobility matrix
 #'   }
+#' @param min_weight Numeric threshold for minimum edge weight to include nodes.
+#'   Only nodes connected to the ego with edge weights >= min_weight will be shown.
+#'   Default is 0 (show all connected nodes). Use higher values to focus on 
+#'   stronger mobility flows.
 #' @param layout Character string specifying the layout algorithm. Default is "stress"
 #'   which often works well for ego networks. Other options include "fr", "kk", "dh".
 #' @param highlight_color Color for the ego (focal) node. Default is "red".
@@ -354,6 +358,12 @@ plot_moneca_ggraph <- function(segments,
 #'   plot_ego_ggraph(seg, mobility_data, ego_id = rownames(mobility_data)[1])
 #' }
 #' 
+#' # Focus on strong mobility flows only (weight >= 10)
+#' plot_ego_ggraph(seg, mobility_data, 
+#'                 ego_id = 2,
+#'                 min_weight = 10,
+#'                 title = "Strong Mobility Flows")
+#' 
 #' # Customized ego plot
 #' plot_ego_ggraph(seg, mobility_data, 
 #'                 ego_id = 2,
@@ -372,6 +382,7 @@ plot_moneca_ggraph <- function(segments,
 plot_ego_ggraph <- function(segments,
                            mobility_matrix,
                            ego_id,
+                           min_weight = 0,
                            layout = "stress",
                            highlight_color = "red",
                            flow_color = "viridis",
@@ -405,8 +416,21 @@ plot_ego_ggraph <- function(segments,
   ego_matrix[ego_id, ] <- core_matrix[ego_id, ]  # Outflows
   ego_matrix[, ego_id] <- core_matrix[, ego_id]  # Inflows
   
-  # Create graph (keep zeros for now, filter later)
-  g <- moneca_graph_from_adjacency(ego_matrix, mode = "directed", weighted = TRUE)
+  # Apply weight threshold - set edges below min_weight to 0
+  ego_matrix[ego_matrix < min_weight] <- 0
+  
+  # Identify nodes that have connections above the threshold
+  connected_nodes <- which(rowSums(ego_matrix) > 0 | colSums(ego_matrix) > 0)
+  
+  # Always include the ego node even if it has no connections above threshold
+  connected_nodes <- unique(c(ego_id, connected_nodes))
+  connected_nodes <- sort(connected_nodes)
+  
+  # Filter matrix to only include connected nodes
+  filtered_matrix <- ego_matrix[connected_nodes, connected_nodes, drop = FALSE]
+  
+  # Create graph from filtered matrix
+  g <- moneca_graph_from_adjacency(filtered_matrix, mode = "directed", weighted = TRUE)
   
   # Convert to tidygraph and filter out zero-weight edges
   tg <- tidygraph::as_tbl_graph(g)
@@ -417,15 +441,35 @@ plot_ego_ggraph <- function(segments,
   # Add node attributes
   node_names <- V(g)$name
   if (is.null(node_names)) {
-    node_names <- rownames(core_matrix)
+    # Use names from the filtered connected nodes
+    if (!is.null(rownames(core_matrix))) {
+      node_names <- rownames(core_matrix)[connected_nodes]
+    } else {
+      node_names <- paste0("Node_", connected_nodes)
+    }
   }
   
-  # Node sizes based on total mobility
-  node_totals <- rowSums(core_matrix) + colSums(core_matrix)
+  # Node sizes based on total mobility (for connected nodes only)
+  node_totals_full <- rowSums(core_matrix) + colSums(core_matrix)
+  node_totals <- node_totals_full[connected_nodes]
+  
+  # Find which filtered node is the ego
+  ego_position_in_filtered <- which(connected_nodes == ego_id)
+  
+  # Get segment membership for all nodes
+  membership <- segment.membership(segments, level = 1:length(segments$segment.list))
+  
+  # Find ego's segment
+  ego_segment <- membership$membership[ego_id]
+  
+  # Determine which nodes belong to the same segment as ego
+  same_segment_as_ego <- membership$membership[connected_nodes] == ego_segment
+  
   tg <- tg %>% tidygraph::activate(nodes) %>%
         dplyr::mutate(
           node_size = node_totals,
-          is_ego = 1:tidygraph::graph_order() == ego_id,
+          is_ego = 1:tidygraph::graph_order() == ego_position_in_filtered,
+          same_segment = same_segment_as_ego,
           node_name = node_names
         )
   
@@ -442,13 +486,16 @@ plot_ego_ggraph <- function(segments,
   ggraph::scale_edge_width_continuous(range = edge_width_range, guide = "none") +
   ggraph::scale_edge_color_viridis(name = "Flow Volume")
   
-  # Add nodes
+  # Add nodes with coloring based on segment membership
   p <- p + ggraph::geom_node_point(
-    ggplot2::aes(size = node_size, color = is_ego),
+    ggplot2::aes(size = node_size, color = interaction(is_ego, same_segment)),
     alpha = 0.8
   ) +
   ggplot2::scale_color_manual(
-    values = c("FALSE" = "steelblue", "TRUE" = highlight_color),
+    values = c("FALSE.FALSE" = "steelblue", 
+               "FALSE.TRUE" = highlight_color, 
+               "TRUE.FALSE" = highlight_color,
+               "TRUE.TRUE" = highlight_color),
     guide = "none"
   ) +
   ggplot2::scale_size_continuous(range = node_size_range, name = "Total Mobility")
@@ -465,8 +512,13 @@ plot_ego_ggraph <- function(segments,
   
   # Add title
   if (is.null(title)) {
-    ego_name <- node_names[ego_id]
-    title <- paste("Mobility Network for", ego_name)
+    ego_name <- node_names[ego_position_in_filtered]
+    if (min_weight > 0) {
+      title <- paste("Mobility Network for", ego_name, 
+                     paste0("(min weight: ", min_weight, ")"))
+    } else {
+      title <- paste("Mobility Network for", ego_name)
+    }
   }
   p <- p + ggplot2::ggtitle(title)
   

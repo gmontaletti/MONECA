@@ -223,6 +223,10 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
 #     mx.1i           <- mx.1i + t(mx.1i)
 #     diag(mx.1i)     <- NA
 
+    # Ensure mx is a matrix
+    if (!is.matrix(mx)) {
+      mx <- as.matrix(mx)
+    }
     mx.1i           <- weight.matrix(mx, cut.off, small.cell.reduction=small.cell.reduction)
     
     # Ensure matrix is symmetric for undirected graph
@@ -280,7 +284,8 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
     # Adjust for actual number of levels available
     actual.levels <- min(segment.levels, length(out.put))
     
-    for (n in 2:actual.levels){
+    if (actual.levels > 1) {
+      for (n in 2:actual.levels){
       
       nu  <- n
       ned <- n
@@ -301,6 +306,7 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
         seg.list[[n+1]] <- niv.nu
       }
     }
+    }
     return(seg.list)
   }
   
@@ -314,15 +320,17 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
   out.put         <- list()
   out.put[[1]]    <- list(segments=segments, mat=mx.2g)
   
-  for (i in 2:segment.levels){
-    segments        <- make.segments(mx.2g, cut.off=cut.off, mode=mode, delete.upper.tri=delete.upper.tri, small.cell.reduction=small.cell.reduction)
-    mx.2g           <- segment.matrix(mx.2g, segments)
-    mat.list[[i+1]] <- mx.2g
-    out.put[[i]]    <- list(segments=segments, mat=mx.2g)
-    
-    # Stop if only one segment remains
-    if(length(segments$cliques) <= 1) {
-      break
+  if (segment.levels > 1) {
+    for (i in 2:segment.levels){
+      segments        <- make.segments(mx.2g, cut.off=cut.off, mode=mode, delete.upper.tri=delete.upper.tri, small.cell.reduction=small.cell.reduction)
+      mx.2g           <- segment.matrix(mx.2g, segments)
+      mat.list[[i+1]] <- mx.2g
+      out.put[[i]]    <- list(segments=segments, mat=mx.2g)
+      
+      # Stop if only one segment remains
+      if(length(segments$cliques) <= 1) {
+        break
+      }
     }
   }
   
@@ -387,7 +395,38 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
 
 weight.matrix <- function(mx, cut.off = 1, symmetric = TRUE, diagonal = NULL, small.cell.reduction = 0){
 
+  # Input validation and conversion
+  if (is.null(mx)) {
+    stop("Input cannot be NULL")
+  }
+  
+  # Convert to matrix if needed
+  if (!is.matrix(mx)) {
+    # Try to convert data.frame, array, or other structures to matrix
+    tryCatch({
+      mx <- as.matrix(mx)
+    }, error = function(e) {
+      stop("Input must be convertible to a matrix: ", e$message)
+    })
+  }
+  
+  # Check if resulting matrix is valid
+  if (!is.matrix(mx)) {
+    stop("Input must be a matrix")
+  }
+  
   l               <- nrow(mx)
+  
+  # Check if matrix has at least 2 rows/columns
+  if (l < 2) {
+    stop("Matrix must have at least 2 rows and columns")
+  }
+  
+  # Check if matrix is square
+  if (nrow(mx) != ncol(mx)) {
+    stop("Matrix must be square (same number of rows and columns)")
+  }
+  
   o.r.s           <- mx[-l, l]
   o.c.s           <- mx[l, -l]
   total.total     <- mx[l,l]
@@ -484,7 +523,16 @@ layout.matrix <- function(segments, attraction=c(320, 40, 10, 4, 2), level=seq(s
 #   mx.1            <- mx.1_net[-l,-l]
 #   mx.attract      <- mx.1
 #   
-  mx.attract      <- weight.matrix(segments$mat.list[[1]], cut.off = 0, diagonal=TRUE, symmetric=FALSE)
+  # Validate input matrix
+  mx_input <- segments$mat.list[[1]]
+  if (is.null(mx_input)) {
+    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete or corrupted. Please re-run the moneca() function to generate a valid segments object.")
+  }
+  if (!is.matrix(mx_input)) {
+    mx_input <- as.matrix(mx_input)
+  }
+  
+  mx.attract      <- weight.matrix(mx_input, cut.off = 0, diagonal=TRUE, symmetric=FALSE)
   mx.attract      <- mx.attract ^ tie.adjustment
   
   gra.lay         <- moneca_graph_from_adjacency(mx.attract, mode="directed", weighted=TRUE)
@@ -543,9 +591,24 @@ layout.matrix <- function(segments, attraction=c(320, 40, 10, 4, 2), level=seq(s
 #' 
 #' @seealso \code{\link{plot_moneca_ggraph}}, \code{\link{moneca.plot}}
 #' @export
-segment.edges <- function(segments, cut.off=1, mode="directed", level=seq(segments$segment.list), segment.reduction=seq(segments$segment.list), method="all", top=3, diagonal=NULL, small.cell.reduction=0){
+segment.edges <- function(segments, cut.off=1, mode="directed", level=NULL, segment.reduction=NULL, method="all", top=3, diagonal=NULL, small.cell.reduction=0){
   
+  # Always use the first matrix which contains the original data with totals
   mx                     <- segments$mat.list[[1]]
+  
+  # Validate that the matrix exists and has proper structure
+  if (is.null(mx) || !is.matrix(mx)) {
+    stop("segments$mat.list[[1]] must be a valid matrix")
+  }
+  
+  # Set default values after validation
+  if (is.null(level)) {
+    level <- seq(segments$segment.list)
+  }
+  if (is.null(segment.reduction)) {
+    segment.reduction <- seq(segments$segment.list)
+  }
+  
   seg                    <- segments
   seg$segment.list <- segments$segment.list[level]
   seg$mat.list     <- segments$mat.list[level]
@@ -637,10 +700,10 @@ segment.edges <- function(segments, cut.off=1, mode="directed", level=seq(segmen
 #' @export
 
 moneca.plot <- function(segments,
-                       layout             = layout.matrix(segments),
-                       edges              = segment.edges(segments),
+                       layout             = NULL,
+                       edges              = NULL,
                        mode               = "directed",
-                       level             = seq(segments$segment.list),
+                       level             = NULL,
                        vertex.size        = 5,
                        vertex.frame.color = "black",
                        edge.curved        = FALSE,
@@ -654,6 +717,35 @@ moneca.plot <- function(segments,
                        border.col      = "black",
                        edge.width      = 1,
                        edge.color      = "black"){
+  
+  # Validate segments object before proceeding
+  if (is.null(segments)) {
+    stop("segments object is NULL")
+  }
+  if (!inherits(segments, "moneca")) {
+    stop("segments must be a moneca object created by the moneca() function")
+  }
+  if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
+    stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  }
+  if (is.null(segments$mat.list[[1]])) {
+    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  }
+  
+  # Set default level if not provided, after validation
+  if (is.null(level)) {
+    level <- seq(segments$segment.list)
+  }
+  
+  # Calculate layout if not provided, after validation
+  if (is.null(layout)) {
+    layout <- layout.matrix(segments)
+  }
+  
+  # Calculate edges first if not provided, before modifying segments
+  if (is.null(edges)) {
+    edges <- segment.edges(segments)
+  }
   
   level                 <- level[level != 1]
   seg                    <- segments

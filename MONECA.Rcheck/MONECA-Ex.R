@@ -227,6 +227,12 @@ if (!is.null(rownames(mobility_data))) {
   plot_ego_ggraph(seg, mobility_data, ego_id = rownames(mobility_data)[1])
 }
 
+# Focus on strong mobility flows only (weight >= 10)
+plot_ego_ggraph(seg, mobility_data, 
+                ego_id = 2,
+                min_weight = 10,
+                title = "Strong Mobility Flows")
+
 # Customized ego plot
 plot_ego_ggraph(seg, mobility_data, 
                 ego_id = 2,

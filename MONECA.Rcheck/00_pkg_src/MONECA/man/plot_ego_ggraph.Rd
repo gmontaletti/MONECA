@@ -8,6 +8,7 @@ plot_ego_ggraph(
   segments,
   mobility_matrix,
   ego_id,
+  min_weight = 0,
   layout = "stress",
   highlight_color = "red",
   flow_color = "viridis",
@@ -28,6 +29,11 @@ Should include row and column totals.}
   \item Integer: Row/column index in the mobility matrix
   \item Character: Row/column name from the mobility matrix
 }}
+
+\item{min_weight}{Numeric threshold for minimum edge weight to include nodes.
+Only nodes connected to the ego with edge weights >= min_weight will be shown.
+Default is 0 (show all connected nodes). Use higher values to focus on 
+stronger mobility flows.}
 
 \item{layout}{Character string specifying the layout algorithm. Default is "stress"
 which often works well for ego networks. Other options include "fr", "kk", "dh".}
@@ -81,6 +87,12 @@ plot_ego_ggraph(seg, mobility_data, ego_id = 3,
 if (!is.null(rownames(mobility_data))) {
   plot_ego_ggraph(seg, mobility_data, ego_id = rownames(mobility_data)[1])
 }
+
+# Focus on strong mobility flows only (weight >= 10)
+plot_ego_ggraph(seg, mobility_data, 
+                ego_id = 2,
+                min_weight = 10,
+                title = "Strong Mobility Flows")
 
 # Customized ego plot
 plot_ego_ggraph(seg, mobility_data, 
