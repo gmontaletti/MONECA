@@ -8,7 +8,7 @@ ego.plot(
   segments,
   mxa.b,
   id = 1,
-  lay = layout.matrix(segments),
+  lay = NULL,
   edge.size = 0.8,
   border.padding = 1,
   title.line = TRUE,

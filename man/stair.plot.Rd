@@ -6,10 +6,9 @@
 \usage{
 stair.plot(
   segments,
-  level = seq(segments$segment.list),
-  layout = layout.matrix(segments),
-  edges = segment.edges(segments, cut.off = 1, method = "all", segment.reduction = 0,
-    level = 1),
+  level = NULL,
+  layout = NULL,
+  edges = NULL,
   mode = "directed",
   vertex.size = "total",
   vertex.alpha = 1,

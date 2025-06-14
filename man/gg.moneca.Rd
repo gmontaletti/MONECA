@@ -6,9 +6,9 @@
 \usage{
 gg.moneca(
   segments,
-  level = seq(segments$segment.list),
-  layout = layout.matrix(segments),
-  edges = log(segment.edges(segments) + 1),
+  level = NULL,
+  layout = NULL,
+  edges = NULL,
   mode = "directed",
   vertex.size = "total",
   vertex.fill = "segment",
