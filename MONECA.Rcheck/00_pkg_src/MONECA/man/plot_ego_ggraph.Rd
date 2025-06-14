@@ -15,6 +15,7 @@ plot_ego_ggraph(
   node_size_range = c(2, 8),
   edge_width_range = c(0.2, 3),
   title = NULL,
+  segment_naming = "auto",
   ...
 )
 }

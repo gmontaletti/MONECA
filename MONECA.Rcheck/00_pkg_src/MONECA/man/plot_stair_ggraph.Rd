@@ -9,6 +9,7 @@ plot_stair_ggraph(
   levels = seq_along(segments$segment.list)[-1],
   layout = NULL,
   ncol = 2,
+  segment_naming = "auto",
   ...
 )
 }

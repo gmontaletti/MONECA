@@ -6,8 +6,9 @@
     GNU Fortran (GCC) 14.2.0
 * running under: macOS Sequoia 15.5
 * using session charset: UTF-8
+* using option ‘--no-examples’
 * checking for file ‘MONECA/DESCRIPTION’ ... OK
-* this is package ‘MONECA’ version ‘0.1.8’
+* this is package ‘MONECA’ version ‘0.2.0’
 * package encoding: UTF-8
 * checking package namespace information ... OK
 * checking package dependencies ... OK
@@ -43,55 +44,14 @@ importazione '::' o ':::' non dichiarata da: ‘eliter’
 There are ::: calls to the package's namespace in its code. A package
   almost never needs to use ::: for its own objects:
   ‘print.descriptive.moneca’
-* checking S3 generic/method consistency ... WARNING
-print:
-  function(x, ...)
-print.moneca:
-  function(segments, small.cell.reduction, ...)
-
-print:
-  function(x, ...)
-print.first_level_summary:
-  function(out)
-See section ‘Generic functions and methods’ in the ‘Writing R
-Extensions’ manual.
+* checking S3 generic/method consistency ... OK
 * checking replacement functions ... OK
 * checking foreign function calls ... OK
 * checking R code for possible problems ... NOTE
-ego.plot: possible error in scale_size_continuous(range = c(2, 8),
-  na.value = 8, name = "Antal"): argomento non utilizzato (na.value =
-  8)
 generate_dependency_report: no visible global function definition for
   ‘analyze_igraph_usage’
-generate_mobility_data: no visible global function definition for
-  ‘rgamma’
-gg.moneca: no visible binding for global variable ‘row.total’
-gg.moneca : segment.circles.hull: no visible global function definition
-  for ‘chull’
-gg.moneca : segment.circles.hull: no visible global function definition
-  for ‘runif’
-gg.moneca: no visible global function definition for ‘runif’
-plot_ego_ggraph: no visible binding for global variable ‘weight’
-plot_ego_ggraph: no visible binding for global variable ‘nodes’
-plot_ego_ggraph: no visible binding for global variable ‘node_size’
-plot_ego_ggraph: no visible binding for global variable ‘is_ego’
-plot_ego_ggraph: no visible binding for global variable ‘same_segment’
-plot_ego_ggraph: no visible binding for global variable ‘node_name’
-plot_moneca_ggraph: no visible binding for global variable ‘nodes’
-plot_moneca_ggraph: no visible binding for global variable ‘weight’
-plot_moneca_ggraph: no visible binding for global variable ‘segment’
-plot_moneca_ggraph: no visible binding for global variable
-  ‘mobility_rate’
-plot_moneca_ggraph: no visible binding for global variable ‘name’
-test_igraph_compatibility: no visible global function definition for
-  ‘runif’
 Undefined global functions or variables:
-  analyze_igraph_usage chull is_ego mobility_rate name node_name
-  node_size nodes rgamma row.total runif same_segment segment weight
-Consider adding
-  importFrom("grDevices", "chull")
-  importFrom("stats", "rgamma", "runif")
-to your NAMESPACE file.
+  analyze_igraph_usage
 * checking Rd files ... OK
 * checking Rd metadata ... OK
 * checking Rd cross-references ... WARNING
@@ -105,43 +65,7 @@ Dataset non documentati:
 All user-level objects in a package should have documentation entries.
 See chapter ‘Writing R documentation files’ in the ‘Writing R
 Extensions’ manual.
-* checking for code/documentation mismatches ... WARNING
-Codoc mismatches from Rd file 'moneca.plot.Rd':
-moneca.plot
-  Codice: function(segments, layout = NULL, edges = NULL, mode =
-                 "directed", level = NULL, vertex.size = 5,
-                 vertex.frame.color = "black", edge.curved = FALSE,
-                 vertex.color = "grey50", vertex.label.color = "black",
-                 vertex.label.cex = 0.5, vertex.label.dist = 0.12,
-                 edge.arrow.size = 0.1, mark.col = NULL, mark.expand =
-                 10, border.col = "black", edge.width = 1, edge.color =
-                 "black")
-  Documentazione: function(segments, layout = layout.matrix(segments),
-                 edges = NULL, mode = "directed", level =
-                 seq(segments$segment.list), vertex.size = 5,
-                 vertex.frame.color = "black", edge.curved = FALSE,
-                 vertex.color = "grey50", vertex.label.color = "black",
-                 vertex.label.cex = 0.5, vertex.label.dist = 0.12,
-                 edge.arrow.size = 0.1, mark.col = NULL, mark.expand =
-                 10, border.col = "black", edge.width = 1, edge.color =
-                 "black")
-  Mancata corrispondenza nei valori predefiniti degli argomenti:
-    Name: 'layout' Code: NULL Docs: layout.matrix(segments)
-    Name: 'level' Code: NULL Docs: seq(segments$segment.list)
-
-Codoc mismatches from Rd file 'segment.edges.Rd':
-segment.edges
-  Codice: function(segments, cut.off = 1, mode = "directed", level =
-                 NULL, segment.reduction = NULL, method = "all", top =
-                 3, diagonal = NULL, small.cell.reduction = 0)
-  Documentazione: function(segments, cut.off = 1, mode = "directed",
-                 level = seq(segments$segment.list), segment.reduction
-                 = seq(segments$segment.list), method = "all", top = 3,
-                 diagonal = NULL, small.cell.reduction = 0)
-  Mancata corrispondenza nei valori predefiniti degli argomenti:
-    Name: 'level' Code: NULL Docs: seq(segments$segment.list)
-    Name: 'segment.reduction' Code: NULL Docs: seq(segments$segment.list)
-
+* checking for code/documentation mismatches ... OK
 * checking Rd \usage sections ... WARNING
 Undocumented arguments in Rd file 'first.level.summary.Rd'
   ‘segments’ ‘small.cell.reduction’
@@ -154,11 +78,16 @@ Undocumented arguments in Rd file 'layout.matrix.Rd'
 Documented arguments not in \usage in Rd file 'layout.matrix.Rd':
   ‘area.size’
 
+Undocumented arguments in Rd file 'plot_ego_ggraph.Rd'
+  ‘segment_naming’
+
+Undocumented arguments in Rd file 'plot_stair_ggraph.Rd'
+  ‘segment_naming’
 Documented arguments not in \usage in Rd file 'plot_stair_ggraph.Rd':
   ‘combine_plots’
 
 Undocumented arguments in Rd file 'print.first_level_summary.Rd'
-  ‘out’
+  ‘x’ ‘...’
 
 Undocumented arguments in Rd file 'segment.quality.Rd'
   ‘segments’ ‘final.solution’
@@ -187,200 +116,22 @@ Extensions’ manual.
 * checking data for ASCII and uncompressed saves ... OK
 * checking installed files from ‘inst/doc’ ... OK
 * checking files in ‘vignettes’ ... OK
-* checking examples ... ERROR
-Running examples in ‘MONECA-Ex.R’ failed
-The error most likely occurred in:
-
-> ### Name: generate_mobility_data
-> ### Title: Generate Realistic Synthetic Mobility Data
-> ### Aliases: generate_mobility_data
-> 
-> ### ** Examples
-> 
-> # Basic synthetic data with default parameters
-> basic_data <- generate_mobility_data()
-> print(basic_data[1:6, 1:6])  # Show first 5 classes plus totals
-        Class 1 Class 2 Class 3 Class 4 Class 5 Class 6
-Class 1     266      65      31       6       4       7
-Class 2     248     971     226     132      16      15
-Class 3     131     219     863     212     124      12
-Class 4      12      69     113     546     111      73
-Class 5      13      15     137     284     920     248
-Class 6      10       6      10     101     150     626
-> 
-> # Small example for quick testing
-> test_data <- generate_mobility_data(
-+   n_classes = 5,
-+   n_total = 1000,
-+   immobility_strength = 0.7,
-+   class_clustering = 0.2,
-+   seed = 42
-+ )
-> 
-> # Professional class structure with custom names
-> professional_data <- generate_mobility_data(
-+   n_classes = 6,
-+   n_total = 5000,
-+   class_names = c("Upper", "Upper-Middle", "Middle", 
-+                   "Lower-Middle", "Working", "Lower"),
-+   immobility_strength = 0.5,
-+   class_clustering = 0.4,
-+   seed = 123
-+ )
-> 
-> # Highly fluid mobility regime
-> fluid_data <- generate_mobility_data(
-+   n_classes = 8,
-+   immobility_strength = 0.3,
-+   class_clustering = 0.1,
-+   noise_level = 0.3
-+ )
-> 
-> # Use in MONECA analysis
-> seg <- moneca(test_data, segment.levels = 3)
-> plot_moneca_ggraph(seg, title = "Synthetic Mobility Analysis")
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
-  font family 'Arial Narrow' not found in PostScript font database
-Error in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  : 
-  invalid font type
-Calls: <Anonymous> ... drawDetails -> drawDetails.text -> grid.Call.graphics
-Execution halted
+* checking examples ... SKIPPED
 * checking for unstated dependencies in ‘tests’ ... OK
 * checking tests ... OK
   Running ‘testthat.R’
 * checking for unstated dependencies in vignettes ... OK
 * checking package vignettes ... OK
 * checking re-building of vignette outputs ... OK
-* checking PDF version of manual ... OK
+* checking PDF version of manual ... WARNING
+LaTeX errors when creating PDF version.
+This typically indicates Rd problems.
+LaTeX errors found:
+! LaTeX Error: Unicode character ≤ (U+2264)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+* checking PDF version of manual without index ... ERROR
 * DONE
-Status: 1 ERROR, 6 WARNINGs, 3 NOTEs
+Status: 1 ERROR, 5 WARNINGs, 3 NOTEs

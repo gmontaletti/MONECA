@@ -6,10 +6,10 @@
 \usage{
 moneca.plot(
   segments,
-  layout = layout.matrix(segments),
+  layout = NULL,
   edges = NULL,
   mode = "directed",
-  level = seq(segments$segment.list),
+  level = NULL,
   vertex.size = 5,
   vertex.frame.color = "black",
   edge.curved = FALSE,

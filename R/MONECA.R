@@ -137,6 +137,8 @@
 #' @import scales
 #' @import toOrdinal
 #' @importFrom stats cor dist hclust cutree na.omit aggregate
+#' @name _PACKAGE
+#' @aliases MONECA-package
 #' @importFrom grDevices rgb col2rgb
 #' @importFrom utils tail setTxtProgressBar txtProgressBar packageVersion
 NULL

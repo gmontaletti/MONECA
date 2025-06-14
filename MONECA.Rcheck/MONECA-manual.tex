@@ -1,0 +1,2377 @@
+\nonstopmode{}
+\documentclass[a4paper]{book}
+\usepackage[times,inconsolata,hyper]{Rd}
+\usepackage{makeidx}
+\makeatletter\@ifl@t@r\fmtversion{2018/04/01}{}{\usepackage[utf8]{inputenc}}\makeatother
+% \usepackage{graphicx} % @USE GRAPHICX@
+\makeindex{}
+\begin{document}
+\chapter*{}
+\begin{center}
+{\textbf{\huge Package `MONECA'}}
+\par\bigskip{\large \today}
+\end{center}
+\ifthenelse{\boolean{Rd@use@hyper}}{\hypersetup{pdftitle = {MONECA: Mobility Network Clustering Analysis}}}{}
+\begin{description}
+\raggedright{}
+\item[Title]\AsIs{Mobility Network Clustering Analysis}
+\item[Description]\AsIs{MONECA creates a weighted network from a mobility table and uses cliques (or similar) to create discrete and nested clusters.}
+\item[URL]\AsIs{None yet}
+\item[Version]\AsIs{0.2.0}
+\item[Maintainer]\AsIs{Anton Grau Larsen }\email{agl.ioa@cbs.dk}\AsIs{}
+\item[Author]\AsIs{Jonas Touboel }\email{jt@soc.ku.dk}\AsIs{}
+\item[Depends]\AsIs{R (>= 3.5.0)}
+\item[Imports]\AsIs{ggplot2 (>= 3.4.0), ggraph (>= 2.0.0), grid, igraph (>=
+1.3.0), toOrdinal, RColorBrewer (>= 1.1-2), scales (>= 1.2.0),
+stats, grDevices, dplyr (>= 1.0.0), tidygraph (>= 1.2.0)}
+\item[Suggests]\AsIs{knitr, rmarkdown, testthat (>= 3.0.0)}
+\item[License]\AsIs{GPL-3}
+\item[RoxygenNote]\AsIs{7.3.2}
+\item[VignetteBuilder]\AsIs{knitr}
+\item[Encoding]\AsIs{UTF-8}
+\item[NeedsCompilation]\AsIs{no}
+\end{description}
+\Rdcontents{Contents}
+\HeaderA{MONECA-package}{MONECA: Mobility Network Clustering Analysis}{MONECA.Rdash.package}
+%
+\begin{Description}
+MONECA creates weighted networks from mobility tables and uses cliques to identify
+discrete and nested clusters of social positions with high internal mobility.
+The package provides comprehensive tools for analyzing social mobility patterns
+through graph-theoretic approaches with modern visualization capabilities.
+
+MONECA creates a weighted network from a mobility table and uses cliques (or similar) to create discrete and nested clusters.
+\end{Description}
+%
+\begin{Details}
+The MONECA package implements a sophisticated hierarchical clustering algorithm
+that detects mobility patterns in social networks. It identifies segments with
+high internal mobility by finding cliques in weighted network representations
+of mobility data, creating nested hierarchical structures that reveal the
+underlying organization of social mobility.
+
+\strong{Key Features:}
+\begin{itemize}
+
+\item{} \strong{Network-based clustering} using relative risk matrices
+\item{} \strong{Hierarchical segmentation} with multiple nested levels
+\item{} \strong{Modern visualization} with ggraph and ggplot2
+\item{} \strong{Synthetic data generation} for testing and demonstrations
+\item{} \strong{Quality metrics} for assessing segmentation performance
+\item{} \strong{Multiple visualization types} (network, ego, stair plots)
+\item{} \strong{Flexible input formats} with automatic data validation
+
+\end{itemize}
+
+
+\strong{Core Functions:}
+\begin{itemize}
+
+\item{} \code{\LinkA{moneca}{moneca}}: Main clustering algorithm
+\item{} \code{\LinkA{find.segments}{find.segments}}: Core segmentation identification
+\item{} \code{\LinkA{weight.matrix}{weight.matrix}}: Relative risk matrix calculation
+\item{} \code{\LinkA{segment.membership}{segment.membership}}: Extract cluster memberships
+
+\end{itemize}
+
+
+\strong{Modern Visualization (Recommended):}
+\begin{itemize}
+
+\item{} \code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}}: Network visualization with ggraph
+\item{} \code{\LinkA{plot\_ego\_ggraph}{plot.Rul.ego.Rul.ggraph}}: Ego network analysis
+\item{} \code{\LinkA{plot\_stair\_ggraph}{plot.Rul.stair.Rul.ggraph}}: Multi-level segmentation plots
+
+\end{itemize}
+
+
+\strong{Legacy Visualization (Backward Compatibility):}
+\begin{itemize}
+
+\item{} \code{\LinkA{gg.moneca}{gg.moneca}}: Original ggplot2-based visualization
+\item{} \code{\LinkA{moneca.plot}{moneca.plot}}: Base R network plotting
+\item{} \code{\LinkA{ego.plot}{ego.plot}}: Legacy ego network plots
+\item{} \code{\LinkA{stair.plot}{stair.plot}}: Legacy stair plots
+
+\end{itemize}
+
+
+\strong{Data Generation:}
+\begin{itemize}
+
+\item{} \code{\LinkA{generate\_mobility\_data}{generate.Rul.mobility.Rul.data}}: Create synthetic mobility tables
+\item{} \code{\LinkA{generate\_example\_datasets}{generate.Rul.example.Rul.datasets}}: Predefined example datasets
+
+\end{itemize}
+
+\end{Details}
+%
+\begin{Section}{Package Dependencies}
+
+\strong{Required packages:}
+\begin{itemize}
+
+\item{} \code{igraph} (>= 1.3.0): Network analysis with compatibility layer
+\item{} \code{ggplot2} (>= 3.4.0): Graphics and plotting
+\item{} \code{RColorBrewer}: Color palettes for visualizations
+\item{} \code{scales}: Scale transformations and formatting
+
+\end{itemize}
+
+
+\strong{Modern visualization packages:}
+\begin{itemize}
+
+\item{} \code{ggraph} (>= 2.0.0): Advanced network visualization
+\item{} \code{tidygraph} (>= 1.2.0): Tidy graph manipulation
+\item{} \code{dplyr} (>= 1.0.0): Data manipulation
+
+\end{itemize}
+
+
+\strong{Additional packages:}
+\begin{itemize}
+
+\item{} \code{grid}: Low-level graphics
+\item{} \code{toOrdinal}: Ordinal number formatting
+
+\end{itemize}
+
+\end{Section}
+%
+\begin{Author}
+Jonas Touboel \email{jonas.touboel@ku.dk}
+
+Anton Grau Larsen \email{agl.ioa@cbs.dk} (maintainer)
+\end{Author}
+%
+\begin{References}
+Touboel, J., \& Larsen, A. G. (2017). Mapping the Social Class Structure: 
+From Occupational Mobility to Social Class Categories Using Network Analysis.
+\emph{Sociology}, 51(6), 1257-1276. \Rhref{https://doi.org/10.1177/0038038516673125}{doi:10.1177\slash{}0038038516673125}
+
+Larsen, A. G., \& Touboel, J. (2015). Social network analysis of occupational 
+mobility and social class. In \emph{Research Handbook on Analytical Sociology} 
+(pp. 411-434). Edward Elgar Publishing.
+\end{References}
+%
+\begin{SeeAlso}
+Useful links:
+\begin{itemize}
+
+\item{} \url{None yet}
+
+\end{itemize}
+
+
+
+Useful links:
+\begin{itemize}
+
+\item{} \url{None yet}
+
+\end{itemize}
+
+
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+# Generate synthetic mobility data
+mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
+
+# Run MONECA analysis
+seg <- moneca(mobility_data, segment.levels = 3)
+print(seg)
+
+# Extract segment membership
+membership <- segment.membership(seg)
+print(membership)
+
+# Modern visualization (recommended)
+## Not run: 
+# Basic network plot
+plot_moneca_ggraph(seg, title = "Social Mobility Network")
+
+# Customized network visualization
+plot_moneca_ggraph(seg, 
+                  layout = "stress",
+                  node_color = "mobility",
+                  edge_width = "weight",
+                  color_palette = "Spectral")
+
+# Ego network analysis
+plot_ego_ggraph(seg, mobility_data, ego_id = 3, 
+               title = "Mobility from Middle Class")
+
+# Multi-level stair plot
+plot_stair_ggraph(seg)
+
+## End(Not run)
+
+# Use predefined examples
+examples <- generate_example_datasets()
+simple_seg <- moneca(examples$simple, segment.levels = 2)
+
+## Not run: 
+# Compare different mobility regimes
+plot_moneca_ggraph(simple_seg, title = "Simple Mobility Structure")
+
+## End(Not run)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{.moneca\_env}{igraph Compatibility Layer}{.moneca.Rul.env}
+\keyword{internal}{.moneca\_env}
+%
+\begin{Description}
+This file provides compatibility functions to handle both old and new igraph API
+ensuring MONECA works with igraph versions from 1.3.0 onwards
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+.moneca_env
+\end{verbatim}
+\end{Usage}
+%
+\begin{Format}
+An object of class \code{environment} of length 7.
+\end{Format}
+\HeaderA{analyze\_package\_dependencies}{Analyze package dependencies usage}{analyze.Rul.package.Rul.dependencies}
+%
+\begin{Description}
+Analyze package dependencies usage
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+analyze_package_dependencies()
+\end{verbatim}
+\end{Usage}
+%
+\begin{Value}
+Data frame with dependency analysis
+\end{Value}
+\HeaderA{apply\_pattern\_rules}{Apply Pattern Rules for Segment Naming}{apply.Rul.pattern.Rul.rules}
+\keyword{internal}{apply\_pattern\_rules}
+%
+\begin{Description}
+Internal helper function that applies pattern recognition rules to generate
+meaningful segment names based on common suffixes or prefixes.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+apply_pattern_rules(node_names, pattern_rules, membership_id)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{node\_names}] Character vector of node names in the segment
+
+\item[\code{pattern\_rules}] Named list of pattern replacement rules
+
+\item[\code{membership\_id}] Character string of membership ID for fallback naming
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Character string with pattern-based name, or NULL if no pattern found
+\end{Value}
+\HeaderA{ego.plot}{Legacy Ego Network Visualization}{ego.plot}
+%
+\begin{Description}
+Creates ego network plots showing mobility patterns from a single focal position
+using the legacy ggplot2 plotting system. For modern ego network analysis,
+use \code{\LinkA{plot\_ego\_ggraph}{plot.Rul.ego.Rul.ggraph}}.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+ego.plot(
+  segments,
+  mxa.b,
+  id = 1,
+  lay = NULL,
+  edge.size = 0.8,
+  border.padding = 1,
+  title.line = TRUE,
+  vertex.size = "totals",
+  small.cell.reduction = 5,
+  edge.weight = "discrete",
+  color.scheme = "RdPu",
+  ...
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{segments}] A MONECA object returned by \code{\LinkA{moneca}{moneca}}.
+
+\item[\code{mxa.b}] The original mobility matrix used in the MONECA analysis.
+
+\item[\code{id}] Integer or character specifying the focal node (ego) for the analysis.
+
+\item[\code{lay}] Layout matrix for node positioning, typically from \code{\LinkA{layout.matrix}{layout.matrix}}.
+
+\item[\code{edge.size}] Numeric value for edge thickness. Default is 0.8.
+
+\item[\code{border.padding}] Numeric value for segment boundary padding. Default is 1.
+
+\item[\code{title.line}] Logical indicating whether to add a title line. Default is TRUE.
+
+\item[\code{vertex.size}] Specification for vertex sizes. If "totals", sizes are derived
+from row/column totals in the mobility matrix. Otherwise, uses the specified values.
+
+\item[\code{small.cell.reduction}] Numeric threshold below which vertices receive different
+shapes to indicate low mobility volumes. Default is 5.
+
+\item[\code{edge.weight}] Character string specifying edge weight display. "discrete"
+creates categorical edge weights, otherwise uses continuous weights.
+
+\item[\code{color.scheme}] Character string specifying the RColorBrewer color scheme
+for the visualization. Default is "RdPu".
+
+\item[\code{...}] Additional arguments passed to \code{\LinkA{gg.moneca}{gg.moneca}}.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+This function creates a focused view of mobility patterns from a single position
+in the social structure. It highlights both incoming and outgoing mobility flows
+and uses different visual elements to represent:
+\begin{itemize}
+
+\item{} Edge colors/weights for relative risk levels
+\item{} Node sizes for total mobility volumes
+\item{} Node shapes for positions with low mobility
+\item{} Node colors for mobility share proportions
+
+\end{itemize}
+
+
+\strong{Note}: This function is maintained for backward compatibility.
+For new analyses, consider using \code{\LinkA{plot\_ego\_ggraph}{plot.Rul.ego.Rul.ggraph}} which offers
+better performance and more modern styling options.
+\end{Details}
+%
+\begin{Value}
+A ggplot2 object showing the ego network.
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{plot\_ego\_ggraph}{plot.Rul.ego.Rul.ggraph}} for modern ego network visualization,
+\code{\LinkA{gg.moneca}{gg.moneca}} for the underlying plotting function
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+## Not run: 
+# Requires legacy data and eliter package
+data(occupations)
+ego.plot(mob.seg, mob.mat, id = 2)
+
+# Customized ego plot
+ego.plot(mob.seg, mob.mat, 
+         id = 3,
+         edge.size = 1.2,
+         color.scheme = "Blues",
+         small.cell.reduction = 10)
+
+## End(Not run)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{find.segments}{Find Segments in Mobility Networks}{find.segments}
+%
+\begin{Description}
+Identifies discrete groups or segments based on a weighted network matrix using a 
+clique-based algorithm. This function implements the core segmentation algorithm
+that iteratively assigns nodes to segments based on network ties.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+find.segments(
+  mat,
+  cliques,
+  cut.off = 1,
+  mode = "symmetric",
+  delete.upper.tri = TRUE
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{mat}] A weighted adjacency matrix representing mobility flows or relationships.
+Should include row and column names representing the categories/classes.
+
+\item[\code{cliques}] A list of cliques (complete subgraphs) in the network, typically
+obtained from \code{igraph::cliques()}.
+
+\item[\code{cut.off}] Numeric threshold for minimum weight or relative risk to be 
+considered a network tie. Default is 1.
+
+\item[\code{mode}] Character string specifying how to handle asymmetric relationships:
+\begin{itemize}
+
+\item{} "symmetric" (default): Standard symmetric treatment
+\item{} "Mutual": Only mutual ties (bidirectional) are considered
+\item{} "Unmutual": Unidirectional ties are allowed
+
+\end{itemize}
+
+
+\item[\code{delete.upper.tri}] Logical indicating whether to process only the lower 
+triangle of the matrix for efficiency. Default is TRUE.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+The algorithm works by iteratively examining the strongest remaining ties in the
+network and assigning nodes to segments based on clique membership. It uses a
+greedy approach that prioritizes stronger connections and larger existing segments.
+\end{Details}
+%
+\begin{Value}
+A list with two components:
+\begin{description}
+
+\item[membership] A factor indicating segment membership for each node
+\item[cliques] A list where each element contains the indices of nodes 
+belonging to that segment
+
+\end{description}
+
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{moneca}{moneca}} for the main analysis function
+\end{SeeAlso}
+\HeaderA{find\_common\_prefix}{Find Common Prefix in Node Names}{find.Rul.common.Rul.prefix}
+\keyword{internal}{find\_common\_prefix}
+%
+\begin{Description}
+Find Common Prefix in Node Names
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+find_common_prefix(names)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{names}] Character vector of names
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Character string of common prefix, or empty string if none
+\end{Value}
+\HeaderA{find\_common\_suffix}{Find Common Suffix in Node Names}{find.Rul.common.Rul.suffix}
+\keyword{internal}{find\_common\_suffix}
+%
+\begin{Description}
+Find Common Suffix in Node Names
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+find_common_suffix(names)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{names}] Character vector of names
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Character string of common suffix, or empty string if none
+\end{Value}
+\HeaderA{first.level.summary}{First level summary}{first.level.summary}
+%
+\begin{Description}
+First level summary
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+first.level.summary(
+  segments,
+  small.cell.reduction = segments$small.cell.reduction
+)
+\end{verbatim}
+\end{Usage}
+\HeaderA{force.segments}{force.segments}{force.segments}
+%
+\begin{Description}
+Create a two-level segment-object with a forced solutionz
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+force.segments(segments, variable)
+\end{verbatim}
+\end{Usage}
+\HeaderA{generate\_dependency\_report}{Generate comprehensive dependency report}{generate.Rul.dependency.Rul.report}
+%
+\begin{Description}
+Generate comprehensive dependency report
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+generate_dependency_report(output_file = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{output\_file}] Optional file path to save the report
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Invisible NULL
+\end{Value}
+\HeaderA{generate\_example\_datasets}{Generate Predefined Example Datasets}{generate.Rul.example.Rul.datasets}
+%
+\begin{Description}
+Creates a collection of predefined mobility datasets with different structural
+characteristics. These examples are useful for tutorials, testing different
+MONECA parameters, and demonstrating various mobility regime types.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+generate_example_datasets()
+\end{verbatim}
+\end{Usage}
+%
+\begin{Details}
+This function provides ready-to-use examples that demonstrate different types
+of social mobility structures:
+
+\begin{itemize}
+
+\item{} \strong{Simple}: Good for learning MONECA basics
+\item{} \strong{Complex}: Tests algorithm performance on larger structures
+\item{} \strong{Rigid}: Shows segmentation in low-mobility societies
+\item{} \strong{Fluid}: Tests segmentation in high-mobility contexts
+\item{} \strong{Polarized}: Demonstrates class divide patterns
+\item{} \strong{Gradual}: Shows continuous mobility gradients
+
+\end{itemize}
+
+
+These examples are particularly useful for:
+\begin{itemize}
+
+\item{} Tutorial and teaching materials
+\item{} Comparing MONECA parameters across mobility types
+\item{} Testing visualization functions
+\item{} Benchmarking algorithm performance
+
+\end{itemize}
+
+\end{Details}
+%
+\begin{Value}
+A named list containing mobility matrices with different characteristics:
+\begin{description}
+
+\item[simple] Small 4-class example with clear segmentation
+\item[complex] Larger 8-class example with hierarchical structure
+\item[rigid] High immobility example showing strong class boundaries
+\item[fluid] Low immobility example with extensive mobility
+\item[polarized] Example with strong upper/lower class divide
+\item[gradual] Example with smooth class transitions
+
+\end{description}
+
+Each matrix is in standard MONECA format with row/column totals.
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{generate\_mobility\_data}{generate.Rul.mobility.Rul.data}} for custom synthetic data,
+\code{\LinkA{moneca}{moneca}} for analysis,
+\code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}} for visualization
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+# Load all example datasets
+examples <- generate_example_datasets()
+names(examples)
+
+# Examine the simple example
+print(examples$simple)
+
+# Compare different mobility regimes
+rigid_seg <- moneca(examples$rigid, segment.levels = 3)
+fluid_seg <- moneca(examples$fluid, segment.levels = 3)
+
+# Visualize different structures
+## Not run: 
+plot_moneca_ggraph(rigid_seg, title = "Rigid Class Structure")
+plot_moneca_ggraph(fluid_seg, title = "Fluid Mobility Regime")
+
+# Create comparative stair plots
+stair_rigid <- plot_stair_ggraph(rigid_seg)
+stair_fluid <- plot_stair_ggraph(fluid_seg)
+
+## End(Not run)
+
+# Analyze segmentation quality across examples
+for (name in names(examples)) {
+  seg <- moneca(examples[[name]], segment.levels = 2)
+  cat("Dataset:", name, "- Segments:", length(seg$segment.list[[2]]), "\n")
+}
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{generate\_level\_name}{Generate Level Name Based on Strategy}{generate.Rul.level.Rul.name}
+\keyword{internal}{generate\_level\_name}
+%
+\begin{Description}
+Internal helper function to generate meaningful level names for segments.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+generate_level_name(
+  node_names,
+  membership_id,
+  naming_strategy,
+  custom_names,
+  separator,
+  max_concat_length,
+  pattern_rules
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{node\_names}] Character vector of node names in the segment
+
+\item[\code{membership\_id}] Character string of the membership ID (e.g., "2.1")
+
+\item[\code{naming\_strategy}] Character string specifying naming approach
+
+\item[\code{custom\_names}] Named list of custom names
+
+\item[\code{separator}] Character string for concatenation
+
+\item[\code{max\_concat\_length}] Maximum nodes to concatenate
+
+\item[\code{pattern\_rules}] Named list of pattern replacement rules
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+Character string with the generated level name
+\end{Value}
+\HeaderA{generate\_mobility\_data}{Generate Realistic Synthetic Mobility Data}{generate.Rul.mobility.Rul.data}
+%
+\begin{Description}
+Creates synthetic social mobility tables with configurable patterns that mimic
+real-world mobility structures. This function is essential for testing MONECA
+algorithms, creating examples, and understanding how different mobility patterns
+affect segmentation results.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+generate_mobility_data(
+  n_classes = 10,
+  n_total = 10000,
+  immobility_strength = 0.6,
+  class_clustering = 0.3,
+  noise_level = 0.1,
+  class_names = NULL,
+  seed = NULL
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{n\_classes}] Integer specifying the number of social classes or occupational
+categories. Must be at least 2. Default is 10.
+
+\item[\code{n\_total}] Integer specifying the total sample size (number of individuals).
+Must be at least as large as n\_classes. Default is 10000.
+
+\item[\code{immobility\_strength}] Numeric value (0-1) controlling the strength of
+diagonal immobility (tendency to remain in origin class). Higher values create
+more rigid class structures. Default is 0.6.
+
+\item[\code{class\_clustering}] Numeric value (0-1) controlling the tendency for mobility
+between adjacent classes in the social hierarchy. Higher values create more
+gradual, short-distance mobility. Default is 0.3.
+
+\item[\code{noise\_level}] Numeric value (0-1) controlling the amount of random mobility
+between non-adjacent classes. Higher values create more chaotic mobility patterns.
+Default is 0.1.
+
+\item[\code{class\_names}] Character vector of names for the social classes. If NULL,
+classes are named "Class 1", "Class 2", etc. Length must equal n\_classes.
+
+\item[\code{seed}] Integer for random seed to ensure reproducible results. Default is NULL
+(no seed set).
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+This function generates mobility data using a hierarchical model that reflects
+common patterns in social mobility research:
+
+\begin{enumerate}
+
+\item{} \strong{Diagonal Dominance}: Most people remain in their origin class
+\item{} \strong{Distance Effects}: Mobility is more likely between adjacent classes
+\item{} \strong{Marginal Heterogeneity}: Class sizes vary realistically
+\item{} \strong{Random Component}: Some unpredictable mobility occurs
+
+\end{enumerate}
+
+
+The generated data can be used to test how different mobility regimes affect
+MONECA segmentation and to create realistic examples for demonstrations.
+
+Parameter combinations:
+\begin{itemize}
+
+\item{} High immobility + low clustering = rigid class boundaries
+\item{} Low immobility + high clustering = fluid but structured mobility
+\item{} High noise = chaotic mobility patterns
+\item{} Balanced parameters = realistic social mobility
+
+\end{itemize}
+
+\end{Details}
+%
+\begin{Value}
+A square matrix in MONECA format with:
+\begin{description}
+
+\item[Core matrix] Upper-left (n\_classes x n\_classes) contains mobility flows
+\item[Row margins] Last column contains origin class totals
+\item[Column margins] Last row contains destination class totals
+\item[Grand total] Bottom-right cell contains total sample size
+
+\end{description}
+
+The matrix includes row and column names for easy interpretation.
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{moneca}{moneca}} for analyzing the generated data,
+\code{\LinkA{generate\_example\_datasets}{generate.Rul.example.Rul.datasets}} for predefined examples,
+\code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}} for visualizing results
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+# Basic synthetic data with default parameters
+basic_data <- generate_mobility_data()
+print(basic_data[1:6, 1:6])  # Show first 5 classes plus totals
+
+# Small example for quick testing
+test_data <- generate_mobility_data(
+  n_classes = 5,
+  n_total = 1000,
+  immobility_strength = 0.7,
+  class_clustering = 0.2,
+  seed = 42
+)
+
+# Professional class structure with custom names
+professional_data <- generate_mobility_data(
+  n_classes = 6,
+  n_total = 5000,
+  class_names = c("Upper", "Upper-Middle", "Middle", 
+                  "Lower-Middle", "Working", "Lower"),
+  immobility_strength = 0.5,
+  class_clustering = 0.4,
+  seed = 123
+)
+
+# Highly fluid mobility regime
+fluid_data <- generate_mobility_data(
+  n_classes = 8,
+  immobility_strength = 0.3,
+  class_clustering = 0.1,
+  noise_level = 0.3
+)
+
+# Use in MONECA analysis
+seg <- moneca(test_data, segment.levels = 3)
+plot_moneca_ggraph(seg, title = "Synthetic Mobility Analysis")
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{gg.moneca}{Legacy ggplot2 Visualization for MONECA Objects}{gg.moneca}
+%
+\begin{Description}
+Creates network visualizations of MONECA clustering results using ggplot2.
+This function provides extensive customization options but has been superseded
+by \code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}} for most use cases.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+gg.moneca(
+  segments,
+  level = NULL,
+  layout = NULL,
+  edges = NULL,
+  mode = "directed",
+  vertex.size = "total",
+  vertex.fill = "segment",
+  vertex.alpha = 1,
+  vertex.color = "black",
+  vertex.shape = 21,
+  show.edges = TRUE,
+  edge.size = 1,
+  edge.alpha = "weight",
+  edge.color = "weight",
+  edge.line = "solid",
+  show.text = TRUE,
+  text.size = 3,
+  text.color = "black",
+  text.alpha = 1,
+  text.vjust = 1.5,
+  show.borders = TRUE,
+  border.size = 1,
+  border.fill = NA,
+  border.color = "black",
+  border.alpha = 1,
+  border.padding = 0.7,
+  border.text = TRUE,
+  border.labels = "segments",
+  border.text.size = 4,
+  border.text.color = "black",
+  border.text.vjust = -0.2,
+  border.text.hjust = 1,
+  midpoints = TRUE,
+  midpoint.arrow = arrow(angle = 20, length = unit(0.33, "cm"), ends = "last", type =
+    "closed"),
+  edge.text = FALSE,
+  edge.text.size = 3,
+  edge.text.alpha = 0.9,
+  legend = "side"
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{segments}] A MONECA object returned by \code{\LinkA{moneca}{moneca}}.
+
+\item[\code{level}] Integer vector specifying which hierarchical levels to display.
+
+\item[\code{layout}] Matrix of node coordinates or layout function result.
+
+\item[\code{edges}] Edge matrix or transformed edge weights for visualization.
+
+\item[\code{mode}] Character string specifying graph mode ("directed" or "undirected").
+
+\item[\code{vertex.size}] Aesthetic for vertex size. Can be "total", "mobility", or numeric.
+
+\item[\code{vertex.fill}] Aesthetic for vertex fill color. Can be "segment" or color specification.
+
+\item[\code{vertex.alpha}] Numeric value (0-1) for vertex transparency.
+
+\item[\code{vertex.color}] Color for vertex borders.
+
+\item[\code{vertex.shape}] Numeric code for vertex shape (see ggplot2 shapes).
+
+\item[\code{show.edges}] Logical indicating whether to display edges.
+
+\item[\code{edge.size}] Size specification for edges.
+
+\item[\code{edge.alpha}] Transparency for edges. Can be "weight" or numeric.
+
+\item[\code{edge.color}] Color specification for edges. Can be "weight" or color name.
+
+\item[\code{edge.line}] Line type for edges ("solid", "dashed", etc.).
+
+\item[\code{show.text}] Logical indicating whether to show vertex labels.
+
+\item[\code{text.size}] Numeric size for vertex labels.
+
+\item[\code{text.color}] Color for vertex labels.
+
+\item[\code{text.alpha}] Transparency for vertex labels.
+
+\item[\code{text.vjust}] Vertical adjustment for labels.
+
+\item[\code{show.borders}] Logical indicating whether to show segment boundaries.
+
+\item[\code{border.size}] Size for segment borders.
+
+\item[\code{border.fill}] Fill color for segment boundaries.
+
+\item[\code{border.color}] Color for segment border lines.
+
+\item[\code{border.alpha}] Transparency for segment borders.
+
+\item[\code{border.padding}] Padding around segment boundaries.
+
+\item[\code{border.text}] Logical indicating whether to show segment labels.
+
+\item[\code{border.labels}] Character vector of custom segment labels.
+
+\item[\code{border.text.size}] Size for segment labels.
+
+\item[\code{border.text.color}] Color for segment labels.
+
+\item[\code{border.text.vjust}] Vertical adjustment for segment labels.
+
+\item[\code{border.text.hjust}] Horizontal adjustment for segment labels.
+
+\item[\code{midpoints}] Logical indicating whether to show edge midpoints.
+
+\item[\code{midpoint.arrow}] Logical indicating whether to show arrows at midpoints.
+
+\item[\code{edge.text}] Logical indicating whether to show edge labels.
+
+\item[\code{edge.text.size}] Size for edge labels.
+
+\item[\code{edge.text.alpha}] Transparency for edge labels.
+
+\item[\code{legend}] Position for legend ("side", "bottom", "none", etc.).
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+This function provides a highly customizable but complex interface for creating
+MONECA visualizations. It requires the eliter package for some functionality.
+For most users, \code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}} offers a more modern and
+user-friendly interface with better defaults.
+
+\strong{Note}: This function is maintained for backward compatibility but
+is no longer actively developed. New features are added to the ggraph-based
+plotting functions instead.
+\end{Details}
+%
+\begin{Value}
+A ggplot2 object.
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}} for modern ggraph-based plotting,
+\code{\LinkA{moneca.plot}{moneca.plot}} for base graphics plotting
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+## Not run: 
+# Requires eliter package
+data(occupations)
+gg.moneca(mob.seg)
+
+# Custom styling
+gg.moneca(mob.seg, 
+         vertex.fill = "red",
+         edge.color = "blue",
+         show.borders = FALSE)
+
+## End(Not run)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{layout.matrix}{Layout matrix}{layout.matrix}
+%
+\begin{Description}
+A matrix with the coordinates of the segments
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+layout.matrix(
+  segments,
+  attraction = c(320, 40, 10, 4, 2),
+  level = seq(segments$segment.list),
+  mode = "directed",
+  weight.adjustment = 1,
+  start.temp = 20,
+  niter = 10000,
+  tie.adjustment = 0.4,
+  ...
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{segments}] a segment object
+
+\item[\code{attraction}] the distance between the segment points for each level.
+
+\item[\code{level}] the included levels
+
+\item[\code{mode}] the mode
+
+\item[\code{area.size}] the size of the plot area - see \LinkA{layout.fruchterman.reingold}{layout.fruchterman.reingold}
+\end{ldescription}
+\end{Arguments}
+\HeaderA{modern\_plotting}{Modern MONECA Plotting with ggraph}{modern.Rul.plotting}
+%
+\begin{Description}
+Enhanced plotting functions using ggplot2 and ggraph for MONECA objects.
+These functions replace the old plotting system with modern, customizable
+network visualizations.
+\end{Description}
+\HeaderA{moneca}{MONECA - Mobility Network Clustering Analysis}{moneca}
+%
+\begin{Description}
+Main function for performing hierarchical clustering analysis on mobility tables.
+MONECA creates weighted networks from mobility data and uses cliques to identify
+discrete and nested clusters of positions with high internal mobility.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+moneca(
+  mx = mx,
+  segment.levels = 3,
+  cut.off = 1,
+  mode = "symmetric",
+  delete.upper.tri = TRUE,
+  small.cell.reduction = 0
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{mx}] A mobility table (square matrix) with row and column totals in the last
+row/column. Row names should identify the categories/classes.
+
+\item[\code{segment.levels}] Integer specifying the number of hierarchical segmentation 
+levels to compute. Default is 3. The algorithm may return fewer levels if no
+further meaningful segmentation is possible.
+
+\item[\code{cut.off}] Numeric threshold for the minimum relative risk to be considered
+a significant tie. Default is 1 (no mobility above random expectation required).
+
+\item[\code{mode}] Character string specifying edge mode ("symmetric", "Mutual", or 
+"Unmutual"). Currently not fully implemented - uses symmetric mode.
+
+\item[\code{delete.upper.tri}] Logical indicating whether to use only lower triangle 
+for efficiency. Default is TRUE.
+
+\item[\code{small.cell.reduction}] Numeric value to handle small cell counts. Cells with
+counts below this threshold are set to 0. Default is 0 (no reduction).
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+MONECA implements an iterative algorithm that:
+\begin{enumerate}
+
+\item{} Converts the mobility table to a relative risk matrix
+\item{} Identifies network cliques based on the threshold
+\item{} Groups nodes into segments using the clique structure
+\item{} Aggregates the mobility table by segments
+\item{} Repeats the process for the specified number of levels
+
+\end{enumerate}
+
+
+The algorithm stops early if no further segmentation is possible (e.g., all
+nodes collapse into a single segment).
+\end{Details}
+%
+\begin{Value}
+An object of class "moneca" containing:
+\begin{description}
+
+\item[segment.list] A list of segment memberships for each hierarchical level.
+Each element is a list of vectors containing the original row indices.
+\item[mat.list] A list of aggregated mobility matrices for each level, where
+rows/columns represent segments instead of original categories.
+\item[small.cell.reduction] The small cell reduction parameter used.
+
+\end{description}
+
+\end{Value}
+%
+\begin{References}
+Toubøl, J., \& Larsen, A. G. (2017). Mapping the Social Class Structure: 
+From Occupational Mobility to Social Class Categories Using Network Analysis.
+Sociology, 51(6), 1257-1276.
+\end{References}
+%
+\begin{SeeAlso}
+\code{\LinkA{find.segments}{find.segments}} for the core segmentation algorithm,
+\code{\LinkA{weight.matrix}{weight.matrix}} for relative risk calculation,
+\code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}} for modern visualization,
+\code{\LinkA{segment.membership}{segment.membership}} for extracting memberships
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+# Generate synthetic mobility data
+mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
+
+# Run MONECA analysis
+seg <- moneca(mobility_data, segment.levels = 3)
+print(seg)
+
+# Examine segment membership
+membership <- segment.membership(seg)
+print(membership)
+
+# Visualize with modern plotting
+## Not run: 
+plot_moneca_ggraph(seg, node_color = "segment", title = "MONECA Clustering")
+
+## End(Not run)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{moneca.plot}{Legacy Network Plot for MONECA Results}{moneca.plot}
+%
+\begin{Description}
+Creates a network visualization of MONECA segmentation results using base
+graphics and igraph. For modern visualizations, use \code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}}.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+moneca.plot(
+  segments,
+  layout = NULL,
+  edges = NULL,
+  mode = "directed",
+  level = NULL,
+  vertex.size = 5,
+  vertex.frame.color = "black",
+  edge.curved = FALSE,
+  vertex.color = "grey50",
+  vertex.label.color = "black",
+  vertex.label.cex = 0.5,
+  vertex.label.dist = 0.12,
+  edge.arrow.size = 0.1,
+  mark.col = NULL,
+  mark.expand = 10,
+  border.col = "black",
+  edge.width = 1,
+  edge.color = "black"
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{segments}] A MONECA object returned by \code{\LinkA{moneca}{moneca}}.
+
+\item[\code{layout}] A matrix of node coordinates, typically from \code{\LinkA{layout.matrix}{layout.matrix}}.
+
+\item[\code{edges}] An adjacency matrix of edges, typically from \code{\LinkA{segment.edges}{segment.edges}}.
+
+\item[\code{mode}] Character string specifying graph mode ("directed" or "undirected").
+
+\item[\code{level}] Integer vector of hierarchical levels to visualize.
+
+\item[\code{vertex.size}] Numeric value for vertex size. Default is 5.
+
+\item[\code{vertex.frame.color}] Color for vertex borders. Default is "black".
+
+\item[\code{edge.curved}] Logical for curved edges. Default is FALSE.
+
+\item[\code{vertex.color}] Color for vertices. Default is "grey50".
+
+\item[\code{vertex.label.color}] Color for vertex labels. Default is "black".
+
+\item[\code{vertex.label.cex}] Size multiplier for labels. Default is 0.5.
+
+\item[\code{vertex.label.dist}] Distance of labels from vertices. Default is 0.12.
+
+\item[\code{edge.arrow.size}] Size of edge arrows. Default is 0.1.
+
+\item[\code{mark.col}] Color for segment markers. Default is NULL.
+
+\item[\code{mark.expand}] Expansion factor for segment boundaries. Default is 10.
+
+\item[\code{border.col}] Color for segment borders. Default is "black".
+
+\item[\code{edge.width}] Width of edges. Default is 1.
+
+\item[\code{edge.color}] Color for edges. Can be a color name or matrix. Default is "black".
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+This function provides backward compatibility with earlier versions of MONECA.
+For new analyses, consider using \code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}} which offers
+more modern styling and customization options.
+\end{Details}
+%
+\begin{Value}
+NULL (creates a plot as side effect).
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}} for modern plotting
+\end{SeeAlso}
+\HeaderA{occupations}{Occupational mobility}{occupations}
+%
+\begin{Description}
+Occupational mobility
+\end{Description}
+%
+\begin{Examples}
+\begin{ExampleCode}
+data(occupations)
+
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{plot\_ego\_ggraph}{Ego Network Visualization with ggraph}{plot.Rul.ego.Rul.ggraph}
+%
+\begin{Description}
+Creates focused visualizations of mobility patterns from a single focal node
+(ego). This function shows all incoming and outgoing mobility flows for a
+specific category, making it ideal for understanding individual position dynamics.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+plot_ego_ggraph(
+  segments,
+  mobility_matrix,
+  ego_id,
+  min_weight = 0,
+  layout = "stress",
+  highlight_color = "red",
+  flow_color = "viridis",
+  node_size_range = c(2, 8),
+  edge_width_range = c(0.2, 3),
+  title = NULL,
+  segment_naming = "auto",
+  ...
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{segments}] A MONECA object returned by \code{\LinkA{moneca}{moneca}}.
+
+\item[\code{mobility\_matrix}] The original mobility matrix used in the MONECA analysis.
+Should include row and column totals.
+
+\item[\code{ego\_id}] Integer or character specifying the focal node. Can be:
+\begin{itemize}
+
+\item{} Integer: Row/column index in the mobility matrix
+\item{} Character: Row/column name from the mobility matrix
+
+\end{itemize}
+
+
+\item[\code{min\_weight}] Numeric threshold for minimum edge weight to include nodes.
+Only nodes connected to the ego with edge weights >= min\_weight will be shown.
+Default is 0 (show all connected nodes). Use higher values to focus on 
+stronger mobility flows.
+
+\item[\code{layout}] Character string specifying the layout algorithm. Default is "stress"
+which often works well for ego networks. Other options include "fr", "kk", "dh".
+
+\item[\code{highlight\_color}] Color for the ego (focal) node. Default is "red".
+
+\item[\code{flow\_color}] Character string specifying the color scheme for mobility flows.
+Default is "viridis". Can be any viridis variant ("viridis", "plasma", "inferno", etc.).
+
+\item[\code{node\_size\_range}] Numeric vector of length 2 specifying the range for node sizes.
+Default is c(3, 12).
+
+\item[\code{edge\_width\_range}] Numeric vector of length 2 specifying the range for edge widths.
+Default is c(0.5, 3).
+
+\item[\code{title}] Character string for plot title. Default is NULL.
+
+\item[\code{...}] Additional arguments passed to the ggraph layout function.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+Ego networks are particularly useful for understanding the mobility patterns
+of specific social positions. The visualization highlights:
+\begin{itemize}
+
+\item{} The focal position (ego) in a distinct color
+\item{} Incoming mobility flows (edges pointing to ego)
+\item{} Outgoing mobility flows (edges from ego)
+\item{} The relative strength of different flows through edge width and color
+
+\end{itemize}
+
+
+Only non-zero mobility flows are displayed to reduce visual clutter.
+Edge colors and widths are scaled to represent the volume of mobility flows.
+\end{Details}
+%
+\begin{Value}
+A ggplot2 object showing the ego network visualization.
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}} for full network visualization,
+\code{\LinkA{plot\_stair\_ggraph}{plot.Rul.stair.Rul.ggraph}} for multi-level visualization,
+\code{\LinkA{moneca}{moneca}} for the main analysis function
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+# Generate synthetic data and run MONECA
+mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+seg <- moneca(mobility_data, segment.levels = 3)
+
+# Ego network for the middle category (index 3)
+plot_ego_ggraph(seg, mobility_data, ego_id = 3, 
+                title = "Mobility from Middle Class")
+
+# Ego network using category name (if available)
+if (!is.null(rownames(mobility_data))) {
+  plot_ego_ggraph(seg, mobility_data, ego_id = rownames(mobility_data)[1])
+}
+
+# Focus on strong mobility flows only (weight >= 10)
+plot_ego_ggraph(seg, mobility_data, 
+                ego_id = 2,
+                min_weight = 10,
+                title = "Strong Mobility Flows")
+
+# Customized ego plot
+plot_ego_ggraph(seg, mobility_data, 
+                ego_id = 2,
+                layout = "fr",
+                highlight_color = "orange",
+                flow_color = "plasma",
+                edge_width_range = c(1, 5),
+                title = "Professional Class Mobility")
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{plot\_moneca\_ggraph}{Modern Network Visualization for MONECA Results}{plot.Rul.moneca.Rul.ggraph}
+%
+\begin{Description}
+Creates sophisticated network visualizations of MONECA clustering results using
+ggraph and ggplot2. This function provides modern, highly customizable plots
+with support for multiple layout algorithms, node aesthetics, and segment highlighting.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+plot_moneca_ggraph(
+  segments,
+  level = NULL,
+  layout = "fr",
+  edges = "auto",
+  node_size = "total",
+  node_color = "segment",
+  node_alpha = 0.8,
+  edge_width = "weight",
+  edge_color = "grey50",
+  edge_alpha = 0.6,
+  show_labels = TRUE,
+  label_size = 3,
+  show_segments = TRUE,
+  segment_alpha = 0.3,
+  color_palette = "Set3",
+  theme_style = "void",
+  title = NULL,
+  segment_naming = "auto",
+  ...
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{segments}] A MONECA object returned by \code{\LinkA{moneca}{moneca}}.
+
+\item[\code{level}] Integer vector specifying which hierarchical levels to visualize.
+Default displays all levels except the first (which represents individual categories).
+
+\item[\code{layout}] Character string or matrix specifying the layout algorithm:
+\begin{itemize}
+
+\item{} "fr" (default): Fruchterman-Reingold force-directed layout
+\item{} "kk": Kamada-Kawai layout
+\item{} "dh": Davidson-Harel layout  
+\item{} "mds": Multidimensional scaling
+\item{} "stress": Stress majorization
+\item{} Matrix: Custom coordinate matrix (n\_nodes x 2)
+
+\end{itemize}
+
+
+\item[\code{edges}] Edge matrix or "auto" to automatically generate using 
+\code{\LinkA{segment.edges}{segment.edges}}. Default is "auto".
+
+\item[\code{node\_size}] Aesthetic mapping for node size:
+\begin{itemize}
+
+\item{} "total": Size by total mobility volume (default)
+\item{} "mobility": Size by off-diagonal mobility rate
+\item{} Numeric vector: Custom sizes for each node
+\item{} Single numeric: Fixed size for all nodes
+
+\end{itemize}
+
+
+\item[\code{node\_color}] Aesthetic mapping for node color:
+\begin{itemize}
+
+\item{} "segment" (default): Color by segment membership
+\item{} "mobility": Color by mobility rate
+\item{} Character vector: Custom colors for each node
+\item{} Single color: Fixed color for all nodes
+
+\end{itemize}
+
+
+\item[\code{node\_alpha}] Numeric value (0-1) for node transparency. Default is 0.8.
+
+\item[\code{edge\_width}] Aesthetic for edge width:
+\begin{itemize}
+
+\item{} "weight" (default): Width proportional to edge weight
+\item{} Numeric: Fixed width for all edges
+
+\end{itemize}
+
+
+\item[\code{edge\_color}] Color for edges. Default is "grey50".
+
+\item[\code{edge\_alpha}] Numeric value (0-1) for edge transparency. Default is 0.6.
+
+\item[\code{show\_labels}] Logical indicating whether to display node labels. Default is TRUE.
+
+\item[\code{label\_size}] Numeric size for node labels. Default is 3.
+
+\item[\code{show\_segments}] Logical indicating whether to highlight segment boundaries.
+Default is TRUE.
+
+\item[\code{segment\_alpha}] Numeric value (0-1) for segment boundary transparency.
+Default is 0.3.
+
+\item[\code{color\_palette}] Character string specifying the color palette for segments.
+Can be any RColorBrewer palette name. Default is "Set3".
+
+\item[\code{theme\_style}] Character string specifying the plot theme:
+\begin{itemize}
+
+\item{} "void" (default): Clean background with no axes
+\item{} "minimal": Minimal theme with subtle gridlines
+\item{} "classic": Traditional ggplot2 theme
+
+\end{itemize}
+
+
+\item[\code{title}] Character string for plot title. Default is NULL (no title).
+
+\item[\code{segment\_naming}] Character string specifying the naming strategy for 
+segment labels. Options are "auto", "concat", "pattern", or "custom". 
+Default is "auto". See \code{\LinkA{segment.membership.enhanced}{segment.membership.enhanced}} for details.
+
+\item[\code{...}] Additional arguments passed to ggraph layout functions.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+This function creates publication-quality network visualizations with extensive
+customization options. It automatically handles node positioning, edge rendering,
+and segment highlighting. The resulting plot can be further modified using
+standard ggplot2 syntax.
+
+For interactive exploration, different layout algorithms may work better with
+different network structures. Force-directed layouts ("fr") work well for most
+cases, while "stress" layouts often produce cleaner results for dense networks.
+\end{Details}
+%
+\begin{Value}
+A ggplot2 object that can be further customized or displayed.
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{moneca}{moneca}} for the main analysis function,
+\code{\LinkA{plot\_ego\_ggraph}{plot.Rul.ego.Rul.ggraph}} for ego network visualization,
+\code{\LinkA{plot\_stair\_ggraph}{plot.Rul.stair.Rul.ggraph}} for multi-level visualization,
+\code{\LinkA{segment.edges}{segment.edges}} for edge matrix generation
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+# Generate synthetic data and run MONECA
+mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+seg <- moneca(mobility_data, segment.levels = 3)
+
+# Basic network plot
+plot_moneca_ggraph(seg)
+
+# Customized plot with different aesthetics
+plot_moneca_ggraph(seg,
+  layout = "stress",
+  node_color = "mobility",
+  edge_width = "weight",
+  color_palette = "Spectral",
+  title = "Social Mobility Network",
+  show_segments = FALSE
+)
+
+# Plot with custom node sizes and colors
+custom_plot <- plot_moneca_ggraph(seg,
+  node_size = c(8, 6, 10, 4, 7, 5),
+  node_color = "red",
+  edge_color = "darkblue",
+  theme_style = "minimal"
+)
+
+# Further customize with ggplot2
+custom_plot + 
+  ggplot2::labs(subtitle = "Custom subtitle") +
+  ggplot2::theme(plot.title = ggplot2::element_text(size = 16))
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{plot\_stair\_ggraph}{Multi-Level Segmentation Visualization (Stair Plot)}{plot.Rul.stair.Rul.ggraph}
+%
+\begin{Description}
+Creates a series of network plots showing how segmentation evolves across
+hierarchical levels in a MONECA analysis. This "stair plot" provides insight
+into the progressive clustering of social positions.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+plot_stair_ggraph(
+  segments,
+  levels = seq_along(segments$segment.list)[-1],
+  layout = NULL,
+  ncol = 2,
+  segment_naming = "auto",
+  ...
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{segments}] A MONECA object returned by \code{\LinkA{moneca}{moneca}}.
+
+\item[\code{levels}] Integer vector specifying which hierarchical levels to visualize.
+Default includes all levels except the first (individual categories).
+
+\item[\code{layout}] Layout specification for consistency across plots. Can be:
+\begin{itemize}
+
+\item{} NULL (default): Use layout.matrix() for consistent positioning
+\item{} Character string: Layout algorithm name ("fr", "kk", "stress", etc.)
+\item{} Matrix: Custom coordinate matrix for node positions
+
+\end{itemize}
+
+
+\item[\code{ncol}] Integer specifying the number of columns in the plot grid.
+Default is 2. Set to 1 for vertical arrangement.
+
+\item[\code{...}] Additional arguments passed to \code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}}.
+
+\item[\code{combine\_plots}] Logical indicating whether to combine plots into a single
+grid (TRUE) or return a list of individual plots (FALSE). Default is TRUE.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+The stair plot helps visualize the hierarchical nature of MONECA segmentation
+by showing how larger segments at higher levels break down into smaller, more
+specific segments at lower levels. This is particularly useful for:
+\begin{itemize}
+
+\item{} Understanding the segmentation process
+\item{} Identifying optimal levels of analysis
+\item{} Presenting results to different audiences
+\item{} Comparing segmentation stability across levels
+
+\end{itemize}
+
+
+When using a consistent layout across all plots, the relative positions of
+nodes remain the same, making it easier to track how segments evolve.
+\end{Details}
+%
+\begin{Value}
+If \code{combine\_plots = TRUE}, returns a combined plot grid object.
+If \code{combine\_plots = FALSE}, returns a list of ggplot objects, one for each level.
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}} for single-level visualization,
+\code{\LinkA{plot\_ego\_ggraph}{plot.Rul.ego.Rul.ggraph}} for ego network analysis,
+\code{\LinkA{layout.matrix}{layout.matrix}} for consistent layouts,
+\code{\LinkA{moneca}{moneca}} for the main analysis function
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+# Generate synthetic data and run MONECA
+mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+seg <- moneca(mobility_data, segment.levels = 4)
+
+# Basic stair plot
+stair_plots <- plot_stair_ggraph(seg)
+
+# Customized stair plot with specific levels
+custom_stair <- plot_stair_ggraph(seg, 
+                                 levels = c(2, 3),
+                                 layout = "stress",
+                                 ncol = 1,
+                                 node_color = "mobility")
+
+# Return individual plots for further customization
+plot_list <- plot_stair_ggraph(seg, combine_plots = FALSE)
+# Modify individual plots
+plot_list[[1]] <- plot_list[[1]] + ggplot2::labs(subtitle = "Level 2")
+
+## Not run: 
+# Display the combined plot
+print(stair_plots)
+
+# Save individual plots
+for (i in seq_along(plot_list)) {
+  ggplot2::ggsave(paste0("level_", i, ".png"), plot_list[[i]])
+}
+
+## End(Not run)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{print.descriptive.moneca}{Print Method for Descriptive MONECA Statistics}{print.descriptive.moneca}
+\keyword{internal}{print.descriptive.moneca}
+%
+\begin{Description}
+Internal function that formats and displays the detailed statistics calculated
+by the \code{print.moneca} method. This function creates formatted tables showing
+network properties and mobility statistics across hierarchical levels.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S3 method for class 'descriptive.moneca'
+print(x, ...)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{x}] A descriptive.moneca object containing calculated statistics.
+
+\item[\code{...}] Additional arguments (currently unused).
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+This internal function is responsible for the formatted display of MONECA
+analysis results. It creates several summary tables:
+\begin{itemize}
+
+\item{} Degree distributions (all, in, out) for each level
+\item{} Edge weight distributions for each level
+\item{} Diagonal mobility percentages
+\item{} Network density and connectivity statistics
+
+\end{itemize}
+
+\end{Details}
+%
+\begin{Value}
+NULL (called for side effects - printing formatted output).
+\end{Value}
+\HeaderA{print.first\_level\_summary}{Print first level summary}{print.first.Rul.level.Rul.summary}
+%
+\begin{Description}
+Print first level summary
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S3 method for class 'first_level_summary'
+print(x, ...)
+\end{verbatim}
+\end{Usage}
+\HeaderA{print.moneca}{Print Method for MONECA Objects}{print.moneca}
+%
+\begin{Description}
+Provides a comprehensive summary of MONECA analysis results including mobility
+statistics, network properties, and segmentation quality measures across all
+hierarchical levels.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S3 method for class 'moneca'
+print(x, small.cell.reduction = x$small.cell.reduction, ...)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{x}] A MONECA object returned by \code{\LinkA{moneca}{moneca}}.
+
+\item[\code{small.cell.reduction}] Numeric threshold for small cell handling. If NULL,
+uses the value from the MONECA object.
+
+\item[\code{...}] Additional arguments (currently unused).
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+The print method calculates and displays several key statistics:
+
+\strong{Mobility Statistics:}
+\begin{itemize}
+
+\item{} Total mobility rate (proportion of off-diagonal movement)
+\item{} Diagonal mobility (immobility) by level
+\item{} Mobility captured by significant edges
+
+\end{itemize}
+
+
+\strong{Network Properties:}
+\begin{itemize}
+
+\item{} Node degrees (in, out, total) by level
+\item{} Network density by level
+\item{} Number of isolated nodes
+\item{} Edge weight distributions
+
+\end{itemize}
+
+
+\strong{Segmentation Quality:}
+\begin{itemize}
+
+\item{} Number of segments per level
+\item{} Proportion of mobility within vs. between segments
+\item{} Network coherence measures
+
+\end{itemize}
+
+\end{Details}
+%
+\begin{Value}
+Invisibly returns a list of descriptive statistics, but primarily called
+for its side effect of printing a formatted summary.
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{moneca}{moneca}}, \code{\LinkA{summary.moneca}{summary.moneca}}
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+# Generate data and run analysis
+mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
+seg <- moneca(mobility_data, segment.levels = 3)
+
+# Print comprehensive summary
+print(seg)
+
+# The summary includes mobility rates, network statistics, and
+# segmentation quality measures for each hierarchical level
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{segment.colors}{Generate Colors for Segments}{segment.colors}
+%
+\begin{Description}
+Creates a grayscale color scheme for MONECA segments based on internal
+mobility rates. Darker colors indicate higher immobility (lower internal mobility).
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+segment.colors(segments)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{segments}] A MONECA object returned by \code{\LinkA{moneca}{moneca}}.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+This function calculates grayscale colors where the intensity reflects
+the immobility rate within each segment. Segments with higher immobility
+(more stable positions) receive darker colors.
+\end{Details}
+%
+\begin{Value}
+A list of color vectors, one for each hierarchical level.
+\end{Value}
+\HeaderA{segment.edges}{Extract Segment Edge Matrix}{segment.edges}
+%
+\begin{Description}
+Creates an adjacency matrix representing edges between segments based on
+mobility flows. This function is used for network visualization and analysis.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+segment.edges(
+  segments,
+  cut.off = 1,
+  mode = "directed",
+  level = NULL,
+  segment.reduction = NULL,
+  method = "all",
+  top = 3,
+  diagonal = NULL,
+  small.cell.reduction = 0
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{segments}] A MONECA object returned by \code{\LinkA{moneca}{moneca}}.
+
+\item[\code{cut.off}] Numeric threshold for minimum relative risk to include an edge.
+Default is 1.
+
+\item[\code{mode}] Character string specifying the graph mode ("directed" or "undirected").
+Default is "directed".
+
+\item[\code{level}] Integer vector specifying which hierarchical levels to include.
+Default includes all levels.
+
+\item[\code{segment.reduction}] Integer vector specifying levels for which to remove
+internal segment edges. Default includes all levels.
+
+\item[\code{method}] Character string specifying edge filtering method:
+\begin{itemize}
+
+\item{} "all" (default): Include all edges above threshold
+\item{} "top.out": Keep only the top outgoing edges per node
+\item{} "top.in": Keep only the top incoming edges per node
+
+\end{itemize}
+
+
+\item[\code{top}] Integer specifying how many top edges to keep when using 
+"top.out" or "top.in" methods. Default is 3.
+
+\item[\code{diagonal}] Controls diagonal values. If NULL (default), diagonal is zeroed.
+
+\item[\code{small.cell.reduction}] Numeric threshold for small cell handling.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+A square matrix representing edge weights between nodes/segments.
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}}, \code{\LinkA{moneca.plot}{moneca.plot}}
+\end{SeeAlso}
+\HeaderA{segment.membership}{Extract Segment Membership Information}{segment.membership}
+%
+\begin{Description}
+Returns a data frame showing which segment each original category belongs to
+across the specified hierarchical levels of a MONECA analysis.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+segment.membership(segments, level = seq(segments$segment.list))
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{segments}] A MONECA object returned by \code{\LinkA{moneca}{moneca}}.
+
+\item[\code{level}] Integer vector specifying which hierarchical levels to include.
+Default includes all available levels.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+The membership strings indicate both the hierarchical level and the specific
+segment within that level. For example, "2.3" means the category belongs to
+segment 3 at level 2 of the hierarchy.
+\end{Details}
+%
+\begin{Value}
+A data frame with two columns:
+\begin{description}
+
+\item[name] Character vector of original category names
+\item[membership] Character vector indicating segment membership, formatted
+as "level.segment" (e.g., "2.1" for level 2, segment 1)
+
+\end{description}
+
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{moneca}{moneca}}, \code{\LinkA{plot\_moneca\_ggraph}{plot.Rul.moneca.Rul.ggraph}}
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+# Generate data and run analysis
+mob_data <- generate_mobility_data(n_classes = 5, seed = 42)
+seg <- moneca(mob_data, segment.levels = 3)
+
+# Get membership information
+membership <- segment.membership(seg)
+print(membership)
+
+# Get membership for specific levels only
+membership_level2 <- segment.membership(seg, level = 2)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{segment.membership.enhanced}{Enhanced Segment Membership with Meaningful Names}{segment.membership.enhanced}
+%
+\begin{Description}
+Returns segment membership information with an additional column containing 
+meaningful segment names derived from the constituent nodes. This function 
+extends \code{\LinkA{segment.membership}{segment.membership}} by adding intelligent naming 
+strategies for aggregated segments.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+segment.membership.enhanced(
+  segments,
+  level = seq(segments$segment.list),
+  naming_strategy = "auto",
+  custom_names = NULL,
+  separator = " + ",
+  max_concat_length = 2,
+  pattern_rules = NULL
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{segments}] A MONECA object returned by \code{\LinkA{moneca}{moneca}}.
+
+\item[\code{level}] Integer vector specifying which hierarchical levels to include.
+Default includes all available levels.
+
+\item[\code{naming\_strategy}] Character string specifying the naming approach:
+\begin{itemize}
+
+\item{} "auto" (default): Automatic naming based on segment composition
+\item{} "concat": Concatenate node names with separator
+\item{} "pattern": Use pattern recognition for common suffixes/prefixes
+\item{} "custom": Use user-provided names from custom\_names parameter
+
+\end{itemize}
+
+
+\item[\code{custom\_names}] Named list providing custom names for specific segments.
+Format: list("level.segment" = "Custom Name"), e.g., list("2.1" = "Blue Collar")
+
+\item[\code{separator}] Character string used to separate names when concatenating.
+Default is " + ".
+
+\item[\code{max\_concat\_length}] Maximum number of names to concatenate before 
+switching to pattern-based naming. Default is 2.
+
+\item[\code{pattern\_rules}] Named list of pattern rules for automatic naming.
+Default includes common patterns like "Worker" → "Workers\_Group".
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+The function applies different naming strategies based on segment composition:
+\begin{enumerate}
+
+\item{} \strong{Individual nodes}: Keep original name unchanged
+\item{} \strong{Small segments} (≤ max\_concat\_length): Concatenate names
+\item{} \strong{Large segments}: Apply pattern recognition or use generic names
+\item{} \strong{Custom names}: Override automatic naming with user-provided names
+
+\end{enumerate}
+
+
+Pattern recognition identifies common suffixes (e.g., "Worker", "Manager") 
+and creates group names (e.g., "Workers\_Group", "Management\_Group").
+\end{Details}
+%
+\begin{Value}
+A data frame with three columns:
+\begin{description}
+
+\item[name] Character vector of original category names
+\item[membership] Character vector indicating segment membership, formatted
+as "level.segment" (e.g., "2.1" for level 2, segment 1)
+\item[level\_name] Character vector with meaningful segment names derived
+from constituent nodes or user-provided names
+
+\end{description}
+
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{segment.membership}{segment.membership}} for basic membership information,
+\code{\LinkA{moneca}{moneca}} for the main analysis function
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+# Generate data and run analysis
+mob_data <- generate_mobility_data(n_classes = 6, seed = 42,
+  class_names = c("Upper_Class", "Professional", "Manager", 
+                  "Skilled_Worker", "Service_Worker", "Manual_Worker"))
+seg <- moneca(mob_data, segment.levels = 3)
+
+# Get enhanced membership with automatic naming
+enhanced <- segment.membership.enhanced(seg)
+print(enhanced)
+
+# Use concatenation strategy
+concat_membership <- segment.membership.enhanced(seg, 
+                                                naming_strategy = "concat")
+
+# Use custom names for specific segments
+custom_names <- list("2.1" = "Blue_Collar", "3.1" = "All_Classes")
+custom_membership <- segment.membership.enhanced(seg, 
+                                                naming_strategy = "custom",
+                                                custom_names = custom_names)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{segment.quality}{Segment quality}{segment.quality}
+%
+\begin{Description}
+Segment quality
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+segment.quality(segments, final.solution = FALSE)
+\end{verbatim}
+\end{Usage}
+\HeaderA{stair.plot}{Legacy Multi-Level Stair Plot}{stair.plot}
+%
+\begin{Description}
+Creates a series of plots showing how segmentation evolves across hierarchical
+levels using the legacy ggplot2 system. For modern stair plots, use
+\code{\LinkA{plot\_stair\_ggraph}{plot.Rul.stair.Rul.ggraph}}.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+stair.plot(
+  segments,
+  level = NULL,
+  layout = NULL,
+  edges = NULL,
+  mode = "directed",
+  vertex.size = "total",
+  vertex.alpha = 1,
+  vertex.color = "black",
+  vertex.shape = 21,
+  show.edges = TRUE,
+  edge.size = 0.5,
+  edge.alpha = "weight",
+  edge.color = "black",
+  edge.line = "solid",
+  show.text = FALSE,
+  text.size = 3,
+  text.color = "black",
+  text.alpha = 1,
+  text.vjust = 1.5,
+  show.borders = TRUE,
+  border.size = 1,
+  border.fill = NA,
+  border.color = "black",
+  border.alpha = 1,
+  border.padding = 1,
+  border.text = TRUE,
+  border.labels = "segments",
+  border.text.size = 4,
+  border.text.color = "black",
+  border.text.vjust = -0.2,
+  border.text.hjust = 1,
+  midpoints = TRUE,
+  midpoint.arrow = arrow(angle = 20, length = unit(0.33, "cm"), ends = "last", type =
+    "closed"),
+  edge.text = FALSE,
+  edge.text.size = 3,
+  edge.text.alpha = 0.9,
+  legend = "side",
+  level.title = "Level"
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{segments}] A MONECA object returned by \code{\LinkA{moneca}{moneca}}.
+
+\item[\code{level}] Integer vector specifying which levels to include in the stair plot.
+
+\item[\code{layout}] Layout matrix for consistent node positioning across plots.
+
+\item[\code{edges}] Edge matrix or specification for network edges.
+
+\item[\code{mode}] Character string specifying graph mode ("directed" or "undirected").
+
+\item[\code{vertex.size}] Specification for vertex sizes ("total" or numeric).
+
+\item[\code{vertex.alpha}] Numeric transparency for vertices (0-1).
+
+\item[\code{vertex.color}] Color specification for vertex borders.
+
+\item[\code{vertex.shape}] Numeric shape code for vertices.
+
+\item[\code{show.edges}] Logical indicating whether to display edges.
+
+\item[\code{edge.size}] Numeric size for edges.
+
+\item[\code{edge.alpha}] Transparency for edges ("weight" or numeric).
+
+\item[\code{edge.color}] Color specification for edges.
+
+\item[\code{edge.line}] Line type for edges ("solid", "dashed", etc.).
+
+\item[\code{show.text}] Logical indicating whether to show vertex labels.
+
+\item[\code{text.size}] Numeric size for text labels.
+
+\item[\code{text.color}] Color for text labels.
+
+\item[\code{text.alpha}] Transparency for text labels.
+
+\item[\code{text.vjust}] Vertical adjustment for text labels.
+
+\item[\code{show.borders}] Logical indicating whether to show segment boundaries.
+
+\item[\code{border.size}] Size for segment borders.
+
+\item[\code{border.fill}] Fill color for segment boundaries.
+
+\item[\code{border.color}] Color for segment border lines.
+
+\item[\code{border.alpha}] Transparency for segment borders.
+
+\item[\code{border.padding}] Padding around segment boundaries.
+
+\item[\code{border.text}] Logical indicating whether to show segment labels.
+
+\item[\code{border.labels}] Specification for segment labels.
+
+\item[\code{border.text.size}] Size for segment labels.
+
+\item[\code{border.text.color}] Color for segment labels.
+
+\item[\code{border.text.vjust}] Vertical adjustment for segment labels.
+
+\item[\code{border.text.hjust}] Horizontal adjustment for segment labels.
+
+\item[\code{midpoints}] Logical indicating whether to show edge midpoints.
+
+\item[\code{midpoint.arrow}] Logical indicating whether to show arrows at midpoints.
+
+\item[\code{edge.text}] Logical indicating whether to show edge labels.
+
+\item[\code{edge.text.size}] Size for edge labels.
+
+\item[\code{edge.text.alpha}] Transparency for edge labels.
+
+\item[\code{legend}] Position specification for legend.
+
+\item[\code{level.title}] Specification for level titles.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+This function creates multiple plots showing the progression of segmentation
+across hierarchical levels. Each plot uses the same layout to maintain
+consistency, making it easy to see how segments merge or split across levels.
+
+\strong{Note}: This function is maintained for backward compatibility and
+requires the eliter package. For new analyses, use \code{\LinkA{plot\_stair\_ggraph}{plot.Rul.stair.Rul.ggraph}}
+which offers better performance and modern styling.
+\end{Details}
+%
+\begin{Value}
+A list of ggplot2 objects, one for each segmentation level.
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{plot\_stair\_ggraph}{plot.Rul.stair.Rul.ggraph}} for modern stair plots,
+\code{\LinkA{gg.moneca}{gg.moneca}} for the underlying plotting function
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+## Not run: 
+# Requires legacy data and eliter package
+data(occupations)
+plots <- stair.plot(mob.seg)
+plots[[2]]  # Display second level
+
+# Customized stair plot
+custom_stairs <- stair.plot(mob.seg,
+                           level = c(2, 3, 4),
+                           vertex.size = "total",
+                           show.borders = TRUE,
+                           border.text.size = 5)
+
+## End(Not run)
+
+\end{ExampleCode}
+\end{Examples}
+\HeaderA{test\_igraph\_compatibility}{Test framework for dependency updates}{test.Rul.igraph.Rul.compatibility}
+\keyword{Test}{test\_igraph\_compatibility}
+\keyword{compatibility}{test\_igraph\_compatibility}
+\keyword{igraph}{test\_igraph\_compatibility}
+\keyword{internal}{test\_igraph\_compatibility}
+\keyword{layer}{test\_igraph\_compatibility}
+%
+\begin{Description}
+This script provides comprehensive testing for the igraph migration
+and dependency updates to ensure compatibility and functionality
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+test_igraph_compatibility()
+\end{verbatim}
+\end{Usage}
+%
+\begin{Value}
+List with test results
+\end{Value}
+\HeaderA{validate\_description\_dependencies}{Validate DESCRIPTION file dependencies}{validate.Rul.description.Rul.dependencies}
+%
+\begin{Description}
+Validate DESCRIPTION file dependencies
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+validate_description_dependencies()
+\end{verbatim}
+\end{Usage}
+%
+\begin{Value}
+List with validation results
+\end{Value}
+\HeaderA{vertex.mobility}{Vertex mobility}{vertex.mobility}
+%
+\begin{Description}
+Vertex mobility
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+vertex.mobility(segments)
+\end{verbatim}
+\end{Usage}
+\HeaderA{weight.matrix}{Calculate Relative Risk Weight Matrix}{weight.matrix}
+%
+\begin{Description}
+Converts a mobility table into a relative risk matrix by comparing observed
+mobility flows to expected flows under independence. This matrix forms the
+basis for network construction in MONECA analysis.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+weight.matrix(
+  mx,
+  cut.off = 1,
+  symmetric = TRUE,
+  diagonal = NULL,
+  small.cell.reduction = 0
+)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{mx}] A mobility table (square matrix) with row and column totals in the 
+last row/column.
+
+\item[\code{cut.off}] Numeric threshold for minimum relative risk. Values below this
+are set to NA. Default is 1.
+
+\item[\code{symmetric}] Logical indicating whether to force the matrix to be symmetric
+by adding it to its transpose. Default is TRUE.
+
+\item[\code{diagonal}] Controls diagonal values. If NULL (default), diagonal is set 
+to NA. Otherwise, diagonal values are preserved.
+
+\item[\code{small.cell.reduction}] Numeric value for handling small cells. Cells with
+counts below this threshold are set to 0 before calculating relative risks.
+Default is 0.
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Details}
+The relative risk for cell (i,j) is calculated as:
+\deqn{RR_{ij} = O_{ij} / E_{ij}}{}
+where \eqn{O_{ij}}{} is the observed count and \eqn{E_{ij}}{} is the expected
+count under independence: \eqn{E_{ij} = (n_i * n_j) / N}{}
+\end{Details}
+%
+\begin{Value}
+A matrix of relative risks where:
+\begin{itemize}
+
+\item{} Values > 1 indicate mobility above expected levels
+\item{} Values < 1 indicate mobility below expected levels  
+\item{} Values below cut.off are set to NA
+
+\end{itemize}
+
+\end{Value}
+%
+\begin{SeeAlso}
+\code{\LinkA{moneca}{moneca}} for the main analysis function
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+# Create a simple mobility table
+mob_table <- matrix(c(100, 20, 10, 130,
+                      15, 80, 25, 120,  
+                      5,  10, 50,  65,
+                      120, 110, 85, 315), 
+                    nrow = 4, byrow = TRUE)
+rownames(mob_table) <- colnames(mob_table) <- c("A", "B", "C", "Total")
+
+# Calculate relative risk matrix
+rr_matrix <- weight.matrix(mob_table, cut.off = 1.5)
+
+\end{ExampleCode}
+\end{Examples}
+\printindex{}
+\end{document}

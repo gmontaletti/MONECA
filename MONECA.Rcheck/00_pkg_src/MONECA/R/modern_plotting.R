@@ -7,6 +7,14 @@
 #' @name modern_plotting
 NULL
 
+# Global variable declarations to avoid R CMD check warnings
+if(getRversion() >= "2.15.1") {
+  utils::globalVariables(c(
+    "weight", "nodes", "node_size", "is_ego", "same_segment", "node_name",
+    "level_name", "mobility_rate", "name", "segment", "x", "y"
+  ))
+}
+
 #' Modern Network Visualization for MONECA Results
 #'
 #' Creates sophisticated network visualizations of MONECA clustering results using
@@ -64,6 +72,9 @@ NULL
 #'     \item "classic": Traditional ggplot2 theme
 #'   }
 #' @param title Character string for plot title. Default is NULL (no title).
+#' @param segment_naming Character string specifying the naming strategy for 
+#'   segment labels. Options are "auto", "concat", "pattern", or "custom". 
+#'   Default is "auto". See \code{\link{segment.membership.enhanced}} for details.
 #' @param ... Additional arguments passed to ggraph layout functions.
 #'
 #' @return A ggplot2 object that can be further customized or displayed.
@@ -117,7 +128,7 @@ NULL
 #' 
 #' @export
 plot_moneca_ggraph <- function(segments,
-                              level = seq(segments$segment.list)[-1],
+                              level = NULL,
                               layout = "fr",
                               edges = "auto",
                               node_size = "total",
@@ -133,6 +144,7 @@ plot_moneca_ggraph <- function(segments,
                               color_palette = "Set3",
                               theme_style = "void",
                               title = NULL,
+                              segment_naming = "auto",
                               ...) {
   
   # Load required packages
@@ -146,6 +158,25 @@ plot_moneca_ggraph <- function(segments,
     stop("Package 'dplyr' is required for this function. Please install it.")
   }
   
+  # Validate segments object
+  if (is.null(segments)) {
+    stop("segments object is NULL")
+  }
+  if (!inherits(segments, "moneca")) {
+    stop("segments must be a moneca object created by the moneca() function")
+  }
+  if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
+    stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  }
+  if (is.null(segments$mat.list[[1]])) {
+    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  }
+  
+  # Set default level after validation
+  if (is.null(level)) {
+    level <- seq(segments$segment.list)[-1]
+  }
+  
   # Get edge matrix
   if (identical(edges, "auto")) {
     edge_matrix <- segment.edges(segments, level = 1)
@@ -153,7 +184,15 @@ plot_moneca_ggraph <- function(segments,
     edge_matrix <- edges
   }
   
-  # Create igraph object
+  # Create igraph object with validation
+  # Check if edge matrix has valid structure
+  if (nrow(edge_matrix) == 0 || ncol(edge_matrix) == 0) {
+    stop("Edge matrix is empty - cannot create network plot")
+  }
+  if (all(edge_matrix == 0, na.rm = TRUE)) {
+    warning("Edge matrix contains no non-zero values - plot may be empty")
+  }
+  
   g <- moneca_graph_from_adjacency(edge_matrix, mode = "directed", weighted = TRUE)
   
   # Get node information
@@ -165,7 +204,7 @@ plot_moneca_ggraph <- function(segments,
   }
   
   # Convert to tidygraph
-  tg <- tidygraph::as_tbl_graph(g)
+  tidy_graph <- tidygraph::as_tbl_graph(g)
   
   # Add node attributes
   mobility_matrix <- segments$mat.list[[1]]
@@ -175,42 +214,83 @@ plot_moneca_ggraph <- function(segments,
     node_totals <- (mobility_matrix[nrow(mobility_matrix), ] + 
                    mobility_matrix[, nrow(mobility_matrix)]) / 2
     node_totals <- node_totals[-length(node_totals)]
-    tg <- tg %>% tidygraph::activate(nodes) %>% 
+    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
           dplyr::mutate(node_size = node_totals)
   } else if (identical(node_size, "mobility")) {
     # Calculate mobility rates (off-diagonal mobility)
     mobility_rates <- 1 - diag(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)]) / 
                      rowSums(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)])
-    tg <- tg %>% tidygraph::activate(nodes) %>% 
+    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
           dplyr::mutate(node_size = mobility_rates)
   } else if (is.numeric(node_size) && length(node_size) == n_nodes) {
-    tg <- tg %>% tidygraph::activate(nodes) %>% 
+    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
           dplyr::mutate(node_size = node_size)
   } else {
-    tg <- tg %>% tidygraph::activate(nodes) %>% 
+    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
           dplyr::mutate(node_size = 5)
   }
   
-  # Add segment membership
+  # Add segment membership with enhanced names
   if (identical(node_color, "segment")) {
-    membership <- segment.membership(segments, level = level)
+    membership <- segment.membership.enhanced(segments, level = level, naming_strategy = segment_naming)
     # Match node names to membership
     node_segments <- membership$membership[match(node_names, membership$name)]
     node_segments[is.na(node_segments)] <- "Unassigned"
-    tg <- tg %>% tidygraph::activate(nodes) %>% 
-          dplyr::mutate(segment = as.factor(node_segments))
+    
+    # Get enhanced level names for better legends
+    node_level_names <- membership$level_name[match(node_names, membership$name)]
+    node_level_names[is.na(node_level_names)] <- "Unassigned"
+    
+    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
+          dplyr::mutate(
+            segment = as.factor(node_segments),
+            level_name = as.factor(node_level_names)
+          )
   } else if (identical(node_color, "mobility")) {
     mobility_rates <- 1 - diag(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)]) / 
                      rowSums(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)])
-    tg <- tg %>% tidygraph::activate(nodes) %>% 
+    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
           dplyr::mutate(mobility_rate = mobility_rates)
   }
   
-  # Create base plot
+  # Create base plot with validation
   if (is.character(layout)) {
-    p <- ggraph::ggraph(tg, layout = layout, ...)
+    # Validate that the graph has nodes
+    if (length(V(g)) == 0) {
+      stop("Cannot create plot: graph has no nodes")
+    }
+    p <- ggraph::ggraph(tidy_graph, layout = layout)
   } else {
-    p <- ggraph::ggraph(tg, layout = "manual", x = layout[, 1], y = layout[, 2])
+    # Validate layout matrix
+    if (!is.matrix(layout) && !is.data.frame(layout)) {
+      stop("Layout must be a matrix or data.frame with coordinates")
+    }
+    if (nrow(layout) != length(V(g))) {
+      stop("Layout dimensions must match number of nodes in graph")
+    }
+    if (ncol(layout) < 2) {
+      stop("Layout must have at least 2 columns (x, y coordinates)")
+    }
+    
+    # Check for valid coordinates (not all the same, not infinite, not NA)
+    x_coords <- layout[, 1]
+    y_coords <- layout[, 2]
+    
+    if (all(is.na(x_coords)) || all(is.na(y_coords))) {
+      stop("Layout coordinates cannot be all NA")
+    }
+    if (any(is.infinite(x_coords)) || any(is.infinite(y_coords))) {
+      warning("Layout contains infinite coordinates, replacing with finite values")
+      x_coords[is.infinite(x_coords)] <- 0
+      y_coords[is.infinite(y_coords)] <- 0
+    }
+    if (length(unique(x_coords[!is.na(x_coords)])) == 1 && length(unique(y_coords[!is.na(y_coords)])) == 1) {
+      warning("All layout coordinates are the same, adding small random jitter")
+      x_coords <- x_coords + runif(length(x_coords), -0.1, 0.1)
+      y_coords <- y_coords + runif(length(y_coords), -0.1, 0.1)
+    }
+    
+    p <- ggraph::ggraph(tidy_graph, layout = "manual", x = x_coords, y = y_coords)
   }
   
   # Add edges
@@ -237,7 +317,7 @@ plot_moneca_ggraph <- function(segments,
   # Add nodes
   if (identical(node_color, "segment")) {
     p <- p + ggraph::geom_node_point(
-      ggplot2::aes(size = node_size, color = segment),
+      ggplot2::aes(size = node_size, color = level_name),
       alpha = node_alpha
     ) +
     ggplot2::scale_color_brewer(type = "qual", palette = color_palette, name = "Segment")
@@ -389,6 +469,7 @@ plot_ego_ggraph <- function(segments,
                            node_size_range = c(2, 8),
                            edge_width_range = c(0.2, 3),
                            title = NULL,
+                           segment_naming = "auto",
                            ...) {
   
   # Load required packages
@@ -433,8 +514,8 @@ plot_ego_ggraph <- function(segments,
   g <- moneca_graph_from_adjacency(filtered_matrix, mode = "directed", weighted = TRUE)
   
   # Convert to tidygraph and filter out zero-weight edges
-  tg <- tidygraph::as_tbl_graph(g)
-  tg <- tg %>% 
+  ego_network <- tidygraph::as_tbl_graph(g)
+  ego_network <- ego_network %>% 
     tidygraph::activate(edges) %>%
     dplyr::filter(weight > 0)
   
@@ -456,25 +537,37 @@ plot_ego_ggraph <- function(segments,
   # Find which filtered node is the ego
   ego_position_in_filtered <- which(connected_nodes == ego_id)
   
-  # Get segment membership for all nodes
-  membership <- segment.membership(segments, level = 1:length(segments$segment.list))
+  # Get enhanced segment membership for all nodes
+  membership <- segment.membership.enhanced(segments, level = 1:length(segments$segment.list), naming_strategy = segment_naming)
   
   # Find ego's segment
   ego_segment <- membership$membership[ego_id]
+  ego_level_name <- membership$level_name[ego_id]
   
   # Determine which nodes belong to the same segment as ego
   same_segment_as_ego <- membership$membership[connected_nodes] == ego_segment
   
-  tg <- tg %>% tidygraph::activate(nodes) %>%
+  # Get level names for connected nodes
+  connected_level_names <- membership$level_name[connected_nodes]
+  
+  ego_network <- ego_network %>% tidygraph::activate(nodes) %>%
         dplyr::mutate(
           node_size = node_totals,
           is_ego = 1:tidygraph::graph_order() == ego_position_in_filtered,
           same_segment = same_segment_as_ego,
-          node_name = node_names
+          node_name = node_names,
+          level_name = connected_level_names
         )
   
-  # Create plot
-  p <- ggraph::ggraph(tg, layout = layout, ...)
+  # Create plot with validation
+  if (length(V(g)) == 0) {
+    stop("Cannot create ego plot: no nodes connected to ego node")
+  }
+  if (length(E(g)) == 0) {
+    warning("Ego plot has no edges - ego node may be isolated")
+  }
+  
+  p <- ggraph::ggraph(ego_network, layout = layout)
   
   # Add edges with width based on flow volume
   p <- p + ggraph::geom_edge_link(
@@ -605,7 +698,22 @@ plot_stair_ggraph <- function(segments,
                              levels = seq_along(segments$segment.list)[-1],
                              layout = NULL,
                              ncol = 2,
+                             segment_naming = "auto",
                              ...) {
+  
+  # Validate segments object
+  if (is.null(segments)) {
+    stop("segments object is NULL")
+  }
+  if (!inherits(segments, "moneca")) {
+    stop("segments must be a moneca object created by the moneca() function")
+  }
+  if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
+    stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  }
+  if (is.null(segments$mat.list[[1]])) {
+    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  }
   
   # Create consistent layout if not provided
   if (is.null(layout)) {
@@ -623,8 +731,59 @@ plot_stair_ggraph <- function(segments,
       level = 1:level_idx,
       layout = layout,
       title = paste("Level", level_idx, "Segmentation"),
+      segment_naming = segment_naming,
       ...
     )
+    
+    # Remove all legends
+    p <- p + ggplot2::theme(legend.position = "none")
+    
+    # Add group boundaries for levels 2, 3, and 4
+    if (level_idx >= 2) {
+      # Get enhanced segment membership for this level
+      membership <- segment.membership.enhanced(segments, level = 1:level_idx, naming_strategy = segment_naming)
+      node_names <- rownames(segments$mat.list[[1]])[-nrow(segments$mat.list[[1]])]
+      
+      # Create a data frame with node positions and segment membership
+      node_data <- data.frame(
+        x = layout[, 1],
+        y = layout[, 2],
+        name = node_names,
+        stringsAsFactors = FALSE
+      )
+      
+      # Match membership to node positions
+      node_data$segment <- membership$membership[match(node_data$name, membership$name)]
+      
+      # Remove nodes without segment assignment
+      node_data <- node_data[!is.na(node_data$segment) & node_data$segment != "", ]
+      
+      if (nrow(node_data) > 0) {
+        # Create convex hulls for each segment
+        if (!requireNamespace("dplyr", quietly = TRUE)) {
+          stop("Package 'dplyr' is required for segment boundaries.")
+        }
+        
+        # Calculate convex hulls for each segment
+        hull_data <- node_data %>%
+          dplyr::group_by(segment) %>%
+          dplyr::filter(dplyr::n() >= 3) %>%  # Need at least 3 points for hull
+          dplyr::slice(grDevices::chull(x, y)) %>%
+          dplyr::ungroup()
+        
+        # Add convex hull polygons
+        if (nrow(hull_data) > 0) {
+          p <- p + ggplot2::geom_polygon(
+            data = hull_data,
+            ggplot2::aes(x = x, y = y, group = segment),
+            fill = NA,
+            color = "black",
+            linewidth = 0.8,
+            alpha = 0.7
+          )
+        }
+      }
+    }
     
     plots[[i]] <- p
   }

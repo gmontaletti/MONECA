@@ -4,7 +4,7 @@
 \alias{print.first_level_summary}
 \title{Print first level summary}
 \usage{
-\method{print}{first_level_summary}(out)
+\method{print}{first_level_summary}(x, ...)
 }
 \description{
 Print first level summary

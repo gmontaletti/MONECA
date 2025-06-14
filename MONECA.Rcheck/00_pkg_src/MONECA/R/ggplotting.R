@@ -2,6 +2,11 @@
 ### GGPLOTTING
 # Vi skal kunne angive styrken af den interne mobilitet i farveskalaen (nok i virkeligheden alpha) for borders
 
+# Global variable declarations to avoid R CMD check warnings
+if(getRversion() >= "2.15.1") {
+  utils::globalVariables(c("row.total"))
+}
+
 # library(igraph)
 # library(ggplot2)
 #source("~/My Dropbox/R/Elite/soc.sna//soc.sna.R")
@@ -121,9 +126,9 @@
 #' 
 #' @export
 gg.moneca               <- function(segments,
-                                   level             = seq(segments$segment.list),
-                                   layout             = layout.matrix(segments),
-                                   edges              = log(segment.edges(segments)+1),
+                                   level             = NULL,
+                                   layout             = NULL,
+                                   edges              = NULL,
                                    mode               = "directed",
                                    
                                    vertex.size        = "total",
@@ -166,6 +171,31 @@ gg.moneca               <- function(segments,
                                                                       
                                    legend             = "side"
                                    ){
+
+# Validate segments object and set defaults
+if (is.null(segments)) {
+  stop("segments object is NULL")
+}
+if (!inherits(segments, "moneca")) {
+  stop("segments must be a moneca object created by the moneca() function")
+}
+if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
+  stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+}
+if (is.null(segments$mat.list[[1]])) {
+  stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+}
+
+# Set default values after validation
+if (is.null(level)) {
+  level <- seq(segments$segment.list)
+}
+if (is.null(layout)) {
+  layout <- layout.matrix(segments)
+}
+if (is.null(edges)) {
+  edges <- log(segment.edges(segments)+1)
+}
 
 if(identical(border.labels, "segments")){
 membership             <- segment.membership(segments, level = level)[,2]
@@ -525,7 +555,7 @@ vertex.coord <- function(graph, layout=layout.fruchterman.reingold(graph)){
 #' @export
 
 ego.plot <- function(segments, mxa.b, id = 1,
-                     lay         = layout.matrix(segments),
+                     lay         = NULL,
                      edge.size   = 0.8,
                      border.padding = 1,
                      title.line  = TRUE,
@@ -535,6 +565,25 @@ ego.plot <- function(segments, mxa.b, id = 1,
                      color.scheme = "RdPu",
                      ...                   
 ){
+  # Validate segments object and set defaults
+  if (is.null(segments)) {
+    stop("segments object is NULL")
+  }
+  if (!inherits(segments, "moneca")) {
+    stop("segments must be a moneca object created by the moneca() function")
+  }
+  if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
+    stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  }
+  if (is.null(segments$mat.list[[1]])) {
+    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  }
+  
+  # Set default layout after validation
+  if (is.null(lay)) {
+    lay <- layout.matrix(segments)
+  }
+  
   l             <- nrow(mxa.b)
   wm            <- weight.matrix(mxa.b, cut.off = 0, small.cell.reduction = small.cell.reduction, symmetric = FALSE)
   freq.mat      <- mxa.b[-l, -l]
@@ -566,7 +615,7 @@ ego.plot <- function(segments, mxa.b, id = 1,
   
   scales                   <- list()
   scales$fill              <- scale_fill_gradientn(colours = brewer.pal(5, color.scheme), na.value = "black", labels = percent, name = "Mobile")
-  scales$size              <- scale_size_continuous(range = c(2, 8), na.value = 8, name = "Antal")
+  scales$size              <- scale_size_continuous(range = c(2, 8), name = "Antal")
   scales$shape             <- scale_shape_manual(values = c(21, 4, -0x25C9), guide = "none")
   scales$guide_fill        <- guides(fill = guide_legend(override.aes = list(size = 5, shape = 21)))
   scales$guide_size        <- guides(size = guide_legend(override.aes = list(shape = 21)))
@@ -675,9 +724,9 @@ ego.plot <- function(segments, mxa.b, id = 1,
 #' 
 #' @export
 stair.plot              <- function(segments,
-                                    level             = seq(segments$segment.list),
-                                    layout             = layout.matrix(segments),
-                                    edges              = segment.edges(segments, cut.off = 1, method = "all", segment.reduction = 0, level = 1),
+                                    level             = NULL,
+                                    layout             = NULL,
+                                    edges              = NULL,
                                     mode               = "directed",
                                     
                                     #membership         = segment.membership(segments),
@@ -722,6 +771,31 @@ stair.plot              <- function(segments,
                                     legend             = "side",
                                     level.title        = "Level"
                                     ){  
+  # Validate segments object and set defaults
+  if (is.null(segments)) {
+    stop("segments object is NULL")
+  }
+  if (!inherits(segments, "moneca")) {
+    stop("segments must be a moneca object created by the moneca() function")
+  }
+  if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
+    stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  }
+  if (is.null(segments$mat.list[[1]])) {
+    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  }
+  
+  # Set default values after validation
+  if (is.null(level)) {
+    level <- seq(segments$segment.list)
+  }
+  if (is.null(layout)) {
+    layout <- layout.matrix(segments)
+  }
+  if (is.null(edges)) {
+    edges <- segment.edges(segments, cut.off = 1, method = "all", segment.reduction = 0, level = 1)
+  }
+  
   plot.arguments         <- as.list(environment())
   plot.arguments$level.title <- NULL
   

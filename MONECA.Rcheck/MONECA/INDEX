@@ -27,6 +27,9 @@ print.moneca            Print Method for MONECA Objects
 segment.colors          Generate Colors for Segments
 segment.edges           Extract Segment Edge Matrix
 segment.membership      Extract Segment Membership Information
+segment.membership.enhanced
+                        Enhanced Segment Membership with Meaningful
+                        Names
 segment.quality         Segment quality
 stair.plot              Legacy Multi-Level Stair Plot
 validate_description_dependencies

@@ -6,7 +6,7 @@
 \usage{
 plot_moneca_ggraph(
   segments,
-  level = seq(segments$segment.list)[-1],
+  level = NULL,
   layout = "fr",
   edges = "auto",
   node_size = "total",
@@ -22,6 +22,7 @@ plot_moneca_ggraph(
   color_palette = "Set3",
   theme_style = "void",
   title = NULL,
+  segment_naming = "auto",
   ...
 )
 }
@@ -93,6 +94,10 @@ Can be any RColorBrewer palette name. Default is "Set3".}
 }}
 
 \item{title}{Character string for plot title. Default is NULL (no title).}
+
+\item{segment_naming}{Character string specifying the naming strategy for 
+segment labels. Options are "auto", "concat", "pattern", or "custom". 
+Default is "auto". See \code{\link{segment.membership.enhanced}} for details.}
 
 \item{...}{Additional arguments passed to ggraph layout functions.}
 }

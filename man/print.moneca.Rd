@@ -4,10 +4,10 @@
 \alias{print.moneca}
 \title{Print Method for MONECA Objects}
 \usage{
-\method{print}{moneca}(segments, small.cell.reduction = segments$small.cell.reduction, ...)
+\method{print}{moneca}(x, small.cell.reduction = x$small.cell.reduction, ...)
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{x}{A MONECA object returned by \code{\link{moneca}}.}
 
 \item{small.cell.reduction}{Numeric threshold for small cell handling. If NULL,
 uses the value from the MONECA object.}

@@ -2,6 +2,11 @@
 ### GGPLOTTING
 # Vi skal kunne angive styrken af den interne mobilitet i farveskalaen (nok i virkeligheden alpha) for borders
 
+# Global variable declarations to avoid R CMD check warnings
+if(getRversion() >= "2.15.1") {
+  utils::globalVariables(c("row.total"))
+}
+
 # library(igraph)
 # library(ggplot2)
 #source("~/My Dropbox/R/Elite/soc.sna//soc.sna.R")
@@ -610,7 +615,7 @@ ego.plot <- function(segments, mxa.b, id = 1,
   
   scales                   <- list()
   scales$fill              <- scale_fill_gradientn(colours = brewer.pal(5, color.scheme), na.value = "black", labels = percent, name = "Mobile")
-  scales$size              <- scale_size_continuous(range = c(2, 8), na.value = 8, name = "Antal")
+  scales$size              <- scale_size_continuous(range = c(2, 8), name = "Antal")
   scales$shape             <- scale_shape_manual(values = c(21, 4, -0x25C9), guide = "none")
   scales$guide_fill        <- guides(fill = guide_legend(override.aes = list(size = 5, shape = 21)))
   scales$guide_size        <- guides(size = guide_legend(override.aes = list(shape = 21)))

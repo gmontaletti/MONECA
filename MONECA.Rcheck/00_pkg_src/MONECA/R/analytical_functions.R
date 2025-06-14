@@ -558,7 +558,32 @@ layout.matrix <- function(segments, attraction=c(320, 40, 10, 4, 2), level=seq(s
   # start            <- norm_coords(start, xmin = -100, xmax = 100, ymin = -100, ymax = 100)
   # 
   layout           <- layout_with_fr(gra.lay, weights=E(gra.lay)$weight*weight.adjustment, niter = niter, start.temp = start.temp, ...)
-  layout[, 1:2]    <- moneca_norm_coords(layout[, 1:2], xmin = 1, xmax = 10^10, ymin = 1, ymax = 10^10)
+  
+  # Validate layout coordinates before normalization
+  if (any(is.na(layout[, 1:2])) || any(is.infinite(layout[, 1:2]))) {
+    warning("Layout contains NA or infinite coordinates, using fallback layout")
+    # Create simple circular layout as fallback
+    n_nodes <- nrow(layout)
+    angles <- seq(0, 2*pi, length.out = n_nodes + 1)[1:n_nodes]
+    layout[, 1] <- cos(angles)
+    layout[, 2] <- sin(angles)
+  }
+  
+  # Check if all coordinates are the same (which can cause viewport issues)
+  if (length(unique(layout[, 1])) == 1 || length(unique(layout[, 2])) == 1) {
+    warning("Layout coordinates are degenerate, adding jitter")
+    layout[, 1] <- layout[, 1] + runif(nrow(layout), -0.1, 0.1)
+    layout[, 2] <- layout[, 2] + runif(nrow(layout), -0.1, 0.1)
+  }
+  
+  # Normalize coordinates with more reasonable bounds
+  layout[, 1:2]    <- moneca_norm_coords(layout[, 1:2], xmin = 0, xmax = 100, ymin = 0, ymax = 100)
+  
+  # Final validation
+  if (any(is.na(layout[, 1:2])) || any(is.infinite(layout[, 1:2]))) {
+    stop("Layout normalization failed - please check input data")
+  }
+  
   layout
 }
 
@@ -833,25 +858,309 @@ if (length(seg.niv) > 0) {
 out.mat <- data.frame(name=org.name, membership=position)
 out.mat
 }  
-#   out <- list()
-#   
-#   for (i in level){
-#   niv     <- level[i]
-#   seg     <- segments$segment.list[[niv]]
-#   node    <- unlist(seg)
-#   l       <- 1:length(seg)
-# 
-#   member <- vector()  
-#   for( u in l){
-#   member  <- c(member,rep(u, length(seg[[u]])))
-#  }
-# 
-#   out[[i]]  <- data.frame(node,member)
-#  }
-# 
-#   return(out)
-# }
-#   
+
+#' Enhanced Segment Membership with Meaningful Names
+#' 
+#' Returns segment membership information with an additional column containing 
+#' meaningful segment names derived from the constituent nodes. This function 
+#' extends \code{\link{segment.membership}} by adding intelligent naming 
+#' strategies for aggregated segments.
+#' 
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param level Integer vector specifying which hierarchical levels to include.
+#'   Default includes all available levels.
+#' @param naming_strategy Character string specifying the naming approach:
+#'   \itemize{
+#'     \item "auto" (default): Automatic naming based on segment composition
+#'     \item "concat": Concatenate node names with separator
+#'     \item "pattern": Use pattern recognition for common suffixes/prefixes
+#'     \item "custom": Use user-provided names from custom_names parameter
+#'   }
+#' @param custom_names Named list providing custom names for specific segments.
+#'   Format: list("level.segment" = "Custom Name"), e.g., list("2.1" = "Blue Collar")
+#' @param separator Character string used to separate names when concatenating.
+#'   Default is " + ".
+#' @param max_concat_length Maximum number of names to concatenate before 
+#'   switching to pattern-based naming. Default is 2.
+#' @param pattern_rules Named list of pattern rules for automatic naming.
+#'   Default includes common patterns like "Worker" → "Workers_Group".
+#' 
+#' @return A data frame with three columns:
+#'   \describe{
+#'     \item{name}{Character vector of original category names}
+#'     \item{membership}{Character vector indicating segment membership, formatted
+#'       as "level.segment" (e.g., "2.1" for level 2, segment 1)}
+#'     \item{level_name}{Character vector with meaningful segment names derived
+#'       from constituent nodes or user-provided names}
+#'   }
+#' 
+#' @details
+#' The function applies different naming strategies based on segment composition:
+#' \enumerate{
+#'   \item \strong{Individual nodes}: Keep original name unchanged
+#'   \item \strong{Small segments} (≤ max_concat_length): Concatenate names
+#'   \item \strong{Large segments}: Apply pattern recognition or use generic names
+#'   \item \strong{Custom names}: Override automatic naming with user-provided names
+#' }
+#' 
+#' Pattern recognition identifies common suffixes (e.g., "Worker", "Manager") 
+#' and creates group names (e.g., "Workers_Group", "Management_Group").
+#' 
+#' @examples
+#' # Generate data and run analysis
+#' mob_data <- generate_mobility_data(n_classes = 6, seed = 42,
+#'   class_names = c("Upper_Class", "Professional", "Manager", 
+#'                   "Skilled_Worker", "Service_Worker", "Manual_Worker"))
+#' seg <- moneca(mob_data, segment.levels = 3)
+#' 
+#' # Get enhanced membership with automatic naming
+#' enhanced <- segment.membership.enhanced(seg)
+#' print(enhanced)
+#' 
+#' # Use concatenation strategy
+#' concat_membership <- segment.membership.enhanced(seg, 
+#'                                                 naming_strategy = "concat")
+#' 
+#' # Use custom names for specific segments
+#' custom_names <- list("2.1" = "Blue_Collar", "3.1" = "All_Classes")
+#' custom_membership <- segment.membership.enhanced(seg, 
+#'                                                 naming_strategy = "custom",
+#'                                                 custom_names = custom_names)
+#' 
+#' @seealso 
+#' \code{\link{segment.membership}} for basic membership information,
+#' \code{\link{moneca}} for the main analysis function
+#' 
+#' @export
+
+segment.membership.enhanced <- function(segments, 
+                                      level = seq(segments$segment.list),
+                                      naming_strategy = "auto",
+                                      custom_names = NULL,
+                                      separator = " + ",
+                                      max_concat_length = 2,
+                                      pattern_rules = NULL) {
+  
+  # Validate inputs
+  if (is.null(segments)) {
+    stop("segments object is NULL")
+  }
+  if (!inherits(segments, "moneca")) {
+    stop("segments must be a moneca object created by the moneca() function")
+  }
+  if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
+    stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  }
+  if (is.null(segments$mat.list[[1]])) {
+    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  }
+  
+  # Get basic membership information
+  basic_membership <- segment.membership(segments, level = level)
+  
+  # Get original node names
+  org.names <- rownames(segments$mat.list[[1]])[-nrow(segments$mat.list[[1]])]
+  
+  # Set default pattern rules if not provided
+  if (is.null(pattern_rules)) {
+    pattern_rules <- list(
+      "Worker" = "Workers_Group",
+      "Manager" = "Management_Group", 
+      "Professional" = "Professionals_Group",
+      "Service" = "Service_Sector",
+      "Manual" = "Manual_Labor",
+      "Class" = "Social_Class"
+    )
+  }
+  
+  # Initialize level_name column
+  level_names <- character(nrow(basic_membership))
+  
+  # Process each unique membership
+  unique_memberships <- unique(basic_membership$membership)
+  # Filter out empty strings and invalid memberships
+  unique_memberships <- unique_memberships[unique_memberships != "" & 
+                                         unique_memberships != "FALSE" & 
+                                         !is.na(unique_memberships)]
+  
+  for (membership_id in unique_memberships) {
+    # Find nodes with this membership
+    node_indices <- which(basic_membership$membership == membership_id)
+    node_names <- basic_membership$name[node_indices]
+    
+    # Generate level name based on strategy
+    level_name <- generate_level_name(
+      node_names = node_names,
+      membership_id = membership_id,
+      naming_strategy = naming_strategy,
+      custom_names = custom_names,
+      separator = separator,
+      max_concat_length = max_concat_length,
+      pattern_rules = pattern_rules
+    )
+    
+    # Assign level name to all nodes with this membership
+    level_names[node_indices] <- level_name
+  }
+  
+  # Handle nodes without membership (empty string, FALSE, or NA)
+  invalid_membership_indices <- which(basic_membership$membership == "" | 
+                                     basic_membership$membership == "FALSE" | 
+                                     is.na(basic_membership$membership))
+  if (length(invalid_membership_indices) > 0) {
+    level_names[invalid_membership_indices] <- basic_membership$name[invalid_membership_indices]
+  }
+  
+  # Create enhanced membership data frame
+  enhanced_membership <- data.frame(
+    name = basic_membership$name,
+    membership = basic_membership$membership,
+    level_name = level_names,
+    stringsAsFactors = FALSE
+  )
+  
+  return(enhanced_membership)
+}
+
+#' Generate Level Name Based on Strategy
+#' 
+#' Internal helper function to generate meaningful level names for segments.
+#' 
+#' @param node_names Character vector of node names in the segment
+#' @param membership_id Character string of the membership ID (e.g., "2.1")
+#' @param naming_strategy Character string specifying naming approach
+#' @param custom_names Named list of custom names
+#' @param separator Character string for concatenation
+#' @param max_concat_length Maximum nodes to concatenate
+#' @param pattern_rules Named list of pattern replacement rules
+#' 
+#' @return Character string with the generated level name
+#' @keywords internal
+
+generate_level_name <- function(node_names, membership_id, naming_strategy, 
+                               custom_names, separator, max_concat_length, 
+                               pattern_rules) {
+  
+  # Strategy 1: Custom names override everything
+  if (naming_strategy == "custom" && !is.null(custom_names) && 
+      membership_id %in% names(custom_names)) {
+    return(custom_names[[membership_id]])
+  }
+  
+  # Strategy 2: Single node - keep original name
+  if (length(node_names) == 1) {
+    return(node_names[1])
+  }
+  
+  # Strategy 3: Concatenation for small groups
+  if (naming_strategy == "concat" || 
+      (naming_strategy == "auto" && length(node_names) <= max_concat_length)) {
+    return(paste(node_names, collapse = separator))
+  }
+  
+  # Strategy 4: Pattern recognition
+  if (naming_strategy == "pattern" || naming_strategy == "auto") {
+    pattern_name <- apply_pattern_rules(node_names, pattern_rules, membership_id)
+    if (!is.null(pattern_name)) {
+      return(pattern_name)
+    }
+  }
+  
+  # Fallback: Generic group name
+  level_num <- as.numeric(strsplit(membership_id, "\\.")[[1]][1])
+  segment_num <- strsplit(membership_id, "\\.")[[1]][2]
+  
+  if (length(node_names) > max_concat_length) {
+    return(paste0("Group_", level_num, "_", segment_num, " (", length(node_names), " nodes)"))
+  } else {
+    return(paste(node_names, collapse = separator))
+  }
+}
+
+#' Apply Pattern Rules for Segment Naming
+#' 
+#' Internal helper function that applies pattern recognition rules to generate
+#' meaningful segment names based on common suffixes or prefixes.
+#' 
+#' @param node_names Character vector of node names in the segment
+#' @param pattern_rules Named list of pattern replacement rules
+#' @param membership_id Character string of membership ID for fallback naming
+#' 
+#' @return Character string with pattern-based name, or NULL if no pattern found
+#' @keywords internal
+
+apply_pattern_rules <- function(node_names, pattern_rules, membership_id) {
+  
+  # Look for common patterns in node names
+  for (pattern in names(pattern_rules)) {
+    # Count how many nodes contain this pattern
+    matches <- sum(grepl(pattern, node_names, ignore.case = TRUE))
+    
+    # If majority of nodes match the pattern, use the rule
+    if (matches >= length(node_names) * 0.5) {  # 50% threshold
+      return(pattern_rules[[pattern]])
+    }
+  }
+  
+  # Look for common prefixes or suffixes
+  if (length(node_names) >= 2) {
+    # Find common suffix
+    common_suffix <- find_common_suffix(node_names)
+    if (nchar(common_suffix) >= 3) {  # Minimum 3 characters
+      return(paste0(common_suffix, "_Group"))
+    }
+    
+    # Find common prefix  
+    common_prefix <- find_common_prefix(node_names)
+    if (nchar(common_prefix) >= 3) {  # Minimum 3 characters
+      return(paste0(common_prefix, "_Group"))
+    }
+  }
+  
+  return(NULL)
+}
+
+#' Find Common Suffix in Node Names
+#' @param names Character vector of names
+#' @return Character string of common suffix, or empty string if none
+#' @keywords internal
+find_common_suffix <- function(names) {
+  if (length(names) < 2) return("")
+  
+  # Reverse all names and find common prefix of reversed names
+  reversed_names <- sapply(names, function(x) paste(rev(strsplit(x, "")[[1]]), collapse = ""))
+  common_reversed <- find_common_prefix(reversed_names)
+  
+  # Reverse the result to get common suffix
+  if (nchar(common_reversed) > 0) {
+    return(paste(rev(strsplit(common_reversed, "")[[1]]), collapse = ""))
+  }
+  return("")
+}
+
+#' Find Common Prefix in Node Names
+#' @param names Character vector of names
+#' @return Character string of common prefix, or empty string if none
+#' @keywords internal
+find_common_prefix <- function(names) {
+  if (length(names) < 2) return("")
+  
+  # Find the shortest name length
+  min_length <- min(nchar(names))
+  if (min_length == 0) return("")
+  
+  # Check each position from start
+  for (i in 1:min_length) {
+    chars <- substr(names, i, i)
+    if (length(unique(chars)) > 1) {
+      if (i == 1) return("")
+      return(substr(names[1], 1, i - 1))
+    }
+  }
+  
+  # All characters match up to minimum length
+  return(substr(names[1], 1, min_length))
+}
 
 #' force.segments
 #' 

@@ -1,11 +1,10 @@
 * installing *source* package ‘MONECA’ ...
-** this is package ‘MONECA’ version ‘0.1.8’
+** this is package ‘MONECA’ version ‘0.2.0’
 ** using staged installation
 ** R
 ** data
 ** inst
 ** byte-compile and prepare package for lazy loading
-Note: possibile errore in 'scale_size_continuous(range = c(2, ': argomento non utilizzato (na.value = 8) 
 ** help
 *** installing help indices
 ** building package indices

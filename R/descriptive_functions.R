@@ -4,7 +4,7 @@
 #' statistics, network properties, and segmentation quality measures across all
 #' hierarchical levels.
 #'
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param x A MONECA object returned by \code{\link{moneca}}.
 #' @param small.cell.reduction Numeric threshold for small cell handling. If NULL,
 #'   uses the value from the MONECA object.
 #' @param ... Additional arguments (currently unused).
@@ -50,7 +50,8 @@
 #'
 #' @seealso \code{\link{moneca}}, \code{\link{summary.moneca}}
 #' @export
-print.moneca <- function(segments, small.cell.reduction=segments$small.cell.reduction, ...){
+print.moneca <- function(x, small.cell.reduction=x$small.cell.reduction, ...){
+  segments <- x
   
   # Hvor mange procent flytter sig i det hele taget?
   mx            <- segments$mat.list[[1]]
@@ -438,12 +439,12 @@ return(out)
 #' 
 #' @export
 
-print.first_level_summary <- function(out){
-  l.seq     <- 1:length(out$n.1.edges)
-  n.1.edges <- paste("Level ",l.seq,": ", out$n.1.edges, sep="") 
-  sum.1     <- out$sum.1
-  des       <- out$des[-1]
-  share     <- paste("Level ",l.seq,": ", round(out$share,3)*100, "%", sep="") 
+print.first_level_summary <- function(x, ...){
+  l.seq     <- 1:length(x$n.1.edges)
+  n.1.edges <- paste("Level ",l.seq,": ", x$n.1.edges, sep="") 
+  sum.1     <- x$sum.1
+  des       <- x$des[-1]
+  share     <- paste("Level ",l.seq,": ", round(x$share,3)*100, "%", sep="") 
   names(sum.1)   <- paste("Level", l.seq,": ", sep="")
   names(des)     <- paste("Level", l.seq[-1:-2],": ", sep="")
   

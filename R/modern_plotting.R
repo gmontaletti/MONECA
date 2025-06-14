@@ -7,6 +7,14 @@
 #' @name modern_plotting
 NULL
 
+# Global variable declarations to avoid R CMD check warnings
+if(getRversion() >= "2.15.1") {
+  utils::globalVariables(c(
+    "weight", "nodes", "node_size", "is_ego", "same_segment", "node_name",
+    "level_name", "mobility_rate", "name", "segment", "x", "y"
+  ))
+}
+
 #' Modern Network Visualization for MONECA Results
 #'
 #' Creates sophisticated network visualizations of MONECA clustering results using
@@ -770,7 +778,7 @@ plot_stair_ggraph <- function(segments,
             ggplot2::aes(x = x, y = y, group = segment),
             fill = NA,
             color = "black",
-            size = 0.8,
+            linewidth = 0.8,
             alpha = 0.7
           )
         }
