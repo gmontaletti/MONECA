@@ -2,6 +2,7 @@
 % Please edit documentation in R/MONECA.R
 \docType{package}
 \name{MONECA-package}
+\alias{MONECA}
 \alias{MONECA-package}
 \title{MONECA: Mobility Network Clustering Analysis}
 \description{
@@ -9,8 +10,6 @@ MONECA creates weighted networks from mobility tables and uses cliques to identi
 discrete and nested clusters of social positions with high internal mobility.
 The package provides comprehensive tools for analyzing social mobility patterns
 through graph-theoretic approaches with modern visualization capabilities.
-
-MONECA creates a weighted network from a mobility table and uses cliques (or similar) to create discrete and nested clusters.
 }
 \details{
 The MONECA package implements a sophisticated hierarchical clustering algorithm
@@ -83,72 +82,10 @@ underlying organization of social mobility.
 }
 }
 
-\examples{
-# Generate synthetic mobility data
-mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
-
-# Run MONECA analysis
-seg <- moneca(mobility_data, segment.levels = 3)
-print(seg)
-
-# Extract segment membership
-membership <- segment.membership(seg)
-print(membership)
-
-# Modern visualization (recommended)
-\dontrun{
-# Basic network plot
-plot_moneca_ggraph(seg, title = "Social Mobility Network")
-
-# Customized network visualization
-plot_moneca_ggraph(seg, 
-                  layout = "stress",
-                  node_color = "mobility",
-                  edge_width = "weight",
-                  color_palette = "Spectral")
-
-# Ego network analysis
-plot_ego_ggraph(seg, mobility_data, ego_id = 3, 
-               title = "Mobility from Middle Class")
-
-# Multi-level stair plot
-plot_stair_ggraph(seg)
-}
-
-# Use predefined examples
-examples <- generate_example_datasets()
-simple_seg <- moneca(examples$simple, segment.levels = 2)
-
-\dontrun{
-# Compare different mobility regimes
-plot_moneca_ggraph(simple_seg, title = "Simple Mobility Structure")
-}
-
-}
-\references{
-Touboel, J., & Larsen, A. G. (2017). Mapping the Social Class Structure: 
-From Occupational Mobility to Social Class Categories Using Network Analysis.
-\emph{Sociology}, 51(6), 1257-1276. \doi{10.1177/0038038516673125}
-
-Larsen, A. G., & Touboel, J. (2015). Social network analysis of occupational 
-mobility and social class. In \emph{Research Handbook on Analytical Sociology} 
-(pp. 411-434). Edward Elgar Publishing.
-}
 \seealso{
 Useful links:
 \itemize{
   \item \url{None yet}
 }
 
-
-Useful links:
-\itemize{
-  \item \url{None yet}
-}
-
-}
-\author{
-Jonas Touboel \email{jonas.touboel@ku.dk}
-
-Anton Grau Larsen \email{agl.ioa@cbs.dk} (maintainer)
 }

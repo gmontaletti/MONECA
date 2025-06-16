@@ -293,78 +293,198 @@ plot_moneca_ggraph <- function(segments,
     p <- ggraph::ggraph(tidy_graph, layout = "manual", x = x_coords, y = y_coords)
   }
   
-  # Add edges
+  # Add segment boundaries (convex hulls) FIRST as background layer
+  if (show_segments && identical(node_color, "segment")) {
+    # Get the layout that ggraph is actually using
+    if (is.character(layout)) {
+      actual_layout <- ggraph::create_layout(tidy_graph, layout = layout)
+    } else {
+      # For manual layout, create layout data frame
+      actual_layout <- data.frame(
+        x = x_coords,
+        y = y_coords,
+        name = node_names,
+        stringsAsFactors = FALSE
+      )
+      # Add all node attributes from tidy_graph
+      node_data <- tidy_graph %>%
+        tidygraph::activate(nodes) %>%
+        tidygraph::as_tibble()
+      
+      actual_layout <- merge(actual_layout, node_data, by = "name", all.x = TRUE)
+    }
+    
+    # Add segment information to layout if not already present
+    if (!"segment" %in% colnames(actual_layout)) {
+      actual_layout$segment <- tidy_graph %>%
+        tidygraph::activate(nodes) %>%
+        tidygraph::pull(segment) %>%
+        as.character()
+    }
+    
+    if (!"level_name" %in% colnames(actual_layout)) {
+      actual_layout$level_name <- tidy_graph %>%
+        tidygraph::activate(nodes) %>%
+        tidygraph::pull(level_name) %>%
+        as.character()
+    }
+    
+    # Create hull data
+    hull_data <- actual_layout %>%
+      dplyr::group_by(segment) %>%
+      dplyr::filter(dplyr::n() >= 3) %>%
+      dplyr::do({
+        if (nrow(.) >= 3) {
+          hull_indices <- grDevices::chull(.$x, .$y)
+          .[hull_indices, c("x", "y", "segment", "level_name")]
+        } else {
+          data.frame(x = numeric(0), y = numeric(0), segment = character(0), level_name = character(0))
+        }
+      }) %>%
+      dplyr::ungroup()
+    
+    if (nrow(hull_data) > 0) {
+      # Calculate label positions
+      label_data <- hull_data %>%
+        dplyr::group_by(segment) %>%
+        dplyr::summarise(
+          x = mean(x, na.rm = TRUE),
+          y = max(y, na.rm = TRUE) + 0.15,  # Slightly higher label position
+          label = dplyr::first(level_name),
+          .groups = 'drop'
+        )
+      
+      # Add hulls as the FIRST layer (background)
+      hull_list <- split(hull_data, hull_data$segment)
+      
+      for (i in seq_along(hull_list)) {
+        hull_segment <- hull_list[[i]]
+        if (nrow(hull_segment) >= 3) {
+          # Use ggforce if available for rounded hulls
+          if (requireNamespace("ggforce", quietly = TRUE)) {
+            p <- p + ggforce::geom_shape(
+              data = hull_segment,
+              ggplot2::aes(x = x, y = y),
+              fill = RColorBrewer::brewer.pal(max(3, length(hull_list)), color_palette)[i],
+              alpha = segment_alpha,
+              expand = ggplot2::unit(0.02, "npc"),
+              radius = ggplot2::unit(0.03, "npc"),
+              show.legend = FALSE,
+              inherit.aes = FALSE
+            )
+          } else {
+            p <- p + ggplot2::geom_polygon(
+              data = hull_segment,
+              ggplot2::aes(x = x, y = y),
+              fill = RColorBrewer::brewer.pal(max(3, length(hull_list)), color_palette)[i],
+              alpha = segment_alpha,
+              show.legend = FALSE,
+              inherit.aes = FALSE
+            )
+          }
+        }
+      }
+      
+      # Store label data for later use
+      hull_label_data <- label_data
+    } else {
+      hull_label_data <- NULL
+    }
+  } else {
+    hull_label_data <- NULL
+  }
+  
+  # Add edges (second layer)
   if (identical(edge_width, "weight")) {
     p <- p + ggraph::geom_edge_link(
-      ggplot2::aes(width = weight),
-      color = edge_color,
-      alpha = edge_alpha,
-      arrow = ggplot2::arrow(length = ggplot2::unit(0.3, "cm"), type = "closed"),
-      end_cap = ggraph::circle(0.1, "cm")
+      ggplot2::aes(width = weight, alpha = weight),
+      color = edge_color
     ) +
-    ggraph::scale_edge_width_continuous(range = c(0.2, 2), guide = "none")
+    ggraph::scale_edge_width_continuous(range = c(0.2, 2), guide = "none") +
+    ggraph::scale_edge_alpha_continuous(range = c(0.2, 0.9), guide = "none")
   } else {
     edge_width_val <- if (is.numeric(edge_width)) edge_width else 0.5
     p <- p + ggraph::geom_edge_link(
       color = edge_color,
       alpha = edge_alpha,
-      width = edge_width_val,
-      arrow = ggplot2::arrow(length = ggplot2::unit(0.3, "cm"), type = "closed"),
-      end_cap = ggraph::circle(0.1, "cm")
+      width = edge_width_val
     )
   }
   
-  # Add nodes
+  # Add nodes (third layer - on top)
   if (identical(node_color, "segment")) {
     p <- p + ggraph::geom_node_point(
       ggplot2::aes(size = node_size, color = level_name),
-      alpha = node_alpha
+      alpha = node_alpha,
+      show.legend = FALSE
     ) +
-    ggplot2::scale_color_brewer(type = "qual", palette = color_palette, name = "Segment")
+    ggplot2::scale_color_brewer(type = "qual", palette = color_palette, guide = "none")
   } else if (identical(node_color, "mobility")) {
     p <- p + ggraph::geom_node_point(
       ggplot2::aes(size = node_size, color = mobility_rate),
-      alpha = node_alpha
+      alpha = node_alpha,
+      show.legend = FALSE
     ) +
-    ggplot2::scale_color_gradient(low = "blue", high = "red", name = "Mobility Rate")
+    ggplot2::scale_color_gradient(low = "blue", high = "red", guide = "none")
   } else {
     p <- p + ggraph::geom_node_point(
       ggplot2::aes(size = node_size),
       color = node_color,
-      alpha = node_alpha
+      alpha = node_alpha,
+      show.legend = FALSE
     )
   }
   
-  # Add labels
-  if (show_labels) {
-    p <- p + ggraph::geom_node_text(
-      ggplot2::aes(label = name),
-      size = label_size,
-      repel = TRUE
+  # Add labels - only show individual node labels when not showing segment hulls
+  if (show_labels && (!show_segments || !identical(node_color, "segment"))) {
+    if (identical(node_color, "segment")) {
+      p <- p + ggraph::geom_node_text(
+        ggplot2::aes(label = level_name),
+        size = label_size,
+        repel = TRUE
+      )
+    } else {
+      p <- p + ggraph::geom_node_text(
+        ggplot2::aes(label = name),
+        size = label_size,
+        repel = TRUE
+      )
+    }
+  }
+  
+  # Add segment labels if we have hull data
+  if (!is.null(hull_label_data)) {
+    p <- p + ggplot2::geom_text(
+      data = hull_label_data,
+      ggplot2::aes(x = x, y = y, label = label),
+      size = 4,
+      fontface = "bold",
+      vjust = 0,
+      inherit.aes = FALSE
     )
   }
   
-  # Add segment boundaries (convex hulls)
-  if (show_segments && identical(node_color, "segment")) {
-    # This would require additional computation to create convex hulls
-    # For now, we'll skip this feature but it can be added later
-  }
   
   # Apply theme
   if (theme_style == "void") {
-    p <- p + ggraph::theme_graph()
+    p <- p + ggraph::theme_graph() +
+           ggplot2::theme(
+             plot.title = ggplot2::element_text(size = 11, margin = ggplot2::margin(b = 2))
+           )
   } else if (theme_style == "minimal") {
     p <- p + ggplot2::theme_minimal() +
            ggplot2::theme(
              axis.text = ggplot2::element_blank(),
              axis.title = ggplot2::element_blank(),
-             panel.grid = ggplot2::element_blank()
+             panel.grid = ggplot2::element_blank(),
+             plot.title = ggplot2::element_text(size = 11, margin = ggplot2::margin(b = 2))
            )
   } else if (theme_style == "classic") {
     p <- p + ggplot2::theme_classic() +
            ggplot2::theme(
              axis.text = ggplot2::element_blank(),
-             axis.title = ggplot2::element_blank()
+             axis.title = ggplot2::element_blank(),
+             plot.title = ggplot2::element_text(size = 11, margin = ggplot2::margin(b = 2))
            )
   }
   
@@ -373,8 +493,8 @@ plot_moneca_ggraph <- function(segments,
     p <- p + ggplot2::ggtitle(title)
   }
   
-  # Scale node sizes
-  p <- p + ggplot2::scale_size_continuous(range = c(2, 8), name = "Size")
+  # Scale node sizes without legend
+  p <- p + ggplot2::scale_size_continuous(range = c(2, 8), guide = "none")
   
   return(p)
 }
@@ -571,13 +691,12 @@ plot_ego_ggraph <- function(segments,
   
   # Add edges with width based on flow volume
   p <- p + ggraph::geom_edge_link(
-    ggplot2::aes(width = weight, color = weight),
-    alpha = 0.7,
-    arrow = ggplot2::arrow(length = ggplot2::unit(0.3, "cm"), type = "closed"),
-    end_cap = ggraph::circle(0.15, "cm")
+    ggplot2::aes(width = weight, color = weight, alpha = weight),
+    end_cap = ggraph::circle(0.05, "cm")
   ) +
   ggraph::scale_edge_width_continuous(range = edge_width_range, guide = "none") +
-  ggraph::scale_edge_color_viridis(name = "Flow Volume")
+  ggraph::scale_edge_color_viridis(name = "Flow Volume", guide = "none") +
+  ggraph::scale_edge_alpha_continuous(range = c(0.3, 0.9), guide = "none")
   
   # Add nodes with coloring based on segment membership
   p <- p + ggraph::geom_node_point(
@@ -593,15 +712,18 @@ plot_ego_ggraph <- function(segments,
   ) +
   ggplot2::scale_size_continuous(range = node_size_range, name = "Total Mobility")
   
-  # Add labels
+  # Add labels - use individual node names (professions)
   p <- p + ggraph::geom_node_text(
     ggplot2::aes(label = node_name),
     size = 3,
     repel = TRUE
   )
   
-  # Apply theme
-  p <- p + ggraph::theme_graph()
+  # Apply theme with reduced title spacing
+  p <- p + ggraph::theme_graph() +
+         ggplot2::theme(
+           plot.title = ggplot2::element_text(size = 11, margin = ggplot2::margin(b = 2))
+         )
   
   # Add title
   if (is.null(title)) {
@@ -626,7 +748,7 @@ plot_ego_ggraph <- function(segments,
 #'
 #' @param segments A MONECA object returned by \code{\link{moneca}}.
 #' @param levels Integer vector specifying which hierarchical levels to visualize.
-#'   Default includes all levels except the first (individual categories).
+#'   Default includes all levels.
 #' @param layout Layout specification for consistency across plots. Can be:
 #'   \itemize{
 #'     \item NULL (default): Use layout.matrix() for consistent positioning
@@ -635,8 +757,10 @@ plot_ego_ggraph <- function(segments,
 #'   }
 #' @param ncol Integer specifying the number of columns in the plot grid.
 #'   Default is 2. Set to 1 for vertical arrangement.
-#' @param combine_plots Logical indicating whether to combine plots into a single
-#'   grid (TRUE) or return a list of individual plots (FALSE). Default is TRUE.
+#' @param segment_naming Character string specifying the naming strategy for 
+#'   segment labels. Default is "auto".
+#' @param include_first_level Logical indicating whether to include the first level
+#'   (individual classes without segmentation). Default is TRUE.
 #' @param ... Additional arguments passed to \code{\link{plot_moneca_ggraph}}.
 #'
 #' @return 
@@ -695,10 +819,11 @@ plot_ego_ggraph <- function(segments,
 #' 
 #' @export
 plot_stair_ggraph <- function(segments,
-                             levels = seq_along(segments$segment.list)[-1],
+                             levels = seq_along(segments$segment.list),
                              layout = NULL,
                              ncol = 2,
                              segment_naming = "auto",
+                             include_first_level = TRUE,
                              ...) {
   
   # Validate segments object
@@ -723,8 +848,37 @@ plot_stair_ggraph <- function(segments,
   
   plots <- list()
   
-  for (i in seq_along(levels)) {
-    level_idx <- levels[i]
+  # Add first level plot (individual nodes) if requested
+  if (include_first_level) {
+    p_first <- plot_moneca_ggraph(
+      segments,
+      level = 1,
+      layout = layout,
+      title = "Level 1: Individual Classes",
+      segment_naming = segment_naming,
+      show_segments = FALSE,  # No hulls for individual level
+      show_labels = TRUE,
+      ...
+    )
+    
+    # Remove all legends
+    p_first <- p_first + ggplot2::theme(legend.position = "none")
+    
+    plots[[1]] <- p_first
+    plot_names <- c("Level 1")
+    
+    # Adjust levels to start from 2
+    plot_levels <- levels[levels > 1]
+    start_idx <- 2
+  } else {
+    plot_levels <- levels
+    start_idx <- 1
+    plot_names <- character(0)
+  }
+  
+  # Add subsequent level plots
+  for (i in seq_along(plot_levels)) {
+    level_idx <- plot_levels[i]
     
     p <- plot_moneca_ggraph(
       segments,
@@ -735,60 +889,14 @@ plot_stair_ggraph <- function(segments,
       ...
     )
     
-    # Remove all legends
+    # Remove all legends - hulls are now handled by plot_moneca_ggraph() in proper layer order
     p <- p + ggplot2::theme(legend.position = "none")
     
-    # Add group boundaries for levels 2, 3, and 4
-    if (level_idx >= 2) {
-      # Get enhanced segment membership for this level
-      membership <- segment.membership.enhanced(segments, level = 1:level_idx, naming_strategy = segment_naming)
-      node_names <- rownames(segments$mat.list[[1]])[-nrow(segments$mat.list[[1]])]
-      
-      # Create a data frame with node positions and segment membership
-      node_data <- data.frame(
-        x = layout[, 1],
-        y = layout[, 2],
-        name = node_names,
-        stringsAsFactors = FALSE
-      )
-      
-      # Match membership to node positions
-      node_data$segment <- membership$membership[match(node_data$name, membership$name)]
-      
-      # Remove nodes without segment assignment
-      node_data <- node_data[!is.na(node_data$segment) & node_data$segment != "", ]
-      
-      if (nrow(node_data) > 0) {
-        # Create convex hulls for each segment
-        if (!requireNamespace("dplyr", quietly = TRUE)) {
-          stop("Package 'dplyr' is required for segment boundaries.")
-        }
-        
-        # Calculate convex hulls for each segment
-        hull_data <- node_data %>%
-          dplyr::group_by(segment) %>%
-          dplyr::filter(dplyr::n() >= 3) %>%  # Need at least 3 points for hull
-          dplyr::slice(grDevices::chull(x, y)) %>%
-          dplyr::ungroup()
-        
-        # Add convex hull polygons
-        if (nrow(hull_data) > 0) {
-          p <- p + ggplot2::geom_polygon(
-            data = hull_data,
-            ggplot2::aes(x = x, y = y, group = segment),
-            fill = NA,
-            color = "black",
-            linewidth = 0.8,
-            alpha = 0.7
-          )
-        }
-      }
-    }
-    
-    plots[[i]] <- p
+    plots[[start_idx + i - 1]] <- p
+    plot_names <- c(plot_names, paste("Level", level_idx))
   }
   
-  names(plots) <- paste("Level", levels)
+  names(plots) <- plot_names
   
   return(plots)
 }

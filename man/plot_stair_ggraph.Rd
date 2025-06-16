@@ -6,10 +6,11 @@
 \usage{
 plot_stair_ggraph(
   segments,
-  levels = seq_along(segments$segment.list)[-1],
+  levels = seq_along(segments$segment.list),
   layout = NULL,
   ncol = 2,
   segment_naming = "auto",
+  include_first_level = TRUE,
   ...
 )
 }
@@ -17,7 +18,7 @@ plot_stair_ggraph(
 \item{segments}{A MONECA object returned by \code{\link{moneca}}.}
 
 \item{levels}{Integer vector specifying which hierarchical levels to visualize.
-Default includes all levels except the first (individual categories).}
+Default includes all levels.}
 
 \item{layout}{Layout specification for consistency across plots. Can be:
 \itemize{
@@ -29,10 +30,13 @@ Default includes all levels except the first (individual categories).}
 \item{ncol}{Integer specifying the number of columns in the plot grid.
 Default is 2. Set to 1 for vertical arrangement.}
 
-\item{...}{Additional arguments passed to \code{\link{plot_moneca_ggraph}}.}
+\item{segment_naming}{Character string specifying the naming strategy for 
+segment labels. Default is "auto".}
 
-\item{combine_plots}{Logical indicating whether to combine plots into a single
-grid (TRUE) or return a list of individual plots (FALSE). Default is TRUE.}
+\item{include_first_level}{Logical indicating whether to include the first level
+(individual classes without segmentation). Default is TRUE.}
+
+\item{...}{Additional arguments passed to \code{\link{plot_moneca_ggraph}}.}
 }
 \value{
 If \code{combine_plots = TRUE}, returns a combined plot grid object.

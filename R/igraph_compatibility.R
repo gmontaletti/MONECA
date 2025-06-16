@@ -21,6 +21,20 @@
     .moneca_env$moneca_shortest_paths <- function(...) igraph::distances(...)
     .moneca_env$moneca_average_path_length <- function(...) igraph::mean_distance(...)
     .moneca_env$moneca_components <- function(...) igraph::components(...)
+    .moneca_env$moneca_cliques <- function(graph, ...) {
+      # Ensure graph is undirected for clique calculations to avoid warning
+      if (igraph::is_directed(graph)) {
+        graph <- igraph::as.undirected(graph, mode = "collapse")
+      }
+      suppressWarnings(igraph::cliques(graph, ...))
+    }
+    .moneca_env$moneca_max_cliques <- function(graph, ...) {
+      # Ensure graph is undirected for clique calculations to avoid warning
+      if (igraph::is_directed(graph)) {
+        graph <- igraph::as.undirected(graph, mode = "collapse")
+      }
+      suppressWarnings(igraph::max_cliques(graph, ...))
+    }
   } else {
     # Use old API functions
     .moneca_env$moneca_graph_from_adjacency <- function(...) igraph::graph.adjacency(...)
@@ -29,6 +43,20 @@
     .moneca_env$moneca_shortest_paths <- function(...) igraph::shortest.paths(...)
     .moneca_env$moneca_average_path_length <- function(...) igraph::average.path.length(...)
     .moneca_env$moneca_components <- function(...) igraph::clusters(...)
+    .moneca_env$moneca_cliques <- function(graph, ...) {
+      # Ensure graph is undirected for clique calculations to avoid warning
+      if (igraph::is.directed(graph)) {
+        graph <- igraph::as.undirected(graph, mode = "collapse")
+      }
+      suppressWarnings(igraph::cliques(graph, ...))
+    }
+    .moneca_env$moneca_max_cliques <- function(graph, ...) {
+      # Ensure graph is undirected for clique calculations to avoid warning
+      if (igraph::is.directed(graph)) {
+        graph <- igraph::as.undirected(graph, mode = "collapse")
+      }
+      suppressWarnings(igraph::max_cliques(graph, ...))
+    }
   }
   
   # Handle norm_coords which was removed in newer versions
@@ -73,3 +101,5 @@ moneca_shortest_paths <- function(...) .moneca_env$moneca_shortest_paths(...)
 moneca_average_path_length <- function(...) .moneca_env$moneca_average_path_length(...)
 moneca_components <- function(...) .moneca_env$moneca_components(...)
 moneca_norm_coords <- function(...) .moneca_env$moneca_norm_coords(...)
+moneca_cliques <- function(...) .moneca_env$moneca_cliques(...)
+moneca_max_cliques <- function(...) .moneca_env$moneca_max_cliques(...)

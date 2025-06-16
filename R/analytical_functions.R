@@ -39,7 +39,7 @@
 find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.upper.tri = TRUE){
   
   ##################
-  # Matrice modificering
+  # Matrix modification
   
   if(identical(mode, "Mutual")){
     mat[mat < cut.off]   <- NA
@@ -56,21 +56,21 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
     mat[upper.tri(mat)] <- NA
   }
     
-  # Her defineres output vectoren:
-  gruppe               <- vector(mode="numeric",length=nrow(mat))
-  names(gruppe)        <- rownames(mat)
-  # Her laves den matrice der skal "slettes i"
+  # Define output vector:
+  group               <- vector(mode="numeric",length=nrow(mat))
+  names(group)        <- rownames(mat)
+  # Create matrix for deletion
   max.mat              <- mat
   
   ############################
-  # Her defineres hjælpefunktionen
-  bejler.test           <- function(cliques, potentiel.klike){
-    klike.match         <- vector(length=length(cliques))
+  # Define helper function
+  clique.test           <- function(cliques, potential.clique){
+    clique.match         <- vector(length=length(cliques))
     for (j in 1:length(cliques)){
-      kl                <- cliques[[j]]
-      klike.match[[j]]  <- all(potentiel.klike %in% kl)
+      cl                <- cliques[[j]]
+      clique.match[[j]]  <- all(potential.clique %in% cl)
     }
-    any(klike.match)
+    any(clique.match)
   }
   
   #############################################################
@@ -96,36 +96,36 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
     #gruppe[max.ind]  <- i
     max.mat[max.ind[1], max.ind[2]] <- NA
     
-    gruppe.tilbejles    <- gruppe[max.ind] # Hvilken gruppe bejler den til?
-    bejler              <- max.ind 
+    group.candidates    <- group[max.ind] # Which group is it seeking to join?
+    candidate              <- max.ind 
     
-    ### Find den tilbejlede gruppe
+    ### Find the target group
     
-    if(sum(gruppe.tilbejles)==0){
-      gruppe[max.ind] <- i  
+    if(sum(group.candidates)==0){
+      group[max.ind] <- i  
     }
-    if(sum(gruppe.tilbejles)!=0){
+    if(sum(group.candidates)!=0){
       
-      gruppe.tilbejles <- gruppe.tilbejles[gruppe.tilbejles!=0] 
-      gruppe.medlemmer <- which(gruppe %in% gruppe.tilbejles)   # Det her skal ske før vi ved med sikkerhed hvilken af grupperne der er den rigtige
-      gruppe.stoerrelse <- table(gruppe[gruppe.medlemmer])       # Her findes den største af grupperne
-      gruppe.tildeles  <- as.numeric(names(gruppe.stoerrelse))[which.max(gruppe.stoerrelse)[1]]        # Her skal den finde den største af grupperne - Den tager det første element - så hvis der er to der er lige store så vælger den "tilfældigt" den største - som også vil være den mest cohesive???
+      group.candidates <- group.candidates[group.candidates!=0] 
+      group.members <- which(group %in% group.candidates)   # This must happen before we know with certainty which group is correct
+      group.size <- table(group[group.members])       # Find the largest group
+      group.assigned  <- as.numeric(names(group.size))[which.max(group.size)[1]]        # Find the largest group - takes the first element - so if two are equal size it chooses "randomly" the largest - which will also be the most cohesive???
       
       #### Test cliques
-      potentiel.klike  <- unique(sort(c(gruppe.medlemmer, bejler)))
+      potential.clique  <- unique(sort(c(group.members, candidate)))
       
-      test <- bejler.test(cliques, potentiel.klike)              # Her tester vi om den potentielle cliques er en faktisk klike
+      test <- clique.test(cliques, potential.clique)              # Test if the potential clique is an actual clique
       if (test==TRUE){
-        gruppe[potentiel.klike] <- gruppe.tildeles             
+        group[potential.clique] <- group.assigned             
       }
     }
   }
-  sub <- gruppe[gruppe==0] 
-  gruppe[gruppe==0] <- 1:length(sub) + max(gruppe)
-  g <- as.factor(gruppe) 
+  sub <- group[group==0] 
+  group[group==0] <- 1:length(sub) + max(group)
+  g <- as.factor(group) 
   levels(g) <- 1:nlevels(g)
   
-  # Her laver vi de nye cliques
+  # Create new cliques
   l        <- levels(g)
   ud.list  <- list()
   for ( i in 1:length(l)) ud.list[[i]] <- which(g == l[i])
@@ -210,8 +210,8 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
 
 moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.upper.tri=TRUE, small.cell.reduction=0){
   
-  # Find segmentsne på baggrund af en matrice
-  # Det er her find.segments options skal angives  
+  # Find segments based on a matrix
+  # This is where find.segments options should be specified  
   make.segments   <- function(mx, cut.off=1, mode=mode, delete.upper.tri=delete.upper.tri, small.cell.reduction=small.cell.reduction){
     
 #     l               <- nrow(mx)
@@ -235,37 +235,37 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
     mx.1i.graph[is.na(mx.1i.graph)] <- 0
     
     gra.1ii         <- moneca_graph_from_adjacency(adjmatrix=mx.1i.graph, mode="undirected", weighted=TRUE, diag=FALSE)
-    klike           <- cliques(gra.1ii)
-    clust.1         <- find.segments(mx.1i, klike, cut.off=cut.off)
+    clique           <- moneca_cliques(gra.1ii)
+    clust.1         <- find.segments(mx.1i, clique, cut.off=cut.off)
     
     return(clust.1)
   }
   
   segment.matrix  <- function(mx, segments){
     
-    grupper.1       <- c(segments$membership, length(segments$membership)+1)
-    mx.2_r          <- rowsum(mx, grupper.1)
+    groups.1       <- c(segments$membership, length(segments$membership)+1)
+    mx.2_r          <- rowsum(mx, groups.1)
     mx.2_r_t        <- t(mx.2_r)
-    mx.2_rc_t       <- rowsum(mx.2_r_t, grupper.1)
+    mx.2_rc_t       <- rowsum(mx.2_r_t, groups.1)
     mx.2g           <- t(mx.2_rc_t)
     return(mx.2g)
   }
   
-  level.down <- function(niv.nu, niv.ned){
-    # nak isolates
-    a               <- unlist(lapply(niv.nu, length))
-    niv.nu          <- niv.nu[a>1]
+  level.down <- function(level.current, level.below){
+    # remove isolates
+    a               <- unlist(lapply(level.current, length))
+    level.current          <- level.current[a>1]
     
     ud <- list()
     
     # Return empty list if no valid segments
-    if(length(niv.nu) == 0) {
+    if(length(level.current) == 0) {
       return(ud)
     }
     
-    for(i in 1:length(niv.nu)){
-      d                 <- niv.nu[[i]]
-      ud[[i]]           <- unlist(niv.ned[d])
+    for(i in 1:length(level.current)){
+      d                 <- level.current[[i]]
+      ud[[i]]           <- unlist(level.below[d])
     }
     
     return(ud)
@@ -276,10 +276,10 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
     seg.list        <- list()
     seg.list[[1]]   <- as.list(1:(nrow(mx)-1))
     
-    niv.nu          <- out.put[[1]]$segments$cliques
-    # nak isolates
-    a               <- unlist(lapply(niv.nu, length))
-    seg.list[[2]]   <- niv.nu[a>1]
+    level.current          <- out.put[[1]]$segments$cliques
+    # remove isolates
+    a               <- unlist(lapply(level.current, length))
+    seg.list[[2]]   <- level.current[a>1]
     
     # Adjust for actual number of levels available
     actual.levels <- min(segment.levels, length(out.put))
@@ -287,23 +287,23 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
     if (actual.levels > 1) {
       for (n in 2:actual.levels){
       
-      nu  <- n
-      ned <- n
+      current  <- n
+      below <- n
       
       # Check if level exists in output
-      if(nu > length(out.put)) break
+      if(current > length(out.put)) break
       
-      niv.nu     <- out.put[[nu]]$segments$cliques
-      niv.ned    <- out.put[[n-1]]$segments$cliques
+      level.current     <- out.put[[current]]$segments$cliques
+      level.below    <- out.put[[n-1]]$segments$cliques
       
       for (i in 1:(n-1)){
-        ned <- ned-1
-        niv.ned <- out.put[[ned]]$segments$cliques
-        niv.nu  <- level.down(niv.nu, niv.ned)  
+        below <- below-1
+        level.below <- out.put[[below]]$segments$cliques
+        level.current  <- level.down(level.current, level.below)  
       }
       # Only add non-empty levels
-      if (length(niv.nu) > 0) {
-        seg.list[[n+1]] <- niv.nu
+      if (length(level.current) > 0) {
+        seg.list[[n+1]] <- level.current
       }
     }
     }
@@ -311,7 +311,7 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
   }
   
   
-  # Her finder vi segmentsne
+  # Find segments
   mat.list        <- list()
   mat.list[[1]]   <- mx
   segments        <- make.segments(mx, cut.off=cut.off, mode=mode, delete.upper.tri=delete.upper.tri, small.cell.reduction=small.cell.reduction)
@@ -335,10 +335,10 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
   }
   
   
-  # Her laves segmentsne
+  # Create segments
   segment.list    <- create.segments(out.put, mx)
   
-  # Her laves output
+  # Create output
   
   out <- list(segment.list=segment.list, mat.list=mat.list, small.cell.reduction=small.cell.reduction)
   
@@ -1175,13 +1175,13 @@ new.seg$segment.list          <- list()
 new.seg$mat.list              <- list()
 new.seg$small.cell.reduction  <- segments$small.cell.reduction
 
-# Første level
+# First level
 
 new.seg$segment.list[[1]]  <- segments$segment.list[[1]]
 new.seg$mat.list[[1]]      <- segments$mat.list[[1]]
 mxa                        <- segments$mat.list[[1]]
 
-# Andet level
+# Second level
 out.list <- list()
 for(i in 1:nlevels(as.factor(variable))){
   var <- as.factor(variable)
@@ -1191,10 +1191,10 @@ for(i in 1:nlevels(as.factor(variable))){
 
 new.seg$segment.list[[2]] <- out.list
 
-grupper.1       <- c(variable, length(out.list)+1)
-mx.2_r          <- rowsum(mxa, grupper.1)
+groups.1       <- c(variable, length(out.list)+1)
+mx.2_r          <- rowsum(mxa, groups.1)
 mx.2_r_t        <- t(mx.2_r)
-mx.2_rc_t       <- rowsum(mx.2_r_t, grupper.1)
+mx.2_rc_t       <- rowsum(mx.2_r_t, groups.1)
 mx.2g           <- t(mx.2_rc_t)
 
 new.seg$mat.list[[2]] <- mx.2g
