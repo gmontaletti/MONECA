@@ -5,7 +5,7 @@
 \alias{.moneca_env}
 \title{igraph Compatibility Layer}
 \format{
-An object of class \code{environment} of length 7.
+An object of class \code{environment} of length 9.
 }
 \usage{
 .moneca_env

@@ -882,8 +882,9 @@ out.mat
 #'   Default is " + ".
 #' @param max_concat_length Maximum number of names to concatenate before 
 #'   switching to pattern-based naming. Default is 2.
-#' @param pattern_rules Named list of pattern rules for automatic naming.
-#'   Default includes common patterns like "Worker" → "Workers_Group".
+#' @param pattern_rules Enhanced pattern rules list with priorities and semantic
+#'   categories. Default includes comprehensive occupational and industry patterns
+#'   (avoiding generic social class terms).
 #' 
 #' @return A data frame with three columns:
 #'   \describe{
@@ -903,8 +904,10 @@ out.mat
 #'   \item \strong{Custom names}: Override automatic naming with user-provided names
 #' }
 #' 
-#' Pattern recognition identifies common suffixes (e.g., "Worker", "Manager") 
-#' and creates group names (e.g., "Workers_Group", "Management_Group").
+#' The enhanced pattern recognition system uses weighted scoring to identify
+#' occupational hierarchies, industry sectors, and employment types. It creates
+#' semantically meaningful names like "Executive_Leadership", "Professional_Services", 
+#' or "Technical_Specialists" based on segment composition, avoiding generic terms.
 #' 
 #' @examples
 #' # Generate data and run analysis
@@ -961,16 +964,9 @@ segment.membership.enhanced <- function(segments,
   # Get original node names
   org.names <- rownames(segments$mat.list[[1]])[-nrow(segments$mat.list[[1]])]
   
-  # Set default pattern rules if not provided
+  # Set default enhanced pattern rules if not provided
   if (is.null(pattern_rules)) {
-    pattern_rules <- list(
-      "Worker" = "Workers_Group",
-      "Manager" = "Management_Group", 
-      "Professional" = "Professionals_Group",
-      "Service" = "Service_Sector",
-      "Manual" = "Manual_Labor",
-      "Class" = "Social_Class"
-    )
+    pattern_rules <- create_enhanced_pattern_rules()
   }
   
   # Initialize level_name column
@@ -1058,9 +1054,9 @@ generate_level_name <- function(node_names, membership_id, naming_strategy,
     return(paste(node_names, collapse = separator))
   }
   
-  # Strategy 4: Pattern recognition
+  # Strategy 4: Enhanced pattern recognition
   if (naming_strategy == "pattern" || naming_strategy == "auto") {
-    pattern_name <- apply_pattern_rules(node_names, pattern_rules, membership_id)
+    pattern_name <- apply_enhanced_pattern_rules(node_names, pattern_rules, membership_id)
     if (!is.null(pattern_name)) {
       return(pattern_name)
     }
@@ -1077,90 +1073,331 @@ generate_level_name <- function(node_names, membership_id, naming_strategy,
   }
 }
 
-#' Apply Pattern Rules for Segment Naming
+#' Create Enhanced Pattern Rules for Segment Naming
 #' 
-#' Internal helper function that applies pattern recognition rules to generate
-#' meaningful segment names based on common suffixes or prefixes.
+#' Creates a comprehensive pattern library for intelligent segment naming,
+#' focusing on occupational levels, industries, and employment types while
+#' avoiding generic social class terms.
 #' 
-#' @param node_names Character vector of node names in the segment
-#' @param pattern_rules Named list of pattern replacement rules
-#' @param membership_id Character string of membership ID for fallback naming
-#' 
-#' @return Character string with pattern-based name, or NULL if no pattern found
+#' @return List of enhanced pattern rules with priorities and semantic categories
 #' @keywords internal
 
-apply_pattern_rules <- function(node_names, pattern_rules, membership_id) {
-  
-  # Look for common patterns in node names
-  for (pattern in names(pattern_rules)) {
-    # Count how many nodes contain this pattern
-    matches <- sum(grepl(pattern, node_names, ignore.case = TRUE))
+create_enhanced_pattern_rules <- function() {
+  list(
+    # Executive and Leadership (Priority 10)
+    "executive" = list(
+      patterns = c("CEO", "Executive", "Director", "Chief", "President"),
+      name = "Executive_Leadership",
+      priority = 10,
+      category = "leadership"
+    ),
     
-    # If majority of nodes match the pattern, use the rule
-    if (matches >= length(node_names) * 0.5) {  # 50% threshold
-      return(pattern_rules[[pattern]])
+    # Senior Management (Priority 9)
+    "senior_management" = list(
+      patterns = c("Senior.*Manager", "Vice.*President", "General.*Manager"),
+      name = "Senior_Management",
+      priority = 9,
+      category = "management"
+    ),
+    
+    # Management (Priority 8)
+    "management" = list(
+      patterns = c("Manager", "Management", "Supervisor", "Head", "Lead"),
+      name = "Management_Level",
+      priority = 8,
+      category = "management"
+    ),
+    
+    # Professional Services (Priority 7)
+    "professional" = list(
+      patterns = c("Professional", "Consultant", "Specialist", "Analyst"),
+      name = "Professional_Services",
+      priority = 7,
+      category = "professional"
+    ),
+    
+    # Technical and Engineering (Priority 7)
+    "technical" = list(
+      patterns = c("Engineer", "Technical", "Technician", "Developer", "Programmer"),
+      name = "Technical_Specialists",
+      priority = 7,
+      category = "technical"
+    ),
+    
+    # Healthcare (Priority 6)
+    "healthcare" = list(
+      patterns = c("Doctor", "Nurse", "Medical", "Health", "Physician"),
+      name = "Healthcare_Professionals",
+      priority = 6,
+      category = "healthcare"
+    ),
+    
+    # Education (Priority 6)
+    "education" = list(
+      patterns = c("Teacher", "Educator", "Professor", "Academic", "Instructor"),
+      name = "Education_Sector",
+      priority = 6,
+      category = "education"
+    ),
+    
+    # Finance and Banking (Priority 6)
+    "finance" = list(
+      patterns = c("Finance", "Bank", "Accountant", "Insurance", "Investment"),
+      name = "Financial_Services",
+      priority = 6,
+      category = "finance"
+    ),
+    
+    # Sales and Marketing (Priority 5)
+    "sales" = list(
+      patterns = c("Sales", "Marketing", "Account", "Business.*Development"),
+      name = "Sales_Marketing",
+      priority = 5,
+      category = "sales"
+    ),
+    
+    # Administrative (Priority 5)
+    "administrative" = list(
+      patterns = c("Admin", "Clerk", "Secretary", "Assistant", "Coordinator"),
+      name = "Administrative_Support", 
+      priority = 5,
+      category = "administrative"
+    ),
+    
+    # Skilled Workers (Priority 4)
+    "skilled_worker" = list(
+      patterns = c("Skilled", "Craft", "Trade", "Artisan", "Mechanic"),
+      name = "Skilled_Workers",
+      priority = 4,
+      category = "skilled"
+    ),
+    
+    # Service Workers (Priority 4)
+    "service" = list(
+      patterns = c("Service", "Customer", "Hospitality", "Retail", "Food"),
+      name = "Service_Industries",
+      priority = 4,
+      category = "service"
+    ),
+    
+    # Manual Labor (Priority 3)
+    "manual" = list(
+      patterns = c("Manual", "Labor", "Factory", "Production", "Warehouse"),
+      name = "Manual_Labor",
+      priority = 3,
+      category = "manual"
+    ),
+    
+    # Public Sector (Priority 5)
+    "public_sector" = list(
+      patterns = c("Public", "Government", "Civil.*Service", "Municipal"),
+      name = "Public_Sector",
+      priority = 5,
+      category = "public"
+    ),
+    
+    # Self-employed (Priority 4)
+    "self_employed" = list(
+      patterns = c("Self.*employed", "Entrepreneur", "Freelance", "Independent"),
+      name = "Self_Employed",
+      priority = 4,
+      category = "employment_type"
+    )
+  )
+}
+
+#' Apply Enhanced Pattern Rules for Segment Naming
+#' 
+#' Advanced pattern recognition system that uses weighted scoring, semantic
+#' analysis, and intelligent fallbacks to generate meaningful segment names.
+#' 
+#' @param node_names Character vector of node names in the segment
+#' @param pattern_rules Enhanced pattern rules from create_enhanced_pattern_rules()
+#' @param membership_id Character string of membership ID for fallback naming
+#' 
+#' @return Character string with intelligently generated name, or NULL if no pattern found
+#' @keywords internal
+
+apply_enhanced_pattern_rules <- function(node_names, pattern_rules, membership_id) {
+  
+  if (length(node_names) == 0) return(NULL)
+  
+  # Score all patterns
+  pattern_scores <- list()
+  
+  for (rule_name in names(pattern_rules)) {
+    rule <- pattern_rules[[rule_name]]
+    total_score <- 0
+    
+    # Check each pattern in the rule
+    for (pattern in rule$patterns) {
+      matches <- sum(grepl(pattern, node_names, ignore.case = TRUE))
+      if (matches > 0) {
+        # Weight by priority and coverage
+        coverage <- matches / length(node_names)
+        score <- rule$priority * coverage * matches
+        total_score <- total_score + score
+      }
+    }
+    
+    if (total_score > 0) {
+      pattern_scores[[rule_name]] <- list(
+        score = total_score,
+        name = rule$name,
+        category = rule$category,
+        coverage = sum(sapply(rule$patterns, function(p) sum(grepl(p, node_names, ignore.case = TRUE)))) / length(node_names)
+      )
     }
   }
   
-  # Look for common prefixes or suffixes
-  if (length(node_names) >= 2) {
-    # Find common suffix
-    common_suffix <- find_common_suffix(node_names)
-    if (nchar(common_suffix) >= 3) {  # Minimum 3 characters
-      return(paste0(common_suffix, "_Group"))
-    }
+  # Find best pattern match
+  if (length(pattern_scores) > 0) {
+    # Sort by score
+    sorted_scores <- pattern_scores[order(sapply(pattern_scores, function(x) x$score), decreasing = TRUE)]
     
-    # Find common prefix  
-    common_prefix <- find_common_prefix(node_names)
-    if (nchar(common_prefix) >= 3) {  # Minimum 3 characters
-      return(paste0(common_prefix, "_Group"))
+    best_match <- sorted_scores[[1]]
+    
+    # Use best match if it covers at least 30% of nodes
+    if (best_match$coverage >= 0.3) {
+      # Check for compound patterns (multiple high-scoring categories)
+      if (length(sorted_scores) >= 2) {
+        second_best <- sorted_scores[[2]]
+        
+        # If second best is also strong (>50% of best score), create compound name
+        if (second_best$score > best_match$score * 0.5 && 
+            second_best$coverage >= 0.2 && 
+            best_match$category != second_best$category) {
+          
+          # Create compound name, ordering by hierarchy
+          categories <- c(best_match$name, second_best$name)
+          # Reorder based on typical hierarchy
+          if (any(grepl("Executive|Leadership", categories)) && any(grepl("Management", categories))) {
+            return("Executive_Management")
+          } else if (any(grepl("Professional", categories)) && any(grepl("Technical", categories))) {
+            return("Professional_Technical")
+          } else {
+            return(paste(categories[1:2], collapse = "_"))
+          }
+        }
+      }
+      
+      return(best_match$name)
     }
+  }
+  
+  # Enhanced fallback: extract meaningful terms
+  meaningful_name <- extract_meaningful_terms(node_names)
+  if (!is.null(meaningful_name)) {
+    return(meaningful_name)
+  }
+  
+  # Final fallback using semantic analysis
+  return(generate_semantic_fallback(node_names, membership_id))
+}
+
+#' Extract Meaningful Terms from Node Names
+#' 
+#' Analyzes node names to extract the most semantically meaningful terms
+#' for generating descriptive segment names.
+#' 
+#' @param node_names Character vector of node names
+#' @return Character string with meaningful term-based name, or NULL
+#' @keywords internal
+
+extract_meaningful_terms <- function(node_names) {
+  if (length(node_names) == 0) return(NULL)
+  
+  # Clean and split node names into words, preserving meaningful separators
+  cleaned_names <- gsub("[^A-Za-z0-9_.]", " ", node_names)
+  all_words <- unlist(strsplit(cleaned_names, "[\\s_]+"))
+  all_words <- all_words[nchar(all_words) >= 3]  # Filter short words
+  all_words <- tolower(all_words)
+  
+  # Remove numbers and purely numeric words
+  all_words <- all_words[!grepl("^\\d+$", all_words)]
+  
+  # Remove common stopwords that aren't meaningful for occupation names
+  stopwords <- c("and", "the", "for", "with", "other", "all", "new", "old", "not", "any")
+  all_words <- all_words[!all_words %in% stopwords]
+  
+  if (length(all_words) == 0) return(NULL)
+  
+  # Find most frequent meaningful words
+  word_freq <- table(all_words)
+  
+  # Prioritize occupational terms
+  occupational_indicators <- c("work", "job", "employ", "occupation", "profession", "career", "industry", "sector")
+  
+  # Find most frequent non-generic terms
+  frequent_words <- names(word_freq)[word_freq >= max(1, length(node_names) * 0.3)]
+  
+  if (length(frequent_words) > 0) {
+    # Prioritize longer, more specific terms
+    best_words <- frequent_words[order(nchar(frequent_words), decreasing = TRUE)]
+    
+    # Take up to 2 most meaningful words, prioritizing longer ones
+    selected_words <- head(best_words, 2)
+    selected_words <- sapply(selected_words, function(w) {
+      # Capitalize first letter properly
+      paste0(toupper(substr(w, 1, 1)), substr(w, 2, nchar(w)))
+    })
+    
+    return(paste(selected_words, collapse = "_"))
   }
   
   return(NULL)
 }
 
-#' Find Common Suffix in Node Names
-#' @param names Character vector of names
-#' @return Character string of common suffix, or empty string if none
+#' Generate Semantic Fallback Name
+#' 
+#' Creates intelligent fallback names using segment composition analysis
+#' when no clear patterns are detected.
+#' 
+#' @param node_names Character vector of node names
+#' @param membership_id Character string of membership ID
+#' @return Character string with semantic fallback name
 #' @keywords internal
-find_common_suffix <- function(names) {
-  if (length(names) < 2) return("")
-  
-  # Reverse all names and find common prefix of reversed names
-  reversed_names <- sapply(names, function(x) paste(rev(strsplit(x, "")[[1]]), collapse = ""))
-  common_reversed <- find_common_prefix(reversed_names)
-  
-  # Reverse the result to get common suffix
-  if (nchar(common_reversed) > 0) {
-    return(paste(rev(strsplit(common_reversed, "")[[1]]), collapse = ""))
-  }
-  return("")
-}
 
-#' Find Common Prefix in Node Names
-#' @param names Character vector of names
-#' @return Character string of common prefix, or empty string if none
-#' @keywords internal
-find_common_prefix <- function(names) {
-  if (length(names) < 2) return("")
+generate_semantic_fallback <- function(node_names, membership_id) {
   
-  # Find the shortest name length
-  min_length <- min(nchar(names))
-  if (min_length == 0) return("")
+  # Analyze segment composition
+  n_nodes <- length(node_names)
   
-  # Check each position from start
-  for (i in 1:min_length) {
-    chars <- substr(names, i, i)
-    if (length(unique(chars)) > 1) {
-      if (i == 1) return("")
-      return(substr(names[1], 1, i - 1))
+  # Create descriptive name based on composition
+  if (n_nodes == 1) {
+    return(node_names[1])
+  } else if (n_nodes <= 3) {
+    return(paste(node_names, collapse = "_"))
+  } else {
+    # For larger segments, create meaningful descriptive names
+    
+    # Check for numeric patterns in names (might indicate levels)
+    has_numbers <- any(grepl("\\d", node_names))
+    
+    # Check for common word patterns
+    common_terms <- extract_meaningful_terms(node_names)
+    
+    if (!is.null(common_terms)) {
+      return(paste0(common_terms, "_Group"))
+    } else if (has_numbers) {
+      return(paste0("Level_", gsub("\\.", "_", membership_id)))
+    } else {
+      # Use position-based naming that's more descriptive
+      level_num <- as.numeric(strsplit(membership_id, "\\.")[[1]][1])
+      segment_num <- strsplit(membership_id, "\\.")[[1]][2]
+      
+      segment_descriptors <- c("Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta")
+      
+      if (as.numeric(segment_num) <= length(segment_descriptors)) {
+        descriptor <- segment_descriptors[as.numeric(segment_num)]
+        return(paste0("Segment_", descriptor, "_L", level_num))
+      } else {
+        return(paste0("Mixed_Group_", level_num, "_", segment_num))
+      }
     }
   }
-  
-  # All characters match up to minimum length
-  return(substr(names[1], 1, min_length))
 }
+
 
 #' force.segments
 #' 
@@ -1202,4 +1439,1259 @@ new.seg$mat.list[[2]] <- mx.2g
 return(new.seg)
 }
 
+#' Comprehensive MONECA Analysis
+#' 
+#' Performs a comprehensive analysis of MONECA segmentation results, extracting matrices
+#' at different levels, computing graph metrics, generating visualizations, and creating
+#' detailed reports on centrality and mobility metrics.
+#' 
+#' @param segments A moneca object returned by the \code{moneca()} function.
+#' @param max_level The maximum segmentation level to analyze. If NULL (default),
+#'   uses the highest available level.
+#' @param enhanced_membership Optional pre-computed enhanced membership object from
+#'   \code{segment.membership.enhanced()}. If NULL, will be computed internally.
+#' @param plot_level Level for which to generate a network plot. Default is 4.
+#' @param naming_strategy Strategy for naming segments. Default is "auto".
+#'   See \code{segment.membership.enhanced()} for options.
+#' @param output_dir Directory to save plots and reports. If NULL, plots are displayed
+#'   but not saved.
+#' 
+#' @return A list containing:
+#'   \describe{
+#'     \item{matrices}{List with 'original' (level 1) and 'max_level' matrices with proper names}
+#'     \item{metrics_comparison}{Data frame comparing graph metrics between levels}
+#'     \item{level_plot}{ggplot object of the network at specified level}
+#'     \item{centrality_report}{Data frame with centrality metrics for max level}
+#'     \item{mobility_report}{Data frame with mobility metrics for max level}
+#'     \item{summary_report}{Data frame with formatted analysis summary}
+#'   }
+#' 
+#' @examples
+#' # Generate synthetic data and run MONECA
+#' mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+#' seg <- moneca(mobility_data, segment.levels = 4)
+#' 
+#' # Run comprehensive analysis
+#' analysis <- moneca_comprehensive_analysis(seg)
+#' 
+#' # View metrics comparison
+#' print(analysis$metrics_comparison)
+#' 
+#' # Display the network plot
+#' print(analysis$level_plot)
+#' 
+#' # View the summary report
+#' print(analysis$summary_report)
+#' 
+#' @export
+moneca_comprehensive_analysis <- function(segments, 
+                                        max_level = NULL,
+                                        enhanced_membership = NULL,
+                                        plot_level = 4,
+                                        naming_strategy = "auto",
+                                        output_dir = NULL) {
+  
+  # Validate inputs
+  if (!inherits(segments, "moneca")) {
+    stop("segments must be a moneca object created by the moneca() function")
+  }
+  
+  # Determine max level
+  if (is.null(max_level)) {
+    max_level <- length(segments$segment.list)
+  } else {
+    max_level <- min(max_level, length(segments$segment.list))
+  }
+  
+  # Ensure plot_level is valid
+  plot_level <- min(plot_level, max_level)
+  
+  # Get enhanced membership if not provided
+  if (is.null(enhanced_membership)) {
+    enhanced_membership <- segment.membership.enhanced(segments, 
+                                                     level = 1:max_level,
+                                                     naming_strategy = naming_strategy)
+  }
+  
+  # Initialize results list
+  results <- list()
+  
+  # 1. Extract matrices with proper naming
+  results$matrices <- extract_named_matrices(segments, max_level, enhanced_membership)
+  
+  # 2. Compute graph metrics comparison
+  results$metrics_comparison <- compute_metrics_comparison(segments, max_level)
+  
+  # 3. Generate network plot for specified level
+  actual_plot_level <- plot_level
+  if (plot_level > max_level) {
+    actual_plot_level <- max_level
+    message(paste("Plot level adjusted to", max_level, "as level", plot_level, "doesn't exist"))
+  } else if (plot_level <= 1) {
+    actual_plot_level <- min(2, max_level)
+    message("Plot level adjusted to level 2 as level 1 contains original categories")
+  }
+  
+  # Check if this level has meaningful structure
+  if (actual_plot_level <= length(segments$mat.list)) {
+    mat_check <- segments$mat.list[[actual_plot_level]]
+    n_segments_check <- nrow(mat_check) - 1
+    
+    if (n_segments_check < 2 && actual_plot_level > 1) {
+      # Try to find a better level
+      for (try_level in (actual_plot_level-1):2) {
+        if (try_level <= length(segments$mat.list)) {
+          mat_try <- segments$mat.list[[try_level]]
+          n_segments_try <- nrow(mat_try) - 1
+          if (n_segments_try >= 2) {
+            actual_plot_level <- try_level
+            message(paste("Plot level adjusted to", try_level, "for better visualization"))
+            break
+          }
+        }
+      }
+    }
+  }
+  
+  results$level_plot <- plot_moneca_ggraph(segments, 
+                                          level = actual_plot_level,
+                                          node_color = "segment",
+                                          edge_width = "weight",
+                                          layout = "stress",
+                                          segment_naming = naming_strategy)
+  
+  # 4. Compute centrality metrics - find best level with structure and names
+  analysis_level <- find_best_level_with_structure(segments, enhanced_membership, max_level)
+  
+  # Generate enhanced membership for the analysis level if needed
+  analysis_membership <- segment.membership.enhanced(segments, 
+                                                    level = analysis_level,
+                                                    naming_strategy = naming_strategy)
+  
+  results$centrality_report <- compute_centrality_metrics(segments, analysis_level, analysis_membership)
+  
+  # 5. Compute mobility metrics - use the same level  
+  results$mobility_report <- compute_mobility_metrics(segments, analysis_level, analysis_membership)
+  
+  # Store analysis metadata
+  results$analysis_level <- analysis_level
+  results$plot_level_used <- actual_plot_level
+  
+  # 6. Generate comprehensive summary report as data frame
+  results$summary_report <- generate_summary_report(results, segments, max_level, analysis_level)
+  
+  # Save outputs if directory specified
+  if (!is.null(output_dir)) {
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE)
+    }
+    
+    # Save plot
+    ggplot2::ggsave(
+      filename = file.path(output_dir, paste0("moneca_network_level_", plot_level, ".png")),
+      plot = results$level_plot,
+      width = 12,
+      height = 10,
+      dpi = 300
+    )
+    
+    # Save reports as CSV
+    write.csv(results$metrics_comparison, 
+              file.path(output_dir, "metrics_comparison.csv"), 
+              row.names = FALSE)
+    write.csv(results$centrality_report, 
+              file.path(output_dir, "centrality_report.csv"), 
+              row.names = FALSE)
+    write.csv(results$mobility_report, 
+              file.path(output_dir, "mobility_report.csv"), 
+              row.names = FALSE)
+    write.csv(results$summary_report, 
+              file.path(output_dir, "summary_report.csv"), 
+              row.names = FALSE)
+    
+    message("Analysis results saved to: ", output_dir)
+  }
+  
+  class(results) <- c("moneca_analysis", "list")
+  return(results)
+}
+
+#' Find Best Level With Structure and Names
+#' 
+#' @keywords internal
+find_best_level_with_structure <- function(segments, enhanced_membership, max_level) {
+  best_level <- 2  # Default fallback
+  best_score <- -1
+  
+  # Evaluate each level for both network structure and name availability
+  for (level in 2:max_level) {
+    if (level <= length(segments$mat.list)) {
+      mat <- segments$mat.list[[level]]
+      n_segments <- nrow(mat) - 1  # Exclude total row
+      
+      # Skip levels with too few segments
+      if (n_segments < 2) next
+      
+      # Check network connectivity
+      wm <- weight.matrix(mat, cut.off = 1, diagonal = FALSE)
+      wm[is.na(wm)] <- 0
+      n_edges <- sum(wm > 0) / 2
+      
+      # Check if enhanced membership has data for this level
+      level_data <- enhanced_membership[enhanced_membership$level == level, ]
+      has_enhanced_data <- nrow(level_data) > 0
+      
+      # Calculate composite score
+      # Prefer levels with 2-5 segments, some connectivity, and enhanced names
+      segment_score <- if (n_segments >= 2 && n_segments <= 5) {
+        1.0
+      } else if (n_segments <= 8) {
+        0.7
+      } else {
+        0.3
+      }
+      
+      connectivity_score <- if (n_edges > 0) 1.0 else 0.1
+      name_score <- if (has_enhanced_data) 1.0 else 0.5
+      
+      # Combined score favoring structure and connectivity
+      score <- segment_score * 0.5 + connectivity_score * 0.3 + name_score * 0.2
+      
+      if (score > best_score) {
+        best_score <- score
+        best_level <- level
+      }
+    }
+  }
+  
+  return(best_level)
+}
+
+#' Extract Named Matrices
+#' 
+#' @keywords internal
+extract_named_matrices <- function(segments, max_level, enhanced_membership) {
+  
+  # Extract original matrix (level 1)
+  original_matrix <- segments$mat.list[[1]]
+  
+  # Extract max level matrix
+  max_level_matrix <- segments$mat.list[[max_level]]
+  
+  # Get names for max level segments
+  max_level_membership <- enhanced_membership[enhanced_membership$level == max_level, ]
+  
+  # Create mapping of segment numbers to enhanced names
+  segment_mapping <- unique(max_level_membership[, c("membership", "level_name")])
+  
+  # Apply names to max level matrix
+  if (nrow(max_level_matrix) - 1 == nrow(segment_mapping)) {
+    # Matrix includes total row/column
+    new_names <- c(segment_mapping$level_name[order(segment_mapping$membership)], "Total")
+    rownames(max_level_matrix) <- new_names
+    colnames(max_level_matrix) <- new_names
+  }
+  
+  list(
+    original = original_matrix,
+    max_level = max_level_matrix,
+    level = max_level
+  )
+}
+
+#' Compute Graph Metrics Comparison
+#' 
+#' @keywords internal
+compute_metrics_comparison <- function(segments, max_level) {
+  
+  metrics_list <- list()
+  
+  for (level in 1:max_level) {
+    # Get matrix for this level
+    mat <- segments$mat.list[[level]]
+    
+    # Remove total row/column
+    mat_clean <- mat[-nrow(mat), -ncol(mat)]
+    
+    # Create weighted adjacency matrix
+    wm <- weight.matrix(mat, cut.off = 1, diagonal = FALSE)
+    wm[is.na(wm)] <- 0
+    
+    # Create graph
+    g <- moneca_graph_from_adjacency(wm, mode = "directed", weighted = TRUE, diag = FALSE)
+    
+    # Compute metrics
+    metrics_list[[level]] <- data.frame(
+      level = level,
+      n_nodes = igraph::vcount(g),
+      n_edges = igraph::ecount(g),
+      density = igraph::graph.density(g),
+      reciprocity = igraph::reciprocity(g),
+      transitivity = igraph::transitivity(g),
+      diameter = ifelse(igraph::is_connected(g, mode = "weak"), 
+                       igraph::diameter(g, directed = TRUE), 
+                       NA),
+      avg_path_length = igraph::mean_distance(g, directed = TRUE),
+      modularity = tryCatch({
+        comm <- igraph::cluster_walktrap(g)
+        igraph::modularity(g, igraph::membership(comm))
+      }, error = function(e) NA),
+      avg_degree = mean(igraph::degree(g)),
+      avg_strength = mean(igraph::strength(g)),
+      centralization = igraph::centralization.degree(g)$centralization
+    )
+  }
+  
+  do.call(rbind, metrics_list)
+}
+
+#' Compute Centrality Metrics
+#' 
+#' @keywords internal
+compute_centrality_metrics <- function(segments, level, enhanced_membership) {
+  
+  # Get matrix and create graph
+  mat <- segments$mat.list[[level]]
+  mat_clean <- mat[-nrow(mat), -ncol(mat)]
+  
+  wm <- weight.matrix(mat, cut.off = 1, diagonal = FALSE)
+  wm[is.na(wm)] <- 0
+  
+  g <- moneca_graph_from_adjacency(wm, mode = "directed", weighted = TRUE, diag = FALSE)
+  
+  # Get segment names - the enhanced membership doesn't use numeric levels
+  # Instead, we'll work directly with the membership data
+  level_membership <- enhanced_membership
+  
+  # Clean up membership data - remove FALSE values and convert to numeric
+  valid_membership <- level_membership[level_membership$membership != "FALSE" & 
+                                      !is.na(level_membership$membership), ]
+  
+  if (nrow(valid_membership) == 0) {
+    return(data.frame(
+      segment = character(),
+      degree_in = numeric(),
+      degree_out = numeric(),
+      degree_total = numeric(),
+      strength_in = numeric(),
+      strength_out = numeric(),
+      strength_total = numeric(),
+      betweenness = numeric(),
+      closeness_in = numeric(),
+      closeness_out = numeric(),
+      eigenvector = numeric(),
+      pagerank = numeric(),
+      composition = character(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  
+  # Convert membership to numeric and create clean segment mapping
+  valid_membership$membership_clean <- as.numeric(as.character(valid_membership$membership))
+  segment_names <- unique(valid_membership[, c("membership_clean", "level_name")])
+  segment_names <- segment_names[order(segment_names$membership_clean), ]
+  
+  # Check if we have nodes
+  n_nodes <- igraph::vcount(g)
+  if (n_nodes == 0 || nrow(segment_names) == 0) {
+    return(data.frame(
+      segment = character(),
+      degree_in = numeric(),
+      degree_out = numeric(),
+      degree_total = numeric(),
+      strength_in = numeric(),
+      strength_out = numeric(),
+      strength_total = numeric(),
+      betweenness = numeric(),
+      closeness_in = numeric(),
+      closeness_out = numeric(),
+      eigenvector = numeric(),
+      pagerank = numeric(),
+      composition = character(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  
+  # Ensure we have the right number of segments as graph nodes
+  n_segments <- nrow(segment_names)
+  if (n_segments != n_nodes) {
+    # Try to match based on available data
+    n_segments <- min(n_segments, n_nodes)
+    segment_names <- head(segment_names, n_segments)
+  }
+  
+  # Compute various centrality measures
+  centrality_df <- data.frame(
+    segment = segment_names$level_name,
+    degree_in = igraph::degree(g, mode = "in")[1:n_segments],
+    degree_out = igraph::degree(g, mode = "out")[1:n_segments],
+    degree_total = igraph::degree(g, mode = "all")[1:n_segments],
+    strength_in = igraph::strength(g, mode = "in")[1:n_segments],
+    strength_out = igraph::strength(g, mode = "out")[1:n_segments],
+    strength_total = igraph::strength(g, mode = "all")[1:n_segments],
+    betweenness = igraph::betweenness(g, directed = TRUE)[1:n_segments],
+    closeness_in = igraph::closeness(g, mode = "in")[1:n_segments],
+    closeness_out = igraph::closeness(g, mode = "out")[1:n_segments],
+    eigenvector = igraph::eigen_centrality(g, directed = TRUE)$vector[1:n_segments],
+    pagerank = igraph::page_rank(g, directed = TRUE)$vector[1:n_segments]
+  )
+  
+  # Add composition information
+  segment_composition <- sapply(1:nrow(segment_names), function(i) {
+    members <- valid_membership[valid_membership$membership_clean == segment_names$membership_clean[i], "name"]
+    paste(members, collapse = ", ")
+  })
+  
+  centrality_df$composition <- segment_composition
+  
+  # Sort by total strength (most central segments first)
+  centrality_df <- centrality_df[order(centrality_df$strength_total, decreasing = TRUE), ]
+  
+  return(centrality_df)
+}
+
+#' Compute Mobility Metrics
+#' 
+#' @keywords internal
+compute_mobility_metrics <- function(segments, level, enhanced_membership) {
+  
+  # Get matrix
+  mat <- segments$mat.list[[level]]
+  n <- nrow(mat) - 1  # Exclude total row
+  
+  # Get segment names - the enhanced membership doesn't use numeric levels
+  # Instead, we'll work directly with the membership data
+  level_membership <- enhanced_membership
+  
+  # Clean up membership data - remove FALSE values and convert to numeric
+  valid_membership <- level_membership[level_membership$membership != "FALSE" & 
+                                      !is.na(level_membership$membership), ]
+  
+  if (nrow(valid_membership) == 0) {
+    return(data.frame(
+      segment = character(),
+      total_outflow = numeric(),
+      total_inflow = numeric(),
+      net_flow = numeric(),
+      immobility_rate = numeric(),
+      mobility_rate = numeric(),
+      upward_mobility = numeric(),
+      downward_mobility = numeric(),
+      lateral_mobility = numeric(),
+      relative_mobility_share = numeric(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  
+  # Convert membership to numeric and create clean segment mapping
+  valid_membership$membership_clean <- as.numeric(as.character(valid_membership$membership))
+  segment_names <- unique(valid_membership[, c("membership_clean", "level_name")])
+  segment_names <- segment_names[order(segment_names$membership_clean), ]
+  
+  # Ensure we match the matrix dimensions
+  n_segments <- min(nrow(segment_names), n)
+  segment_names <- head(segment_names, n_segments)
+  
+  # Check if we have segments
+  if (n == 0 || nrow(segment_names) == 0) {
+    return(data.frame(
+      segment = character(),
+      total_outflow = numeric(),
+      total_inflow = numeric(),
+      net_flow = numeric(),
+      immobility_rate = numeric(),
+      mobility_rate = numeric(),
+      upward_mobility = numeric(),
+      downward_mobility = numeric(),
+      lateral_mobility = numeric(),
+      relative_mobility_share = numeric(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  
+  # Initialize metrics data frame
+  mobility_metrics <- data.frame(
+    segment = segment_names$level_name,
+    total_outflow = numeric(n_segments),
+    total_inflow = numeric(n_segments),
+    net_flow = numeric(n_segments),
+    immobility_rate = numeric(n_segments),
+    mobility_rate = numeric(n_segments),
+    upward_mobility = numeric(n_segments),
+    downward_mobility = numeric(n_segments),
+    lateral_mobility = numeric(n_segments)
+  )
+  
+  # Compute metrics for each segment
+  for (i in 1:n_segments) {
+    # Total flows
+    mobility_metrics$total_outflow[i] <- sum(mat[i, -c(i, ncol(mat))])
+    mobility_metrics$total_inflow[i] <- sum(mat[-c(i, nrow(mat)), i])
+    mobility_metrics$net_flow[i] <- mobility_metrics$total_inflow[i] - mobility_metrics$total_outflow[i]
+    
+    # Mobility rates
+    row_total <- mat[i, ncol(mat)]
+    mobility_metrics$immobility_rate[i] <- if(row_total > 0) mat[i, i] / row_total else 0
+    mobility_metrics$mobility_rate[i] <- 1 - mobility_metrics$immobility_rate[i]
+    
+    # Directional mobility (assuming lower index = higher status)
+    if (i > 1) {
+      mobility_metrics$upward_mobility[i] <- sum(mat[i, 1:(i-1)])
+    }
+    if (i < n_segments) {
+      mobility_metrics$downward_mobility[i] <- sum(mat[i, (i+1):n_segments])
+    }
+    mobility_metrics$lateral_mobility[i] <- mat[i, i]
+  }
+  
+  # Add relative mobility index
+  total_mobility <- sum(mat[-nrow(mat), -ncol(mat)]) - sum(diag(mat[-nrow(mat), -ncol(mat)]))
+  mobility_metrics$relative_mobility_share <- 
+    (mobility_metrics$total_outflow + mobility_metrics$total_inflow) / total_mobility
+  
+  return(mobility_metrics)
+}
+
+#' Generate Summary Report as Data Frame
+#' 
+#' @keywords internal
+generate_summary_report <- function(results, segments, max_level, analysis_level = max_level) {
+  
+  # Initialize report components
+  report_rows <- list()
+  
+  # Basic information
+  report_rows[[length(report_rows) + 1]] <- data.frame(
+    category = "Basic Information",
+    metric = "Analysis Date",
+    value = as.character(Sys.Date()),
+    details = NA,
+    stringsAsFactors = FALSE
+  )
+  
+  report_rows[[length(report_rows) + 1]] <- data.frame(
+    category = "Basic Information",
+    metric = "Maximum Segmentation Level",
+    value = as.character(max_level),
+    details = NA,
+    stringsAsFactors = FALSE
+  )
+  
+  report_rows[[length(report_rows) + 1]] <- data.frame(
+    category = "Basic Information",
+    metric = "Analysis Level Used",
+    value = as.character(analysis_level),
+    details = "Level used for centrality/mobility analysis",
+    stringsAsFactors = FALSE
+  )
+  
+  # Matrix dimensions
+  report_rows[[length(report_rows) + 1]] <- data.frame(
+    category = "Matrix Dimensions",
+    metric = "Original Matrix Size",
+    value = paste(dim(results$matrices$original), collapse = " x "),
+    details = paste(nrow(results$matrices$original) - 1, "categories"),
+    stringsAsFactors = FALSE
+  )
+  
+  report_rows[[length(report_rows) + 1]] <- data.frame(
+    category = "Matrix Dimensions",
+    metric = paste("Level", max_level, "Matrix Size"),
+    value = paste(dim(results$matrices$max_level), collapse = " x "),
+    details = paste(nrow(results$matrices$max_level) - 1, "segments"),
+    stringsAsFactors = FALSE
+  )
+  
+  # Network consolidation
+  consolidation_ratio <- results$metrics_comparison$n_nodes[1] / results$metrics_comparison$n_nodes[max_level]
+  report_rows[[length(report_rows) + 1]] <- data.frame(
+    category = "Network Structure",
+    metric = "Consolidation Ratio",
+    value = paste0(round(consolidation_ratio, 2), ":1"),
+    details = paste(results$metrics_comparison$n_nodes[1], "->", results$metrics_comparison$n_nodes[max_level]),
+    stringsAsFactors = FALSE
+  )
+  
+  # Graph metrics at analysis level
+  analysis_metrics <- results$metrics_comparison[results$metrics_comparison$level == analysis_level, ]
+  
+  if (nrow(analysis_metrics) > 0) {
+    report_rows[[length(report_rows) + 1]] <- data.frame(
+      category = "Graph Metrics",
+      metric = "Network Density",
+      value = round(analysis_metrics$density, 4),
+      details = paste("Level", analysis_level),
+      stringsAsFactors = FALSE
+    )
+    
+    report_rows[[length(report_rows) + 1]] <- data.frame(
+      category = "Graph Metrics",
+      metric = "Reciprocity",
+      value = round(analysis_metrics$reciprocity, 4),
+      details = paste("Level", analysis_level),
+      stringsAsFactors = FALSE
+    )
+    
+    report_rows[[length(report_rows) + 1]] <- data.frame(
+      category = "Graph Metrics",
+      metric = "Transitivity",
+      value = round(analysis_metrics$transitivity, 4),
+      details = paste("Level", analysis_level),
+      stringsAsFactors = FALSE
+    )
+    
+    report_rows[[length(report_rows) + 1]] <- data.frame(
+      category = "Graph Metrics",
+      metric = "Average Degree",
+      value = round(analysis_metrics$avg_degree, 2),
+      details = paste("Level", analysis_level),
+      stringsAsFactors = FALSE
+    )
+  }
+  
+  # Most central segments
+  if (nrow(results$centrality_report) > 0) {
+    top_n <- min(5, nrow(results$centrality_report))
+    for (i in 1:top_n) {
+      report_rows[[length(report_rows) + 1]] <- data.frame(
+        category = "Top Central Segments",
+        metric = paste("Rank", i, "by Strength"),
+        value = results$centrality_report$segment[i],
+        details = paste("Strength:", round(results$centrality_report$strength_total[i], 2)),
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  
+  # Mobility patterns
+  if (nrow(results$mobility_report) > 0) {
+    highest_mobility_idx <- which.max(results$mobility_report$mobility_rate)
+    lowest_mobility_idx <- which.min(results$mobility_report$mobility_rate)
+    
+    if (length(highest_mobility_idx) > 0) {
+      report_rows[[length(report_rows) + 1]] <- data.frame(
+        category = "Mobility Patterns",
+        metric = "Highest Mobility Segment",
+        value = results$mobility_report$segment[highest_mobility_idx],
+        details = paste("Rate:", round(results$mobility_report$mobility_rate[highest_mobility_idx], 3)),
+        stringsAsFactors = FALSE
+      )
+    }
+    
+    if (length(lowest_mobility_idx) > 0) {
+      report_rows[[length(report_rows) + 1]] <- data.frame(
+        category = "Mobility Patterns",
+        metric = "Lowest Mobility Segment",
+        value = results$mobility_report$segment[lowest_mobility_idx],
+        details = paste("Rate:", round(results$mobility_report$mobility_rate[lowest_mobility_idx], 3)),
+        stringsAsFactors = FALSE
+      )
+    }
+    
+    # Average mobility
+    avg_mobility <- mean(results$mobility_report$mobility_rate)
+    report_rows[[length(report_rows) + 1]] <- data.frame(
+      category = "Mobility Patterns",
+      metric = "Average Mobility Rate",
+      value = round(avg_mobility, 3),
+      details = paste("Level", analysis_level),
+      stringsAsFactors = FALSE
+    )
+    
+    # Net flow information
+    max_inflow_idx <- which.max(results$mobility_report$net_flow)
+    max_outflow_idx <- which.min(results$mobility_report$net_flow)
+    
+    if (length(max_inflow_idx) > 0 && results$mobility_report$net_flow[max_inflow_idx] > 0) {
+      report_rows[[length(report_rows) + 1]] <- data.frame(
+        category = "Flow Patterns",
+        metric = "Largest Net Inflow",
+        value = results$mobility_report$segment[max_inflow_idx],
+        details = paste("Net flow:", round(results$mobility_report$net_flow[max_inflow_idx], 0)),
+        stringsAsFactors = FALSE
+      )
+    }
+    
+    if (length(max_outflow_idx) > 0 && results$mobility_report$net_flow[max_outflow_idx] < 0) {
+      report_rows[[length(report_rows) + 1]] <- data.frame(
+        category = "Flow Patterns",
+        metric = "Largest Net Outflow",
+        value = results$mobility_report$segment[max_outflow_idx],
+        details = paste("Net flow:", round(results$mobility_report$net_flow[max_outflow_idx], 0)),
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  
+  # Combine all rows into a single data frame
+  report_df <- do.call(rbind, report_rows)
+  
+  # Add row numbers for reference
+  report_df <- cbind(row_id = 1:nrow(report_df), report_df)
+  
+  return(report_df)
+}
+
+#' Print method for moneca_analysis objects
+#' 
+#' @export
+print.moneca_analysis <- function(x, ...) {
+  cat("MONECA Comprehensive Analysis Results\n")
+  cat("=====================================\n\n")
+  
+  # Print summary report
+  print(x$summary_report, row.names = FALSE)
+  
+  cat("\n\nUse names(x) to see all available components.\n")
+  invisible(x)
+}
+
+#' Segment-Level Mobility Analysis
+#' 
+#' Performs focused analysis on the final segmentation level from MONECA results,
+#' extracting the aggregated matrix at the maximum level with meaningful segment
+#' names and computing comprehensive mobility and centrality metrics for each segment.
+#' 
+#' @param moneca_results A MONECA object returned by \code{\link{moneca}} or \code{moneca_fast}.
+#' @param enhanced_membership A data frame returned by \code{\link{segment.membership.enhanced}}
+#'   containing segment membership information with level names.
+#' @param level_selection Character string or integer specifying which level to analyze:
+#'   \itemize{
+#'     \item "auto" (default): Automatically select the level with meaningful segment names
+#'     \item "max": Use the maximum available level
+#'     \item integer: Use specific level number
+#'   }
+#' @param plot_layout Character string specifying the network layout for visualization.
+#'   Options include "fr" (Fruchterman-Reingold), "kk" (Kamada-Kawai), "stress", 
+#'   "circle", "grid", "tree". Default is "fr".
+#' @param plot_node_color Character string specifying what metric to use for node coloring:
+#'   \itemize{
+#'     \item "mobility_rate": Color by mobility rate (default)
+#'     \item "centrality": Color by total strength centrality
+#'     \item "net_flow": Color by net flow (red = outflow, blue = inflow)
+#'     \item "segment": Use discrete colors for each segment
+#'   }
+#' @param node_size_metric Character string specifying what metric determines node size.
+#'   Options: "strength", "mobility_rate", "population", "constant". Default is "strength".
+#' 
+#' @return A list with the following components:
+#'   \describe{
+#'     \item{segment_matrix}{Square matrix of aggregated mobility flows between segments}
+#'     \item{mobility_metrics}{Data frame with mobility rates, net flows, and directional 
+#'       mobility measures for each segment}
+#'     \item{centrality_metrics}{Data frame with various centrality measures (degree, 
+#'       strength, betweenness, eigenvector, PageRank) for each segment}
+#'     \item{segment_plot}{ggplot object showing the segment network visualization}
+#'     \item{metadata}{List containing analysis metadata including level used, 
+#'       number of segments, and analysis parameters}
+#'   }
+#' 
+#' @details
+#' This function focuses specifically on segment-level analysis by:
+#' \enumerate{
+#'   \item Identifying the optimal analysis level based on meaningful segment names
+#'   \item Extracting the aggregated mobility matrix at that level
+#'   \item Computing comprehensive mobility metrics including mobility rates, 
+#'     net flows, and directional mobility patterns
+#'   \item Calculating network centrality measures for segments
+#'   \item Generating a publication-quality network visualization
+#' }
+#' 
+#' The mobility metrics include:
+#' \itemize{
+#'   \item \strong{Mobility rate}: Proportion of individuals moving out of segment
+#'   \item \strong{Net flow}: Difference between inflow and outflow (positive = net immigration)
+#'   \item \strong{Directional mobility}: Upward, downward, and lateral mobility flows
+#'   \item \strong{Relative mobility share}: Segment's contribution to total mobility
+#' }
+#' 
+#' The centrality metrics include degree, strength, betweenness, closeness, 
+#' eigenvector centrality, and PageRank, providing comprehensive measures of 
+#' each segment's structural importance in the mobility network.
+#' 
+#' @examples
+#' # Generate synthetic data and run MONECA analysis
+#' mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
+#' seg <- moneca(mobility_data, segment.levels = 3)
+#' 
+#' # Get enhanced membership information
+#' enhanced <- segment.membership.enhanced(seg)
+#' 
+#' # Perform segment-level analysis
+#' analysis <- segment_mobility_analysis(seg, enhanced)
+#' 
+#' # Examine results
+#' print(analysis$mobility_metrics)
+#' print(analysis$centrality_metrics)
+#' print(analysis$segment_plot)
+#' 
+#' # Analyze specific level
+#' analysis_level2 <- segment_mobility_analysis(seg, enhanced, level_selection = 2)
+#' 
+#' # Custom visualization options
+#' analysis_custom <- segment_mobility_analysis(seg, enhanced, 
+#'                                             plot_layout = "stress",
+#'                                             plot_node_color = "net_flow",
+#'                                             node_size_metric = "mobility_rate")
+#' 
+#' @seealso 
+#' \code{\link{moneca}} for the main analysis function,
+#' \code{\link{segment.membership.enhanced}} for enhanced membership information,
+#' \code{\link{moneca_comprehensive_analysis}} for multi-level comparative analysis
+#' 
+#' @export
+segment_mobility_analysis <- function(moneca_results, 
+                                    enhanced_membership,
+                                    level_selection = "auto",
+                                    plot_layout = "fr",
+                                    plot_node_color = "mobility_rate",
+                                    node_size_metric = "strength") {
+  
+  # Validate inputs
+  if (!inherits(moneca_results, "moneca")) {
+    stop("moneca_results must be a MONECA object from moneca() or moneca_fast()")
+  }
+  
+  if (!is.data.frame(enhanced_membership) || 
+      !all(c("name", "membership", "level_name") %in% names(enhanced_membership))) {
+    stop("enhanced_membership must be a data frame from segment.membership.enhanced()")
+  }
+  
+  # Determine analysis level
+  analysis_level <- determine_analysis_level(moneca_results, enhanced_membership, level_selection)
+  
+  # Extract and aggregate matrix at analysis level
+  segment_matrix <- extract_segment_matrix(moneca_results, enhanced_membership, analysis_level)
+  
+  # Compute mobility metrics
+  mobility_metrics <- compute_segment_mobility_metrics(segment_matrix, enhanced_membership)
+  
+  # Compute centrality metrics
+  centrality_metrics <- compute_segment_centrality_metrics(segment_matrix, enhanced_membership)
+  
+  # Generate visualization
+  segment_plot <- generate_segment_plot(segment_matrix, enhanced_membership, 
+                                       mobility_metrics, centrality_metrics,
+                                       plot_layout, plot_node_color, node_size_metric)
+  
+  # Create metadata
+  metadata <- list(
+    analysis_level = analysis_level,
+    n_segments = nrow(segment_matrix) - 1,  # Exclude totals row
+    level_selection_method = level_selection,
+    plot_layout = plot_layout,
+    plot_node_color = plot_node_color,
+    node_size_metric = node_size_metric,
+    analysis_date = Sys.Date()
+  )
+  
+  # Return results
+  results <- list(
+    segment_matrix = segment_matrix,
+    mobility_metrics = mobility_metrics,
+    centrality_metrics = centrality_metrics,
+    segment_plot = segment_plot,
+    metadata = metadata
+  )
+  
+  class(results) <- "segment_analysis"
+  return(results)
+}
+
+#' Determine Optimal Analysis Level
+#' 
+#' @keywords internal
+determine_analysis_level <- function(moneca_results, enhanced_membership, level_selection) {
+  
+  if (is.numeric(level_selection)) {
+    # Use specific level if provided
+    max_level <- length(moneca_results$mat.list)
+    if (level_selection > max_level) {
+      warning(paste("Requested level", level_selection, "exceeds maximum level", max_level, 
+                   ". Using level", max_level))
+      return(max_level)
+    }
+    return(level_selection)
+  }
+  
+  if (level_selection == "max") {
+    return(length(moneca_results$mat.list))
+  }
+  
+  if (level_selection == "auto") {
+    # Find the level with the most meaningful segment names
+    # Look for levels where level_name is not just numeric or generic
+    
+    # Get levels with meaningful names (not just "FALSE" or simple numbers)
+    meaningful_levels <- enhanced_membership[
+      enhanced_membership$membership != "FALSE" & 
+      !is.na(enhanced_membership$level_name) &
+      enhanced_membership$level_name != "" &
+      !grepl("^[0-9]+$", enhanced_membership$level_name), ]
+    
+    if (nrow(meaningful_levels) > 0) {
+      # Extract level numbers from membership strings
+      level_nums <- as.numeric(sapply(strsplit(meaningful_levels$membership, "\\."), `[`, 1))
+      level_nums <- level_nums[!is.na(level_nums)]
+      
+      if (length(level_nums) > 0) {
+        # Use the highest level with meaningful names
+        return(max(level_nums))
+      }
+    }
+    
+    # Fallback to maximum level
+    return(length(moneca_results$mat.list))
+  }
+  
+  stop("level_selection must be 'auto', 'max', or a numeric level")
+}
+
+#' Extract Segment Matrix
+#' 
+#' @keywords internal
+extract_segment_matrix <- function(moneca_results, enhanced_membership, level) {
+  
+  # Get the matrix at the specified level
+  mat <- moneca_results$mat.list[[level]]
+  
+  if (is.null(mat)) {
+    stop(paste("No matrix available at level", level))
+  }
+  
+  # Get segment names for this level
+  level_membership <- enhanced_membership[
+    enhanced_membership$membership != "FALSE" & 
+    !is.na(enhanced_membership$membership), ]
+  
+  # Extract level number from membership and filter
+  level_membership$level_num <- as.numeric(sapply(strsplit(level_membership$membership, "\\."), `[`, 1))
+  level_data <- level_membership[level_membership$level_num == level, ]
+  
+  if (nrow(level_data) > 0) {
+    # Create segment mapping
+    unique_segments <- unique(level_data[, c("membership", "level_name")])
+    unique_segments <- unique_segments[order(unique_segments$membership), ]
+    
+    # Apply names to matrix if dimensions match
+    n_segments <- nrow(mat) - 1  # Exclude totals
+    if (nrow(unique_segments) <= n_segments) {
+      segment_names <- unique_segments$level_name[1:min(nrow(unique_segments), n_segments)]
+      dimnames(mat) <- list(c(segment_names, "Total"), c(segment_names, "Total"))
+    }
+  }
+  
+  return(mat)
+}
+
+#' Compute Segment Mobility Metrics
+#' 
+#' @keywords internal
+compute_segment_mobility_metrics <- function(segment_matrix, enhanced_membership) {
+  
+  n <- nrow(segment_matrix) - 1  # Exclude totals row
+  
+  if (n <= 0) {
+    return(data.frame(
+      segment = character(),
+      total_outflow = numeric(),
+      total_inflow = numeric(),
+      net_flow = numeric(),
+      mobility_rate = numeric(),
+      immobility_rate = numeric(),
+      upward_mobility = numeric(),
+      downward_mobility = numeric(),
+      lateral_mobility = numeric(),
+      relative_mobility_share = numeric(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  
+  # Get segment names from matrix
+  segment_names <- rownames(segment_matrix)[1:n]
+  if (is.null(segment_names)) {
+    segment_names <- paste("Segment", 1:n)
+  }
+  
+  # Initialize metrics data frame
+  mobility_metrics <- data.frame(
+    segment = segment_names,
+    total_outflow = numeric(n),
+    total_inflow = numeric(n),
+    net_flow = numeric(n),
+    mobility_rate = numeric(n),
+    immobility_rate = numeric(n),
+    upward_mobility = numeric(n),
+    downward_mobility = numeric(n),
+    lateral_mobility = numeric(n),
+    relative_mobility_share = numeric(n),
+    stringsAsFactors = FALSE
+  )
+  
+  # Calculate total mobility for relative shares
+  total_mobility <- sum(segment_matrix[1:n, 1:n]) - sum(diag(segment_matrix[1:n, 1:n]))
+  
+  # Compute metrics for each segment
+  for (i in 1:n) {
+    # Total flows
+    mobility_metrics$total_outflow[i] <- sum(segment_matrix[i, 1:n]) - segment_matrix[i, i]
+    mobility_metrics$total_inflow[i] <- sum(segment_matrix[1:n, i]) - segment_matrix[i, i]
+    mobility_metrics$net_flow[i] <- mobility_metrics$total_inflow[i] - mobility_metrics$total_outflow[i]
+    
+    # Mobility rates
+    row_total <- segment_matrix[i, n + 1]  # Total from last column
+    if (row_total > 0) {
+      mobility_metrics$immobility_rate[i] <- segment_matrix[i, i] / row_total
+      mobility_metrics$mobility_rate[i] <- 1 - mobility_metrics$immobility_rate[i]
+    } else {
+      mobility_metrics$immobility_rate[i] <- 0
+      mobility_metrics$mobility_rate[i] <- 0
+    }
+    
+    # Directional mobility (assuming lower index = higher status)
+    mobility_metrics$upward_mobility[i] <- if(i > 1) sum(segment_matrix[i, 1:(i-1)]) else 0
+    mobility_metrics$downward_mobility[i] <- if(i < n) sum(segment_matrix[i, (i+1):n]) else 0
+    mobility_metrics$lateral_mobility[i] <- segment_matrix[i, i]
+    
+    # Relative mobility share
+    total_segment_mobility <- mobility_metrics$total_outflow[i] + mobility_metrics$total_inflow[i]
+    mobility_metrics$relative_mobility_share[i] <- if(total_mobility > 0) total_segment_mobility / total_mobility else 0
+  }
+  
+  return(mobility_metrics)
+}
+
+#' Compute Segment Centrality Metrics
+#' 
+#' @keywords internal
+compute_segment_centrality_metrics <- function(segment_matrix, enhanced_membership) {
+  
+  n <- nrow(segment_matrix) - 1  # Exclude totals row
+  
+  if (n <= 0) {
+    return(data.frame(
+      segment = character(),
+      degree_in = numeric(),
+      degree_out = numeric(),
+      degree_total = numeric(),
+      strength_in = numeric(),
+      strength_out = numeric(),
+      strength_total = numeric(),
+      betweenness = numeric(),
+      closeness_in = numeric(),
+      closeness_out = numeric(),
+      eigenvector = numeric(),
+      pagerank = numeric(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  
+  # Get segment names
+  segment_names <- rownames(segment_matrix)[1:n]
+  if (is.null(segment_names)) {
+    segment_names <- paste("Segment", 1:n)
+  }
+  
+  # Create weighted adjacency matrix (excluding totals)
+  adj_matrix <- segment_matrix[1:n, 1:n]
+  
+  # Convert to igraph object
+  if (!requireNamespace("igraph", quietly = TRUE)) {
+    stop("igraph package is required for centrality calculations")
+  }
+  
+  # Use compatibility function for igraph
+  g <- moneca_graph_from_adjacency(adj_matrix, mode = "directed", weighted = TRUE)
+  
+  # Compute centrality measures with error handling
+  safe_centrality <- function(func, ...) {
+    tryCatch(func(...), error = function(e) rep(0, n))
+  }
+  
+  centrality_metrics <- data.frame(
+    segment = segment_names,
+    degree_in = safe_centrality(igraph::degree, g, mode = "in"),
+    degree_out = safe_centrality(igraph::degree, g, mode = "out"),
+    degree_total = safe_centrality(igraph::degree, g, mode = "all"),
+    strength_in = safe_centrality(igraph::strength, g, mode = "in"),
+    strength_out = safe_centrality(igraph::strength, g, mode = "out"),
+    strength_total = safe_centrality(igraph::strength, g, mode = "all"),
+    betweenness = safe_centrality(igraph::betweenness, g, directed = TRUE),
+    closeness_in = safe_centrality(igraph::closeness, g, mode = "in"),
+    closeness_out = safe_centrality(igraph::closeness, g, mode = "out"),
+    stringsAsFactors = FALSE
+  )
+  
+  # Eigenvector centrality and PageRank (these return different structures)
+  eigen_result <- tryCatch(igraph::eigen_centrality(g, directed = TRUE), 
+                          error = function(e) list(vector = rep(0, n)))
+  pagerank_result <- tryCatch(igraph::page_rank(g, directed = TRUE), 
+                             error = function(e) list(vector = rep(0, n)))
+  
+  centrality_metrics$eigenvector <- eigen_result$vector
+  centrality_metrics$pagerank <- pagerank_result$vector
+  
+  # Sort by total strength (most central first)
+  centrality_metrics <- centrality_metrics[order(centrality_metrics$strength_total, decreasing = TRUE), ]
+  
+  return(centrality_metrics)
+}
+
+#' Generate Segment Network Plot
+#' 
+#' @keywords internal
+generate_segment_plot <- function(segment_matrix, enhanced_membership, 
+                                 mobility_metrics, centrality_metrics,
+                                 plot_layout, plot_node_color, node_size_metric) {
+  
+  n <- nrow(segment_matrix) - 1  # Exclude totals row
+  
+  if (n <= 0 || !requireNamespace("ggplot2", quietly = TRUE) || 
+      !requireNamespace("ggraph", quietly = TRUE) || !requireNamespace("tidygraph", quietly = TRUE)) {
+    # Return a simple placeholder plot
+    if (requireNamespace("ggplot2", quietly = TRUE)) {
+      return(ggplot2::ggplot() + 
+             ggplot2::labs(title = "Cannot generate plot: insufficient data or missing packages") +
+             ggplot2::theme_void())
+    } else {
+      return(NULL)
+    }
+  }
+  
+  # Create adjacency matrix for network (excluding totals)
+  adj_matrix <- segment_matrix[1:n, 1:n]
+  
+  # Create igraph object and convert to tidygraph
+  g <- moneca_graph_from_adjacency(adj_matrix, mode = "directed", weighted = TRUE)
+  
+  # Create tidygraph object
+  tg <- tidygraph::as_tbl_graph(g)
+  
+  # Add node attributes
+  segment_names <- rownames(segment_matrix)[1:n]
+  if (is.null(segment_names)) {
+    segment_names <- paste("Segment", 1:n)
+  }
+  
+  # Merge metrics into node data
+  node_data <- data.frame(name = segment_names, stringsAsFactors = FALSE)
+  
+  # Add mobility metrics
+  if (nrow(mobility_metrics) > 0) {
+    node_data <- merge(node_data, mobility_metrics, by.x = "name", by.y = "segment", all.x = TRUE)
+  }
+  
+  # Add centrality metrics  
+  if (nrow(centrality_metrics) > 0) {
+    node_data <- merge(node_data, centrality_metrics, by.x = "name", by.y = "segment", all.x = TRUE)
+  }
+  
+  # Update tidygraph with node attributes - first add name column to tidygraph
+  tg <- tg %>%
+    tidygraph::activate(nodes) %>%
+    dplyr::mutate(name = segment_names) %>%
+    dplyr::left_join(node_data, by = "name")
+  
+  # Create the plot
+  p <- ggraph::ggraph(tg, layout = plot_layout) +
+    ggraph::geom_edge_arc(
+      ggplot2::aes(width = weight, alpha = weight),
+      arrow = ggplot2::arrow(length = ggplot2::unit(3, "mm"), type = "closed"),
+      end_cap = ggraph::circle(3, "mm"),
+      start_cap = ggraph::circle(3, "mm"),
+      color = "grey60"
+    ) +
+    ggraph::scale_edge_width_continuous(range = c(0.3, 2), guide = "none") +
+    ggraph::scale_edge_alpha_continuous(range = c(0.3, 0.8), guide = "none")
+  
+  # Determine node size
+  size_value <- switch(node_size_metric,
+    "strength" = if("strength_total" %in% names(node_data)) node_data$strength_total else 3,
+    "mobility_rate" = if("mobility_rate" %in% names(node_data)) node_data$mobility_rate * 10 else 3,
+    "population" = 3,  # Would need population data
+    "constant" = 3,
+    3  # default
+  )
+  
+  # Determine node color
+  color_aes <- switch(plot_node_color,
+    "mobility_rate" = if("mobility_rate" %in% names(node_data)) "mobility_rate" else NULL,
+    "centrality" = if("strength_total" %in% names(node_data)) "strength_total" else NULL,
+    "net_flow" = if("net_flow" %in% names(node_data)) "net_flow" else NULL,
+    "segment" = "name",
+    NULL
+  )
+  
+  if (!is.null(color_aes)) {
+    p <- p + ggraph::geom_node_point(ggplot2::aes_string(color = color_aes), size = size_value)
+  } else {
+    p <- p + ggraph::geom_node_point(size = size_value, color = "steelblue")
+  }
+  
+  # Add node labels
+  p <- p + ggraph::geom_node_label(ggplot2::aes(label = name), 
+                                  size = 3, repel = TRUE, alpha = 0.8)
+  
+  # Customize colors based on metric
+  if (plot_node_color == "mobility_rate") {
+    p <- p + ggplot2::scale_color_gradient(low = "darkblue", high = "red", 
+                                          name = "Mobility\nRate")
+  } else if (plot_node_color == "centrality") {
+    p <- p + ggplot2::scale_color_gradient(low = "lightblue", high = "darkred", 
+                                          name = "Centrality\n(Strength)")
+  } else if (plot_node_color == "net_flow") {
+    p <- p + ggplot2::scale_color_gradient2(low = "red", mid = "white", high = "blue",
+                                           name = "Net Flow")
+  } else if (plot_node_color == "segment") {
+    p <- p + ggplot2::scale_color_discrete(name = "Segment")
+  }
+  
+  # Final styling
+  p <- p +
+    ggplot2::labs(
+      title = "Segment Mobility Network",
+      subtitle = paste("Layout:", plot_layout, "| Node color:", plot_node_color, "| Node size:", node_size_metric),
+      caption = "Edge width represents mobility flow strength"
+    ) +
+    ggraph::theme_graph(base_family = "sans") +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(size = 14, face = "bold"),
+      plot.subtitle = ggplot2::element_text(size = 10),
+      legend.position = "right"
+    )
+  
+  return(p)
+}
+
+#' Print method for segment_analysis objects
+#' 
+#' @export
+print.segment_analysis <- function(x, ...) {
+  cat("MONECA Segment-Level Analysis Results\n")
+  cat("=====================================\n\n")
+  
+  cat("Analysis Level:", x$metadata$analysis_level, "\n")
+  cat("Number of Segments:", x$metadata$n_segments, "\n")
+  cat("Analysis Date:", as.character(x$metadata$analysis_date), "\n\n")
+  
+  cat("Mobility Metrics Summary:\n")
+  if (nrow(x$mobility_metrics) > 0) {
+    print(x$mobility_metrics[, c("segment", "mobility_rate", "net_flow")], row.names = FALSE)
+  } else {
+    cat("No mobility metrics available\n")
+  }
+  
+  cat("\nTop Central Segments:\n")
+  if (nrow(x$centrality_metrics) > 0) {
+    top_central <- head(x$centrality_metrics[, c("segment", "strength_total", "betweenness")], 3)
+    print(top_central, row.names = FALSE)
+  } else {
+    cat("No centrality metrics available\n")
+  }
+  
+  cat("\nUse names(x) to see all available components.\n")
+  cat("Available components: segment_matrix, mobility_metrics, centrality_metrics, segment_plot, metadata\n")
+  
+  invisible(x)
+}
 

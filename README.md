@@ -49,8 +49,39 @@ plot_moneca_ggraph(seg,
                   node_color = "segment", 
                   title = "Social Mobility Network")
 
+# Comprehensive analysis
+analysis <- moneca_comprehensive_analysis(seg)
+print(analysis$summary_report)
+print(analysis$level_plot)
+
 # Ego network analysis
 plot_ego_ggraph(seg, mobility_data, ego_id = 3)
+```
+
+## Comprehensive Analysis
+
+The `moneca_comprehensive_analysis()` function provides a complete analytical workflow that:
+- Extracts and compares matrices at different hierarchical levels
+- Computes graph metrics across all levels (density, reciprocity, centrality, etc.)
+- Generates publication-quality network visualizations
+- Creates detailed centrality and mobility reports
+- Produces structured data frame summaries for further analysis
+
+```r
+# Run comprehensive analysis
+analysis <- moneca_comprehensive_analysis(seg, plot_level = 3)
+
+# Access different components
+print(analysis$matrices)           # Original and max-level matrices with names
+print(analysis$metrics_comparison) # Graph metrics across all levels
+print(analysis$centrality_report)  # Centrality measures for each segment
+print(analysis$mobility_report)    # Mobility patterns and flow analysis
+print(analysis$summary_report)     # Structured summary as data frame
+print(analysis$level_plot)         # Network visualization
+
+# Save outputs to directory
+analysis_with_files <- moneca_comprehensive_analysis(seg, 
+                                                     output_dir = "results/")
 ```
 
 ## Key Functions
@@ -69,6 +100,9 @@ plot_ego_ggraph(seg, mobility_data, ego_id = 3)
 - `plot_moneca_ggraph()` - Network plots with ggraph
 - `plot_ego_ggraph()` - Ego network visualization  
 - `plot_stair_ggraph()` - Multi-level segmentation plots
+
+### Comprehensive Analysis
+- `moneca_comprehensive_analysis()` - Complete analysis workflow with reports
 
 ### Legacy Functions
 - `moneca.plot()` - Base R plotting (still supported)

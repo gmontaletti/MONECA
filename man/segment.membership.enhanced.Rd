@@ -37,8 +37,9 @@ Default is " + ".}
 \item{max_concat_length}{Maximum number of names to concatenate before 
 switching to pattern-based naming. Default is 2.}
 
-\item{pattern_rules}{Named list of pattern rules for automatic naming.
-Default includes common patterns like "Worker" → "Workers_Group".}
+\item{pattern_rules}{Enhanced pattern rules list with priorities and semantic
+categories. Default includes comprehensive occupational and industry patterns
+(avoiding generic social class terms).}
 }
 \value{
 A data frame with three columns:
@@ -65,8 +66,10 @@ The function applies different naming strategies based on segment composition:
   \item \strong{Custom names}: Override automatic naming with user-provided names
 }
 
-Pattern recognition identifies common suffixes (e.g., "Worker", "Manager") 
-and creates group names (e.g., "Workers_Group", "Management_Group").
+The enhanced pattern recognition system uses weighted scoring to identify
+occupational hierarchies, industry sectors, and employment types. It creates
+semantically meaningful names like "Executive_Leadership", "Professional_Services", 
+or "Technical_Specialists" based on segment composition, avoiding generic terms.
 }
 \examples{
 # Generate data and run analysis

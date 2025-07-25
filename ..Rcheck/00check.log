@@ -6,12 +6,14 @@
     GNU Fortran (GCC) 14.2.0
 * running under: macOS Sequoia 15.5
 * using session charset: UTF-8
-* using option ‘--no-manual’
+* using options ‘--no-tests --no-manual’
 * checking for file ‘./DESCRIPTION’ ... OK
-* this is package ‘MONECA’ version ‘0.1’
+* this is package ‘MONECA’ version ‘0.3.0’
+* package encoding: UTF-8
 * checking package namespace information ... OK
 * checking package dependencies ... OK
-* checking if this is a source package ... OK
+* checking if this is a source package ... NOTE
+Subdirectory ‘MONECA.Rcheck/MONECA’ seems to contain an installed version of the package.
 * checking if there is a namespace ... OK
 * checking for executable files ... OK
 * checking for hidden files and directories ... NOTE
@@ -24,9 +26,241 @@ Found the following hidden files and directories:
   .Rproj.user
   .claude
   .git
+  MONECA.Rcheck/00_pkg_src/MONECA/.claude
 These were most likely included in error. See section ‘Package
 structure’ in the ‘Writing R Extensions’ manual.
 * checking for portable file names ... OK
 * checking for sufficient/correct file permissions ... OK
 * checking whether package ‘MONECA’ can be installed ... OK
-* checking installed package size ...
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking DESCRIPTION meta-information ... NOTE
+Checking should be performed on sources prepared by ‘R CMD build’.
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... WARNING
+Found the following directories with names of check directories:
+  ./..Rcheck
+  ./MONECA.Rcheck
+Most likely, these were included erroneously.
+* checking code files for non-ASCII characters ... WARNING
+Found the following file with non-ASCII characters:
+  R/analytical_functions.R
+Portable packages must use only ASCII characters in their R code and
+NAMESPACE directives, except perhaps in comments.
+Use \uxxxx escapes for other characters.
+Function ‘tools::showNonASCIIfile’ can help in finding non-ASCII
+characters in files.
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking dependencies in R code ... NOTE
+importazioni '::' o ':::' non dichiarate da:
+  ‘eliter’ ‘ggforce’
+chiamata 'loadNamespace' o 'requireNamespace' non dichiarata da: ‘ggforce’
+There are ::: calls to the package's namespace in its code. A package
+  almost never needs to use ::: for its own objects:
+  ‘print.descriptive.moneca’
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... NOTE
+extract_meaningful_terms: no visible global function definition for
+  ‘head’
+generate_dependency_report: no visible global function definition for
+  ‘analyze_igraph_usage’
+generate_mobility_data: no visible global function definition for
+  ‘rgamma’
+gg.moneca : segment.circles.hull: no visible global function definition
+  for ‘chull’
+gg.moneca : segment.circles.hull: no visible global function definition
+  for ‘runif’
+gg.moneca: no visible global function definition for ‘runif’
+layout.matrix: no visible global function definition for ‘runif’
+moneca_comprehensive_analysis: no visible global function definition
+  for ‘write.csv’
+plot_moneca_ggraph: no visible global function definition for ‘runif’
+plot_moneca_ggraph: no visible binding for global variable ‘.’
+test_igraph_compatibility: no visible global function definition for
+  ‘runif’
+Undefined global functions or variables:
+  . analyze_igraph_usage chull head rgamma runif write.csv
+Consider adding
+  importFrom("grDevices", "chull")
+  importFrom("stats", "rgamma", "runif")
+  importFrom("utils", "head", "write.csv")
+to your NAMESPACE file.
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd cross-references ... WARNING
+Missing link(s) in Rd file 'print.moneca.Rd':
+  ‘summary.moneca’
+
+Vedi sezione 'Cross-references' nel manuale 'Writing R Extensions'.
+* checking for missing documentation entries ... WARNING
+Dataset non documentati:
+  ‘mob.mat’ ‘mob.seg’
+All user-level objects in a package should have documentation entries.
+See chapter ‘Writing R documentation files’ in the ‘Writing R
+Extensions’ manual.
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... WARNING
+Undocumented arguments in Rd file 'first.level.summary.Rd'
+  ‘segments’ ‘small.cell.reduction’
+
+Undocumented arguments in Rd file 'force.segments.Rd'
+  ‘segments’ ‘variable’
+
+Undocumented arguments in Rd file 'layout.matrix.Rd'
+  ‘weight.adjustment’ ‘start.temp’ ‘niter’ ‘tie.adjustment’ ‘...’
+Documented arguments not in \usage in Rd file 'layout.matrix.Rd':
+  ‘area.size’
+
+Undocumented arguments in Rd file 'plot_ego_ggraph.Rd'
+  ‘segment_naming’
+
+Undocumented arguments in Rd file 'print.first_level_summary.Rd'
+  ‘x’ ‘...’
+
+Undocumented arguments in Rd file 'print.moneca_analysis.Rd'
+  ‘x’ ‘...’
+
+Undocumented arguments in Rd file 'vertex.mobility.Rd'
+  ‘segments’
+
+Functions with \usage entries need to have the appropriate \alias
+entries, and all their arguments documented.
+The \usage entries must correspond to syntactically valid R code.
+See chapter ‘Writing R documentation files’ in the ‘Writing R
+Extensions’ manual.
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking contents of ‘data’ directory ... OK
+* checking data for non-ASCII characters ... WARNING
+  Warning: found non-ASCII strings
+  '7220: Grovsmede- og v<c3><a6>rkt<c3><b8>jsmagerarbejde' in object 'mob.mat'
+  '7433: Tekstil- og bekl<c3><a6>dningsarbejde, skind-, l<c3><a6>der- og skot<c3><b8>jsarbejde' in object 'mob.mat'
+  '8261: Betjening af maskiner inden for tekstil-, skind- og l<c3><a6>derindustri' in object 'mob.mat'
+  '8331: Arbejde med andre mobile maskiner og k<c3><b8>ret<c3><b8>jer' in object 'mob.mat'
+  '7220: Grovsmede- og v<c3><a6>rkt<c3><b8>jsmagerarbejde' in object 'mob.seg'
+  '7433: Tekstil- og bekl<c3><a6>dningsarbejde, skind-, l<c3><a6>der- og skot<c3><b8>jsarbejde' in object 'mob.seg'
+  '8261: Betjening af maskiner inden for tekstil-, skind- og l<c3><a6>derindustri' in object 'mob.seg'
+  '8331: Arbejde med andre mobile maskiner og k<c3><b8>ret<c3><b8>jer' in object 'mob.seg'
+* checking data for ASCII and uncompressed saves ... OK
+* checking files in ‘vignettes’ ... WARNING
+Files in the 'vignettes' directory but no files in 'inst/doc':
+  ‘algorithm-comparison.Rmd’ ‘moneca-introduction.Rmd’
+* checking examples ... ERROR
+Running examples in ‘MONECA-Ex.R’ failed
+The error most likely occurred in:
+
+> ### Name: generate_mobility_data
+> ### Title: Generate Realistic Synthetic Mobility Data
+> ### Aliases: generate_mobility_data
+> 
+> ### ** Examples
+> 
+> # Basic synthetic data with default parameters
+> basic_data <- generate_mobility_data()
+> print(basic_data[1:6, 1:6])  # Show first 5 classes plus totals
+        Class 1 Class 2 Class 3 Class 4 Class 5 Class 6
+Class 1     266      65      31       6       4       7
+Class 2     248     971     226     132      16      15
+Class 3     131     219     863     212     124      12
+Class 4      12      69     113     546     111      73
+Class 5      13      15     137     284     920     248
+Class 6      10       6      10     101     150     626
+> 
+> # Small example for quick testing
+> test_data <- generate_mobility_data(
++   n_classes = 5,
++   n_total = 1000,
++   immobility_strength = 0.7,
++   class_clustering = 0.2,
++   seed = 42
++ )
+> 
+> # Professional class structure with custom names
+> professional_data <- generate_mobility_data(
++   n_classes = 6,
++   n_total = 5000,
++   class_names = c("Upper", "Upper-Middle", "Middle", 
++                   "Lower-Middle", "Working", "Lower"),
++   immobility_strength = 0.5,
++   class_clustering = 0.4,
++   seed = 123
++ )
+> 
+> # Highly fluid mobility regime
+> fluid_data <- generate_mobility_data(
++   n_classes = 8,
++   immobility_strength = 0.3,
++   class_clustering = 0.1,
++   noise_level = 0.3
++ )
+> 
+> # Use in MONECA analysis
+> seg <- moneca(test_data, segment.levels = 3)
+> plot_moneca_ggraph(seg, title = "Synthetic Mobility Analysis")
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_stringMetric, as.graphicsAnnot(x$label)) :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  font family 'Arial Narrow' not found in PostScript font database
+Error in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  : 
+  invalid font type
+Calls: <Anonymous> ... drawDetails -> drawDetails.text -> grid.Call.graphics
+Execution halted
+* checking for unstated dependencies in ‘tests’ ... OK
+* checking tests ... SKIPPED
+* checking for unstated dependencies in vignettes ... OK
+* checking package vignettes ... WARNING
+Directory 'inst/doc' does not exist.
+Package vignettes without corresponding single PDF/HTML:
+  ‘algorithm-comparison.Rmd’
+  ‘moneca-introduction.Rmd’
+* checking re-building of vignette outputs ... OK
+* DONE
+Status: 1 ERROR, 8 WARNINGs, 5 NOTEs
