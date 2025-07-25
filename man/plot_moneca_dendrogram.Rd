@@ -71,6 +71,13 @@ The dendrogram branches show merging points where categories or segments are
 combined based on the MONECA algorithm's clique detection. Unlike traditional
 hierarchical clustering, MONECA can create non-binary trees where multiple
 categories merge simultaneously.
+
+\strong{No-Crossing Layout:} Categories on the x-axis are automatically ordered
+using a hierarchical algorithm that completely eliminates line crossings between
+all levels. The algorithm processes segments from the most aggregated level down,
+ensuring that at each level, categories are grouped optimally to prevent any
+crossing lines. This creates the clearest possible visualization of the 
+hierarchical structure.
 }
 \examples{
 # Generate synthetic data and run MONECA

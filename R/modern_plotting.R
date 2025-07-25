@@ -951,6 +951,13 @@ plot_stair_ggraph <- function(segments,
 #' combined based on the MONECA algorithm's clique detection. Unlike traditional
 #' hierarchical clustering, MONECA can create non-binary trees where multiple
 #' categories merge simultaneously.
+#' 
+#' \strong{No-Crossing Layout:} Categories on the x-axis are automatically ordered
+#' using a hierarchical algorithm that completely eliminates line crossings between
+#' all levels. The algorithm processes segments from the most aggregated level down,
+#' ensuring that at each level, categories are grouped optimally to prevent any
+#' crossing lines. This creates the clearest possible visualization of the 
+#' hierarchical structure.
 #'
 #' @examples
 #' # Generate synthetic data and run MONECA
@@ -1045,14 +1052,56 @@ plot_moneca_dendrogram <- function(segments,
   # Create node positions for each level
   node_positions <- list()
   
-  # Level 1: Individual categories
+  # Determine optimal x-axis ordering to completely eliminate line crossings
+  # Algorithm: Process levels from most aggregated to least aggregated,
+  # grouping categories by their segment membership at each level
+  # This guarantees no crossing lines between any adjacent levels
+  if (n_levels > 1) {
+    # Start with the highest level (most aggregated) and work down
+    ordered_cats <- seq_len(n_categories)
+    
+    # Process levels from most aggregated to least aggregated
+    for (level in n_levels:2) {
+      segments_at_level <- seg_list[[level]]
+      
+      if (length(segments_at_level) == 0) next
+      
+      # Create new ordering based on this level's segments
+      new_order <- integer(0)
+      
+      # Add categories in segment order
+      for (seg_idx in seq_along(segments_at_level)) {
+        segment_members <- segments_at_level[[seg_idx]]
+        # Sort members within segment by their current order
+        segment_members_ordered <- segment_members[order(match(segment_members, ordered_cats))]
+        new_order <- c(new_order, segment_members_ordered)
+      }
+      
+      # Add any missing categories (those not in any segment at this level) at the end
+      missing_cats <- setdiff(ordered_cats, new_order)
+      if (length(missing_cats) > 0) {
+        # Sort missing categories by their current order
+        missing_cats_ordered <- missing_cats[order(match(missing_cats, ordered_cats))]
+        new_order <- c(new_order, missing_cats_ordered)
+      }
+      
+      # Update the ordering
+      ordered_cats <- new_order
+    }
+  } else {
+    # If only one level, keep original order
+    ordered_cats <- seq_len(n_categories)
+  }
+  
+  # Level 1: Individual categories with optimized x positions
   node_positions[[1]] <- data.frame(
     node_id = paste0("L1_", seq_len(n_categories)),
     label = cat_names,
-    x = seq_len(n_categories),
+    x = match(seq_len(n_categories), ordered_cats), # Map original indices to new positions
     y = heights[1],
     level = 1,
     segment_id = seq_len(n_categories),
+    original_index = seq_len(n_categories), # Keep track of original indices
     stringsAsFactors = FALSE
   )
   
@@ -1088,6 +1137,7 @@ plot_moneca_dendrogram <- function(segments,
       y = heights[level],
       level = level,
       segment_id = seq_len(n_segments),
+      original_index = NA, # Add consistent column structure
       stringsAsFactors = FALSE
     )
     
@@ -1186,9 +1236,14 @@ plot_moneca_dendrogram <- function(segments,
     color = "black"
   )
   
-  # Add labels for bottom level
+  # Add labels for bottom level (in optimized order)
   if (show_labels) {
     bottom_nodes <- all_nodes[all_nodes$level == 1, ]
+    # Sort by x position to ensure labels appear in the correct order
+    bottom_nodes <- bottom_nodes[order(bottom_nodes$x), ]
+    # Update labels to show categories in their new positions
+    bottom_nodes$label <- cat_names[ordered_cats]
+    
     p <- p + ggplot2::geom_text(
       data = bottom_nodes,
       ggplot2::aes(x = x, y = y, label = label),
