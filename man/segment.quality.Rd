@@ -2,10 +2,99 @@
 % Please edit documentation in R/descriptive_functions.R
 \name{segment.quality}
 \alias{segment.quality}
-\title{Segment quality}
+\title{Evaluate Segment Quality Metrics}
 \usage{
 segment.quality(segments, final.solution = FALSE)
 }
+\arguments{
+\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+
+\item{final.solution}{Logical indicating whether to return only the final 
+(most aggregated) solution for each unique segment. Default is FALSE, which
+returns metrics for all levels.}
+}
+\value{
+A data frame with the following columns for each hierarchical level:
+  \describe{
+    \item{Membership}{Segment membership identifier in format "level.segment" 
+      (e.g., "2.1" means level 2, segment 1)}
+    \item{[Level]: Segment}{Integer segment identifier at each level}
+    \item{[Level]: within.mobility}{Proportion of mobility that stays within 
+      the segment (diagonal/total). Higher values indicate more cohesive segments.
+      Range: 0-1, where 1 means all mobility is internal.}
+    \item{[Level]: share.of.mobility}{Segment's share of total mobility in the 
+      system. Indicates the relative importance/size of the segment.
+      Range: 0-1, values sum to 1 across segments.}
+    \item{[Level]: Density}{Network density within the segment (proportion of 
+      possible edges that exist). Higher values indicate more interconnected nodes.
+      Range: 0-1, where 1 means fully connected.}
+    \item{[Level]: Nodes}{Number of original categories/nodes in the segment}
+    \item{[Level]: Max.path}{Maximum shortest path length (diameter) within 
+      the segment. Lower values indicate more compact segments.}
+    \item{[Level]: share.of.total}{Segment's share of total population/observations
+      based on marginal totals. Differs from share.of.mobility by considering
+      population size rather than flow volume.}
+  }
+  
+  When \code{final.solution = TRUE}, returns a simplified data frame with only
+  the most aggregated metrics for each unique segment.
+}
 \description{
-Segment quality
+Calculates comprehensive quality metrics for each segment across all hierarchical 
+levels of a MONECA analysis. This function provides detailed statistics about 
+segment cohesion, size, network properties, and mobility patterns.
+}
+\details{
+The function evaluates multiple aspects of segmentation quality:
+
+\strong{Cohesion Metrics:}
+\itemize{
+  \item \code{within.mobility}: Key quality indicator - proportion of mobility 
+    contained within segment boundaries. Values > 0.7 suggest strong segments.
+  \item \code{Density}: How interconnected nodes are within each segment.
+    Dense segments (> 0.5) indicate tight communities.
+}
+
+\strong{Size Metrics:}
+\itemize{
+  \item \code{share.of.mobility}: Relative importance based on flow volume
+  \item \code{share.of.total}: Relative size based on population
+  \item \code{Nodes}: Absolute size in terms of categories
+}
+
+\strong{Structure Metrics:}
+\itemize{
+  \item \code{Max.path}: Network diameter - smaller values indicate more 
+    compact, well-connected segments
+}
+
+The output is ordered by the final level's segment sizes for easier interpretation.
+}
+\examples{
+# Generate data and run MONECA
+mobility_data <- generate_mobility_data(n_classes = 8, seed = 123)
+seg <- moneca(mobility_data, segment.levels = 3)
+
+# Get detailed quality metrics for all levels
+quality_full <- segment.quality(seg)
+print(quality_full)
+
+# Get only final solution summary
+quality_final <- segment.quality(seg, final.solution = TRUE)
+print(quality_final)
+
+# Identify high-quality segments (high cohesion, reasonable size)
+good_segments <- quality_full[quality_full[,"2 : within.mobility"] > 0.7 & 
+                             quality_full[,"2 : Nodes"] > 1, ]
+
+# Visualize segment quality
+\dontrun{
+plot_segment_quality(seg)
+}
+
+}
+\seealso{
+\code{\link{moneca}} for the main analysis function,
+\code{\link{plot_segment_quality}} for graphical representation,
+\code{\link{segment.membership}} for segment assignments
 }

@@ -11,8 +11,16 @@ NULL
 if(getRversion() >= "2.15.1") {
   utils::globalVariables(c(
     "weight", "nodes", "node_size", "is_ego", "same_segment", "node_name",
-    "level_name", "mobility_rate", "name", "segment", "x", "y"
+    "level_name", "mobility_rate", "name", "segment", "x", "y",
+    "Membership", "within.mobility", "Nodes", "Density", "share.of.mobility",
+    "share.of.total", "Level_Metric", "Level", "Metric", "Value", "Max.path",
+    "color", "x1", "y1", "x2", "y2", "node_id", "label"
   ))
+}
+
+# Helper function for NULL default values
+`%||%` <- function(x, y) {
+  if (is.null(x)) y else x
 }
 
 #' Modern Network Visualization for MONECA Results
@@ -899,4 +907,763 @@ plot_stair_ggraph <- function(segments,
   names(plots) <- plot_names
   
   return(plots)
+}
+
+#' Plot MONECA Results as Dendrogram
+#'
+#' Creates a dendrogram-like visualization of the hierarchical clustering results
+#' from MONECA analysis. This function shows how categories are progressively
+#' aggregated across segmentation levels, making the hierarchical structure clear.
+#'
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param height_method Character string specifying how to calculate dendrogram heights:
+#'   \itemize{
+#'     \item "uniform" (default): Equal spacing between levels
+#'     \item "mobility": Height based on mobility reduction between levels
+#'     \item "segments": Height based on number of segments at each level
+#'   }
+#' @param color_segments Logical indicating whether to color branches by final
+#'   segment membership. Default is TRUE.
+#' @param show_labels Logical indicating whether to show category labels at the
+#'   bottom. Default is TRUE.
+#' @param label_size Numeric size for labels. Default is 3.
+#' @param branch_width Numeric width for dendrogram branches. Default is 1.
+#' @param title Character string for plot title. Default is "MONECA Hierarchical Clustering".
+#' @param subtitle Character string for plot subtitle. Default is NULL.
+#' @param color_palette Character string specifying the RColorBrewer palette for
+#'   segment colors. Default is "Set3".
+#' @param theme_style Character string specifying the plot theme. Options are
+#'   "minimal" (default), "classic", or "void".
+#' @param vertical Logical indicating whether to plot vertically (TRUE, default)
+#'   or horizontally (FALSE).
+#'
+#' @return A ggplot2 object representing the dendrogram.
+#'
+#' @details
+#' This function creates a dendrogram visualization that clearly shows:
+#' \itemize{
+#'   \item How individual categories (leaves) are grouped at each level
+#'   \item The hierarchical relationships between segments
+#'   \item The progressive aggregation from individual categories to larger segments
+#' }
+#' 
+#' The dendrogram branches show merging points where categories or segments are
+#' combined based on the MONECA algorithm's clique detection. Unlike traditional
+#' hierarchical clustering, MONECA can create non-binary trees where multiple
+#' categories merge simultaneously.
+#'
+#' @examples
+#' # Generate synthetic data and run MONECA
+#' mobility_data <- generate_mobility_data(n_classes = 8, seed = 123)
+#' seg <- moneca(mobility_data, segment.levels = 3)
+#' 
+#' # Basic dendrogram
+#' plot_moneca_dendrogram(seg)
+#' 
+#' # Dendrogram with mobility-based heights
+#' plot_moneca_dendrogram(seg, height_method = "mobility", 
+#'                       title = "Mobility-based Hierarchical Clustering")
+#' 
+#' # Horizontal dendrogram without colors
+#' plot_moneca_dendrogram(seg, vertical = FALSE, color_segments = FALSE)
+#' 
+#' # Customize appearance
+#' plot_moneca_dendrogram(seg, 
+#'                       color_palette = "Dark2",
+#'                       branch_width = 1.5,
+#'                       label_size = 4,
+#'                       theme_style = "classic")
+#'
+#' @seealso 
+#' \code{\link{moneca}} for the main analysis function,
+#' \code{\link{plot_moneca_ggraph}} for network visualization,
+#' \code{\link{plot_stair_ggraph}} for multi-level visualization
+#'
+#' @export
+plot_moneca_dendrogram <- function(segments,
+                                  height_method = "uniform",
+                                  color_segments = TRUE,
+                                  show_labels = TRUE,
+                                  label_size = 3,
+                                  branch_width = 1,
+                                  title = "MONECA Hierarchical Clustering",
+                                  subtitle = NULL,
+                                  color_palette = "Set3",
+                                  theme_style = "minimal",
+                                  vertical = TRUE) {
+  
+  # Input validation
+  if (!inherits(segments, "moneca")) {
+    stop("segments must be a moneca object created by the moneca() function")
+  }
+  
+  # Extract segment list and original names
+  seg_list <- segments$segment.list
+  n_levels <- length(seg_list)
+  
+  # Get original category names
+  mat <- segments$mat.list[[1]]
+  cat_names <- rownames(mat)[-nrow(mat)]  # Remove "Total" row
+  n_categories <- length(cat_names)
+  
+  # Initialize data structures for dendrogram
+  edges <- data.frame(from = character(), to = character(), 
+                     x1 = numeric(), y1 = numeric(), 
+                     x2 = numeric(), y2 = numeric(),
+                     level = integer(), segment = character(),
+                     stringsAsFactors = FALSE)
+  
+  # Calculate heights for each level
+  heights <- switch(height_method,
+    "uniform" = seq(0, n_levels - 1),
+    "mobility" = {
+      # Calculate mobility reduction at each level
+      mob_rates <- sapply(seq_len(n_levels), function(i) {
+        mat <- segments$mat.list[[i]]
+        l <- nrow(mat)
+        if (l <= 1) return(1)
+        diag_sum <- sum(diag(mat)[-l])
+        total_sum <- sum(mat[-l, -l])
+        if (total_sum == 0) return(1)
+        diag_sum / total_sum
+      })
+      cumsum(c(0, diff(mob_rates)))
+    },
+    "segments" = {
+      # Height based on number of segments
+      n_segs <- sapply(seg_list, length)
+      cumsum(c(0, -diff(log(n_segs + 1))))
+    },
+    stop("Invalid height_method. Choose 'uniform', 'mobility', or 'segments'")
+  )
+  
+  # Normalize heights to 0-1 range
+  if (length(heights) > 1 && max(heights) > min(heights)) {
+    heights <- (heights - min(heights)) / (max(heights) - min(heights))
+  }
+  
+  # Create node positions for each level
+  node_positions <- list()
+  
+  # Level 1: Individual categories
+  node_positions[[1]] <- data.frame(
+    node_id = paste0("L1_", seq_len(n_categories)),
+    label = cat_names,
+    x = seq_len(n_categories),
+    y = heights[1],
+    level = 1,
+    segment_id = seq_len(n_categories),
+    stringsAsFactors = FALSE
+  )
+  
+  # Process each subsequent level
+  for (level in 2:n_levels) {
+    segments_at_level <- seg_list[[level]]
+    n_segments <- length(segments_at_level)
+    
+    if (n_segments == 0) next
+    
+    # Calculate x positions as centers of constituent nodes
+    x_positions <- numeric(n_segments)
+    segment_labels <- character(n_segments)
+    
+    for (i in seq_len(n_segments)) {
+      members <- segments_at_level[[i]]
+      # Find x positions of members from level 1
+      member_x <- node_positions[[1]]$x[members]
+      x_positions[i] <- mean(member_x)
+      
+      # Create segment label
+      if (length(members) <= 3) {
+        segment_labels[i] <- paste(cat_names[members], collapse = "-")
+      } else {
+        segment_labels[i] <- paste0("S", level, ".", i, " (", length(members), " nodes)")
+      }
+    }
+    
+    node_positions[[level]] <- data.frame(
+      node_id = paste0("L", level, "_", seq_len(n_segments)),
+      label = segment_labels,
+      x = x_positions,
+      y = heights[level],
+      level = level,
+      segment_id = seq_len(n_segments),
+      stringsAsFactors = FALSE
+    )
+    
+    # Create edges from previous level to current level
+    for (i in seq_len(n_segments)) {
+      members <- segments_at_level[[i]]
+      
+      # Find which nodes from previous level map to this segment
+      if (level == 2) {
+        # Direct mapping from categories
+        prev_nodes <- node_positions[[1]][members, ]
+      } else {
+        # Find which previous segments contain these members
+        prev_segments <- seg_list[[level - 1]]
+        prev_indices <- which(sapply(prev_segments, function(ps) {
+          any(members %in% ps)
+        }))
+        prev_nodes <- node_positions[[level - 1]][prev_indices, ]
+      }
+      
+      current_node <- node_positions[[level]][i, ]
+      
+      # Create edges
+      for (j in seq_len(nrow(prev_nodes))) {
+        new_edge <- data.frame(
+          from = prev_nodes$node_id[j],
+          to = current_node$node_id,
+          x1 = prev_nodes$x[j],
+          y1 = prev_nodes$y[j],
+          x2 = current_node$x,
+          y2 = current_node$y,
+          level = level,
+          segment = paste0("S", level, ".", i),
+          stringsAsFactors = FALSE
+        )
+        edges <- rbind(edges, new_edge)
+      }
+    }
+  }
+  
+  # Combine all node positions
+  all_nodes <- do.call(rbind, node_positions)
+  
+  # Assign colors based on final segment membership
+  if (color_segments && n_levels > 1) {
+    final_segments <- seg_list[[n_levels]]
+    n_final_segments <- length(final_segments)
+    
+    # Get colors from palette
+    if (n_final_segments <= 12) {
+      segment_colors <- RColorBrewer::brewer.pal(max(3, n_final_segments), color_palette)
+    } else {
+      segment_colors <- grDevices::colorRampPalette(
+        RColorBrewer::brewer.pal(12, color_palette)
+      )(n_final_segments)
+    }
+    
+    # Assign colors to edges based on final segment membership
+    edge_colors <- character(nrow(edges))
+    for (i in seq_len(nrow(edges))) {
+      # Find which final segment this edge belongs to
+      edge_level <- edges$level[i]
+      if (edge_level == n_levels) {
+        # Direct assignment for final level
+        seg_idx <- as.numeric(gsub("S\\d+\\.(\\d+)", "\\1", edges$segment[i]))
+        edge_colors[i] <- segment_colors[seg_idx]
+      } else {
+        # Trace forward to find final segment
+        # For simplicity, use black for intermediate levels
+        edge_colors[i] <- "black"
+      }
+    }
+    edges$color <- edge_colors
+  } else {
+    edges$color <- "black"
+  }
+  
+  # Create the plot
+  p <- ggplot2::ggplot()
+  
+  # Add edges (dendrogram branches)
+  if (nrow(edges) > 0) {
+    p <- p + ggplot2::geom_segment(
+      data = edges,
+      ggplot2::aes(x = x1, y = y1, xend = x2, yend = y2, color = color),
+      size = branch_width,
+      lineend = "round"
+    )
+  }
+  
+  # Add node points
+  p <- p + ggplot2::geom_point(
+    data = all_nodes,
+    ggplot2::aes(x = x, y = y),
+    size = 3,
+    color = "black"
+  )
+  
+  # Add labels for bottom level
+  if (show_labels) {
+    bottom_nodes <- all_nodes[all_nodes$level == 1, ]
+    p <- p + ggplot2::geom_text(
+      data = bottom_nodes,
+      ggplot2::aes(x = x, y = y, label = label),
+      vjust = 1.5,
+      size = label_size,
+      angle = if (vertical) 45 else 0,
+      hjust = if (vertical) 1 else 0.5
+    )
+  }
+  
+  # Apply theme
+  p <- p + switch(theme_style,
+    "minimal" = ggplot2::theme_minimal(),
+    "classic" = ggplot2::theme_classic(),
+    "void" = ggplot2::theme_void(),
+    ggplot2::theme_minimal()
+  )
+  
+  # Customize theme
+  p <- p + ggplot2::theme(
+    legend.position = "none",
+    axis.text = ggplot2::element_blank(),
+    axis.title = ggplot2::element_blank(),
+    axis.ticks = ggplot2::element_blank(),
+    panel.grid = ggplot2::element_blank(),
+    plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
+    plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5)
+  )
+  
+  # Add titles
+  p <- p + ggplot2::labs(title = title, subtitle = subtitle)
+  
+  # Set scale to use actual colors
+  if (color_segments) {
+    p <- p + ggplot2::scale_color_identity()
+  }
+  
+  # Adjust orientation
+  if (!vertical) {
+    p <- p + ggplot2::coord_flip()
+  }
+  
+  # Expand limits slightly
+  p <- p + ggplot2::expand_limits(
+    y = c(min(heights) - 0.1, max(heights) + 0.1)
+  )
+  
+  return(p)
+}
+
+#' Visualize Segment Quality Metrics
+#'
+#' Creates comprehensive visualizations of segment quality metrics from MONECA 
+#' analysis. This function provides multiple plot types to help assess the 
+#' quality and characteristics of the segmentation.
+#'
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param plot_type Character string specifying the type of visualization:
+#'   \itemize{
+#'     \item "overview" (default): Multi-panel overview of key metrics
+#'     \item "cohesion": Within-mobility vs segment size scatter plot
+#'     \item "radar": Radar/spider plot of normalized metrics per segment
+#'     \item "heatmap": Heatmap of all metrics across levels
+#'     \item "evolution": Line plot showing metric evolution across levels
+#'   }
+#' @param level Integer specifying which hierarchical level to visualize. 
+#'   Default is 2. Use NULL for all levels (only valid for some plot types).
+#' @param metrics Character vector of metrics to include. Default includes all.
+#'   Options: "within.mobility", "share.of.mobility", "Density", "Nodes", 
+#'   "Max.path", "share.of.total"
+#' @param color_palette Character string specifying the RColorBrewer palette.
+#'   Default is "Set3" for categorical data, "RdYlBu" for continuous.
+#' @param theme_style Character string specifying the plot theme: "minimal" 
+#'   (default), "classic", or "void".
+#' @param title Character string for plot title. Default is auto-generated
+#'   based on plot type.
+#' @param show_labels Logical indicating whether to show segment labels.
+#'   Default is TRUE.
+#' @param label_size Numeric size for labels. Default is 3.
+#'
+#' @return A ggplot2 object (or list of ggplot2 objects for "overview" type).
+#'
+#' @details
+#' Each plot type serves a different analytical purpose:
+#' 
+#' \strong{Overview}: Four-panel display showing:
+#' \itemize{
+#'   \item Within-mobility by segment (bar chart)
+#'   \item Segment sizes (nodes) 
+#'   \item Network density
+#'   \item Share of total mobility
+#' }
+#' 
+#' \strong{Cohesion}: Scatter plot with within-mobility on y-axis and segment
+#' size on x-axis. Ideal segments appear in the upper-right (large and cohesive).
+#' Points are sized by share of mobility.
+#' 
+#' \strong{Radar}: Multi-dimensional comparison showing all metrics normalized
+#' to 0-1 scale. Useful for comparing segment profiles.
+#' 
+#' \strong{Heatmap}: Shows all metrics across all levels and segments. Colors
+#' indicate metric values, making patterns easy to spot.
+#' 
+#' \strong{Evolution}: Line plots showing how each metric changes across 
+#' hierarchical levels for each segment lineage.
+#'
+#' @examples
+#' # Generate data and run MONECA
+#' mobility_data <- generate_mobility_data(n_classes = 8, seed = 123)
+#' seg <- moneca(mobility_data, segment.levels = 3)
+#' 
+#' # Overview of level 2 quality
+#' plot_segment_quality(seg)
+#' 
+#' # Cohesion vs size analysis
+#' plot_segment_quality(seg, plot_type = "cohesion", level = 2)
+#' 
+#' # Radar plot for segment comparison
+#' plot_segment_quality(seg, plot_type = "radar", level = 2)
+#' 
+#' # Heatmap of all metrics across levels
+#' plot_segment_quality(seg, plot_type = "heatmap", level = NULL)
+#' 
+#' # Evolution of metrics across levels
+#' plot_segment_quality(seg, plot_type = "evolution", 
+#'                     metrics = c("within.mobility", "Density"))
+#' 
+#' # Custom styling
+#' plot_segment_quality(seg, plot_type = "cohesion",
+#'                     color_palette = "Dark2",
+#'                     theme_style = "classic",
+#'                     title = "Segment Quality Analysis")
+#'
+#' @seealso 
+#' \code{\link{segment.quality}} for the underlying metrics,
+#' \code{\link{moneca}} for the main analysis function,
+#' \code{\link{plot_moneca_ggraph}} for network visualization
+#'
+#' @export
+plot_segment_quality <- function(segments,
+                                plot_type = "overview",
+                                level = 2,
+                                metrics = NULL,
+                                color_palette = NULL,
+                                theme_style = "minimal",
+                                title = NULL,
+                                show_labels = TRUE,
+                                label_size = 3) {
+  
+  # Input validation
+  if (!inherits(segments, "moneca")) {
+    stop("segments must be a moneca object created by the moneca() function")
+  }
+  
+  # Get quality data
+  quality_data <- segment.quality(segments, final.solution = FALSE)
+  
+  # Set default metrics if not provided
+  if (is.null(metrics)) {
+    metrics <- c("within.mobility", "share.of.mobility", "Density", 
+                "Nodes", "Max.path", "share.of.total")
+  }
+  
+  # Set default color palette based on plot type
+  if (is.null(color_palette)) {
+    color_palette <- if (plot_type %in% c("heatmap", "cohesion")) "RdYlBu" else "Set3"
+  }
+  
+  # Apply theme
+  theme_base <- switch(theme_style,
+    "minimal" = ggplot2::theme_minimal(),
+    "classic" = ggplot2::theme_classic(),
+    "void" = ggplot2::theme_void(),
+    ggplot2::theme_minimal()
+  )
+  
+  # Generate plots based on type
+  if (plot_type == "overview") {
+    # Multi-panel overview
+    if (is.null(level)) level <- 2
+    
+    # Extract data for specified level
+    level_cols <- grep(paste0("^", level, ": "), colnames(quality_data), value = TRUE)
+    
+    # Check if we found any columns for this level
+    if (length(level_cols) == 0) {
+      # Extract available levels from column names
+      all_level_cols <- grep("^[0-9]+:", colnames(quality_data), value = TRUE)
+      available_levels <- unique(gsub(":.*", "", all_level_cols))
+      stop(paste("No data found for level", level, ". Available levels:", 
+                 paste(available_levels, collapse = ", ")))
+    }
+    
+    # Ensure we get a data frame even with single column
+    level_data <- quality_data[, c("Membership", level_cols), drop = FALSE]
+    
+    # Clean column names
+    colnames(level_data) <- gsub(paste0("^", level, ": "), "", colnames(level_data))
+    
+    # Create individual plots
+    plots <- list()
+    
+    # 1. Within-mobility bar chart
+    p1 <- ggplot2::ggplot(level_data, ggplot2::aes(x = Membership, y = within.mobility)) +
+      ggplot2::geom_bar(stat = "identity", fill = "steelblue") +
+      ggplot2::geom_hline(yintercept = 0.7, linetype = "dashed", color = "red", alpha = 0.5) +
+      ggplot2::labs(x = "Segment", y = "Within-mobility", 
+                   title = "Segment Cohesion") +
+      theme_base +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+    
+    if (show_labels && nrow(level_data) <= 10) {
+      p1 <- p1 + ggplot2::geom_text(ggplot2::aes(label = round(within.mobility, 2)), 
+                                    vjust = -0.5, size = label_size)
+    }
+    plots[[1]] <- p1
+    
+    # 2. Segment size (nodes)
+    p2 <- ggplot2::ggplot(level_data, ggplot2::aes(x = Membership, y = Nodes)) +
+      ggplot2::geom_bar(stat = "identity", fill = "darkgreen") +
+      ggplot2::labs(x = "Segment", y = "Number of Nodes", 
+                   title = "Segment Size") +
+      theme_base +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+    
+    if (show_labels && nrow(level_data) <= 10) {
+      p2 <- p2 + ggplot2::geom_text(ggplot2::aes(label = Nodes), 
+                                    vjust = -0.5, size = label_size)
+    }
+    plots[[2]] <- p2
+    
+    # 3. Network density
+    p3 <- ggplot2::ggplot(level_data, ggplot2::aes(x = Membership, y = Density)) +
+      ggplot2::geom_bar(stat = "identity", fill = "orange") +
+      ggplot2::geom_hline(yintercept = 0.5, linetype = "dashed", color = "red", alpha = 0.5) +
+      ggplot2::labs(x = "Segment", y = "Network Density", 
+                   title = "Internal Connectivity") +
+      theme_base +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+    
+    if (show_labels && nrow(level_data) <= 10) {
+      p3 <- p3 + ggplot2::geom_text(ggplot2::aes(label = round(Density, 2)), 
+                                    vjust = -0.5, size = label_size)
+    }
+    plots[[3]] <- p3
+    
+    # 4. Share of mobility
+    p4 <- ggplot2::ggplot(level_data, ggplot2::aes(x = Membership, y = share.of.mobility)) +
+      ggplot2::geom_bar(stat = "identity", fill = "purple") +
+      ggplot2::labs(x = "Segment", y = "Share of Total Mobility", 
+                   title = "Relative Importance") +
+      theme_base +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+    
+    if (show_labels && nrow(level_data) <= 10) {
+      p4 <- p4 + ggplot2::geom_text(ggplot2::aes(label = round(share.of.mobility, 2)), 
+                                    vjust = -0.5, size = label_size)
+    }
+    plots[[4]] <- p4
+    
+    # Combine plots
+    combined <- gridExtra::grid.arrange(
+      grobs = plots,
+      ncol = 2,
+      top = title %||% paste("Segment Quality Overview - Level", level)
+    )
+    
+    return(combined)
+    
+  } else if (plot_type == "cohesion") {
+    # Cohesion vs size scatter plot
+    if (is.null(level)) level <- 2
+    
+    # Extract data for specified level
+    level_cols <- grep(paste0("^", level, ": "), colnames(quality_data), value = TRUE)
+    
+    # Check if we found any columns for this level
+    if (length(level_cols) == 0) {
+      # Extract available levels from column names
+      all_level_cols <- grep("^[0-9]+:", colnames(quality_data), value = TRUE)
+      available_levels <- unique(gsub(":.*", "", all_level_cols))
+      stop(paste("No data found for level", level, ". Available levels:", 
+                 paste(available_levels, collapse = ", ")))
+    }
+    
+    level_data <- quality_data[, c("Membership", level_cols), drop = FALSE]
+    colnames(level_data) <- gsub(paste0("^", level, ": "), "", colnames(level_data))
+    
+    # Create scatter plot
+    p <- ggplot2::ggplot(level_data, 
+                        ggplot2::aes(x = Nodes, y = within.mobility, 
+                                    size = share.of.mobility, color = Membership)) +
+      ggplot2::geom_point(alpha = 0.7) +
+      ggplot2::scale_size_continuous(range = c(3, 10), name = "Share of Mobility") +
+      ggplot2::geom_hline(yintercept = 0.7, linetype = "dashed", color = "red", alpha = 0.5) +
+      ggplot2::geom_vline(xintercept = 2, linetype = "dashed", color = "blue", alpha = 0.5) +
+      ggplot2::labs(x = "Number of Nodes", 
+                   y = "Within-mobility (Cohesion)",
+                   title = title %||% paste("Segment Quality Analysis - Level", level),
+                   subtitle = "Ideal segments: upper-right quadrant") +
+      theme_base
+    
+    # Add labels if requested
+    if (show_labels) {
+      p <- p + ggplot2::geom_text(ggplot2::aes(label = Membership), 
+                                  vjust = -1, size = label_size)
+    }
+    
+    # Color palette
+    n_segments <- nrow(level_data)
+    if (n_segments <= 12) {
+      p <- p + ggplot2::scale_color_brewer(palette = color_palette)
+    } else {
+      p <- p + ggplot2::scale_color_manual(
+        values = grDevices::colorRampPalette(
+          RColorBrewer::brewer.pal(12, color_palette)
+        )(n_segments)
+      )
+    }
+    
+    return(p)
+    
+  } else if (plot_type == "radar") {
+    # Radar plot
+    if (is.null(level)) level <- 2
+    
+    # Extract and prepare data
+    level_cols <- grep(paste0("^", level, ": "), colnames(quality_data), value = TRUE)
+    
+    # Check if we found any columns for this level
+    if (length(level_cols) == 0) {
+      # Extract available levels from column names
+      all_level_cols <- grep("^[0-9]+:", colnames(quality_data), value = TRUE)
+      available_levels <- unique(gsub(":.*", "", all_level_cols))
+      stop(paste("No data found for level", level, ". Available levels:", 
+                 paste(available_levels, collapse = ", ")))
+    }
+    
+    level_data <- quality_data[, c("Membership", level_cols), drop = FALSE]
+    colnames(level_data) <- gsub(paste0("^", level, ": "), "", colnames(level_data))
+    
+    # Select only requested metrics
+    metric_cols <- intersect(metrics, colnames(level_data))
+    radar_data <- level_data[, c("Membership", metric_cols), drop = FALSE]
+    
+    # Normalize metrics to 0-1 scale
+    for (col in metric_cols) {
+      if (col != "Membership") {
+        col_data <- radar_data[[col]]
+        radar_data[[col]] <- (col_data - min(col_data, na.rm = TRUE)) / 
+                            (max(col_data, na.rm = TRUE) - min(col_data, na.rm = TRUE))
+      }
+    }
+    
+    # Reshape data for plotting
+    radar_long <- tidyr::pivot_longer(radar_data, 
+                                     cols = -Membership, 
+                                     names_to = "Metric", 
+                                     values_to = "Value")
+    
+    # Create radar plot using coord_polar
+    p <- ggplot2::ggplot(radar_long, 
+                        ggplot2::aes(x = Metric, y = Value, group = Membership, 
+                                    color = Membership)) +
+      ggplot2::geom_line(size = 1) +
+      ggplot2::geom_point(size = 3) +
+      ggplot2::coord_polar() +
+      ggplot2::ylim(0, 1) +
+      ggplot2::labs(title = title %||% paste("Segment Profiles - Level", level),
+                   subtitle = "Normalized metrics (0-1 scale)") +
+      theme_base +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(size = 10))
+    
+    # Color palette
+    n_segments <- length(unique(radar_long$Membership))
+    if (n_segments <= 12) {
+      p <- p + ggplot2::scale_color_brewer(palette = color_palette)
+    } else {
+      p <- p + ggplot2::scale_color_manual(
+        values = grDevices::colorRampPalette(
+          RColorBrewer::brewer.pal(12, color_palette)
+        )(n_segments)
+      )
+    }
+    
+    return(p)
+    
+  } else if (plot_type == "heatmap") {
+    # Heatmap of all metrics
+    
+    # Select metrics columns
+    all_metric_cols <- character()
+    for (m in metrics) {
+      cols <- grep(paste0(": ", m, "$"), colnames(quality_data), value = TRUE)
+      all_metric_cols <- c(all_metric_cols, cols)
+    }
+    
+    # Prepare data
+    heatmap_data <- quality_data[, c("Membership", all_metric_cols), drop = FALSE]
+    
+    # Reshape to long format
+    heatmap_long <- tidyr::pivot_longer(heatmap_data,
+                                       cols = -Membership,
+                                       names_to = "Level_Metric",
+                                       values_to = "Value")
+    
+    # Separate level and metric
+    heatmap_long$Level <- gsub(": .*", "", heatmap_long$Level_Metric)
+    heatmap_long$Metric <- gsub("^[0-9]+: ", "", heatmap_long$Level_Metric)
+    
+    # Create heatmap
+    p <- ggplot2::ggplot(heatmap_long, 
+                        ggplot2::aes(x = Level, y = Membership, fill = Value)) +
+      ggplot2::geom_tile() +
+      ggplot2::facet_wrap(~ Metric, scales = "free", ncol = 3) +
+      ggplot2::scale_fill_distiller(palette = color_palette, direction = 1) +
+      ggplot2::labs(title = title %||% "Segment Quality Metrics Across Levels",
+                   x = "Hierarchical Level", y = "Segment") +
+      theme_base +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+    
+    return(p)
+    
+  } else if (plot_type == "evolution") {
+    # Evolution across levels
+    
+    # Prepare data for evolution plot
+    evolution_data <- list()
+    
+    for (m in metrics) {
+      metric_cols <- grep(paste0(": ", m, "$"), colnames(quality_data), value = TRUE)
+      if (length(metric_cols) > 0) {
+        metric_data <- quality_data[, c("Membership", metric_cols), drop = FALSE]
+        
+        # Reshape to long format
+        metric_long <- tidyr::pivot_longer(metric_data,
+                                         cols = -Membership,
+                                         names_to = "Level",
+                                         values_to = "Value")
+        metric_long$Level <- as.numeric(gsub(": .*", "", metric_long$Level))
+        metric_long$Metric <- m
+        
+        evolution_data[[m]] <- metric_long
+      }
+    }
+    
+    # Combine all metrics
+    evolution_combined <- do.call(rbind, evolution_data)
+    
+    # Create line plot
+    p <- ggplot2::ggplot(evolution_combined, 
+                        ggplot2::aes(x = Level, y = Value, color = Membership, 
+                                    group = Membership)) +
+      ggplot2::geom_line(size = 1) +
+      ggplot2::geom_point(size = 3) +
+      ggplot2::facet_wrap(~ Metric, scales = "free_y", ncol = 2) +
+      ggplot2::labs(title = title %||% "Metric Evolution Across Hierarchical Levels",
+                   x = "Hierarchical Level", y = "Metric Value") +
+      theme_base
+    
+    # Color palette
+    n_segments <- length(unique(evolution_combined$Membership))
+    if (n_segments <= 12) {
+      p <- p + ggplot2::scale_color_brewer(palette = color_palette)
+    } else {
+      p <- p + ggplot2::scale_color_manual(
+        values = grDevices::colorRampPalette(
+          RColorBrewer::brewer.pal(12, color_palette)
+        )(n_segments)
+      )
+    }
+    
+    return(p)
+    
+  } else {
+    stop("Invalid plot_type. Choose 'overview', 'cohesion', 'radar', 'heatmap', or 'evolution'")
+  }
 }

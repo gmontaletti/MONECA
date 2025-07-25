@@ -2,7 +2,7 @@ Package: MONECA
 Title: Mobility Network Clustering Analysis
 Description: MONECA creates a weighted network from a mobility table and uses cliques (or similar) to create discrete and nested clusters.
 URL: None yet
-Version: 0.2.8
+Version: 0.2.9
 Maintainer: Anton Grau Larsen <agl.ioa@cbs.dk>
 Author: Jonas Touboel <jt@soc.ku.dk>
 Depends:
@@ -18,7 +18,9 @@ Imports:
   stats,
   grDevices,
   dplyr (>= 1.0.0),
-  tidygraph (>= 1.2.0)
+  tidygraph (>= 1.2.0),
+  tidyr (>= 1.0.0),
+  gridExtra (>= 2.3)
 Suggests:
   knitr,
   rmarkdown,

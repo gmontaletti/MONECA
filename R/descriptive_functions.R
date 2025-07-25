@@ -267,7 +267,94 @@ return(list(out.mobility=out.mat, in.mat=in.mat))
 ####################################################################
 # Segment quality
 
-#' Segment quality
+#' Evaluate Segment Quality Metrics
+#' 
+#' Calculates comprehensive quality metrics for each segment across all hierarchical 
+#' levels of a MONECA analysis. This function provides detailed statistics about 
+#' segment cohesion, size, network properties, and mobility patterns.
+#' 
+#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param final.solution Logical indicating whether to return only the final 
+#'   (most aggregated) solution for each unique segment. Default is FALSE, which
+#'   returns metrics for all levels.
+#' 
+#' @return A data frame with the following columns for each hierarchical level:
+#'   \describe{
+#'     \item{Membership}{Segment membership identifier in format "level.segment" 
+#'       (e.g., "2.1" means level 2, segment 1)}
+#'     \item{[Level]: Segment}{Integer segment identifier at each level}
+#'     \item{[Level]: within.mobility}{Proportion of mobility that stays within 
+#'       the segment (diagonal/total). Higher values indicate more cohesive segments.
+#'       Range: 0-1, where 1 means all mobility is internal.}
+#'     \item{[Level]: share.of.mobility}{Segment's share of total mobility in the 
+#'       system. Indicates the relative importance/size of the segment.
+#'       Range: 0-1, values sum to 1 across segments.}
+#'     \item{[Level]: Density}{Network density within the segment (proportion of 
+#'       possible edges that exist). Higher values indicate more interconnected nodes.
+#'       Range: 0-1, where 1 means fully connected.}
+#'     \item{[Level]: Nodes}{Number of original categories/nodes in the segment}
+#'     \item{[Level]: Max.path}{Maximum shortest path length (diameter) within 
+#'       the segment. Lower values indicate more compact segments.}
+#'     \item{[Level]: share.of.total}{Segment's share of total population/observations
+#'       based on marginal totals. Differs from share.of.mobility by considering
+#'       population size rather than flow volume.}
+#'   }
+#'   
+#'   When \code{final.solution = TRUE}, returns a simplified data frame with only
+#'   the most aggregated metrics for each unique segment.
+#' 
+#' @details
+#' The function evaluates multiple aspects of segmentation quality:
+#' 
+#' \strong{Cohesion Metrics:}
+#' \itemize{
+#'   \item \code{within.mobility}: Key quality indicator - proportion of mobility 
+#'     contained within segment boundaries. Values > 0.7 suggest strong segments.
+#'   \item \code{Density}: How interconnected nodes are within each segment.
+#'     Dense segments (> 0.5) indicate tight communities.
+#' }
+#' 
+#' \strong{Size Metrics:}
+#' \itemize{
+#'   \item \code{share.of.mobility}: Relative importance based on flow volume
+#'   \item \code{share.of.total}: Relative size based on population
+#'   \item \code{Nodes}: Absolute size in terms of categories
+#' }
+#' 
+#' \strong{Structure Metrics:}
+#' \itemize{
+#'   \item \code{Max.path}: Network diameter - smaller values indicate more 
+#'     compact, well-connected segments
+#' }
+#' 
+#' The output is ordered by the final level's segment sizes for easier interpretation.
+#' 
+#' @examples
+#' # Generate data and run MONECA
+#' mobility_data <- generate_mobility_data(n_classes = 8, seed = 123)
+#' seg <- moneca(mobility_data, segment.levels = 3)
+#' 
+#' # Get detailed quality metrics for all levels
+#' quality_full <- segment.quality(seg)
+#' print(quality_full)
+#' 
+#' # Get only final solution summary
+#' quality_final <- segment.quality(seg, final.solution = TRUE)
+#' print(quality_final)
+#' 
+#' # Identify high-quality segments (high cohesion, reasonable size)
+#' good_segments <- quality_full[quality_full[,"2 : within.mobility"] > 0.7 & 
+#'                              quality_full[,"2 : Nodes"] > 1, ]
+#' 
+#' # Visualize segment quality
+#' \dontrun{
+#' plot_segment_quality(seg)
+#' }
+#' 
+#' @seealso 
+#' \code{\link{moneca}} for the main analysis function,
+#' \code{\link{plot_segment_quality}} for graphical representation,
+#' \code{\link{segment.membership}} for segment assignments
 #' 
 #' @export
 
@@ -275,12 +362,27 @@ segment.quality <- function(segments, final.solution = FALSE){
   mat <- segments$mat.list[[1]]
   l   <- nrow(mat)
   mat <- mat[-l, -l]
-  number.of.levels <- length(segments$mat.list)
+  # Use the minimum of mat.list and segment.list lengths to avoid index out of bounds
+  number.of.levels <- min(length(segments$mat.list), length(segments$segment.list))
   
   segment.qual.onelevel <- function(segments, level){
     
     names <- rownames(segments$mat.list[[1]])
     names <- names[-length(names)]
+    
+    # Check if level exists in both lists
+    if (level > length(segments$segment.list) || level > length(segments$mat.list)) {
+      # Return empty data frame with correct structure
+      return(data.frame(
+        Segment = rep(NA, length(names)),
+        within.mobility = rep(NA, length(names)),
+        share.of.mobility = rep(NA, length(names)),
+        Density = rep(NA, length(names)),
+        Nodes = rep(NA, length(names)),
+        Max.path = rep(NA, length(names)),
+        share.of.total = rep(NA, length(names))
+      ))
+    }
     
     seg.list.level <- segments$segment.list[[level]]
     mat.level      <- segments$mat.list[[level]]
@@ -295,13 +397,34 @@ segment.quality <- function(segments, final.solution = FALSE){
     seg                <- rep(NA, length(names))
     for (i in 1 : length(seg.list.level)) seg[seg.list.level[[i]]] <- i
     # Quality (or within mobility)
-    level.qual        <- round(diag(mat.level)/((rowSums(mat.level) + colSums(mat.level))/2),3)
+    if (is.matrix(mat.level) && nrow(mat.level) > 0) {
+      level.qual        <- round(diag(mat.level)/((rowSums(mat.level) + colSums(mat.level))/2),3)
+    } else if (length(mat.level) == 1) {
+      # Handle single segment case
+      level.qual <- 1  # Perfect within-mobility for single segment
+    } else {
+      level.qual <- numeric(0)
+    }
     quality            <- rep(NA, length(names))
-    for (i in 1 : length(seg.list.level)) quality[seg.list.level[[i]]] <- level.qual[i]
+    for (i in seq_along(seg.list.level)) {
+      if (i <= length(level.qual)) {
+        quality[seg.list.level[[i]]] <- level.qual[i]
+      }
+    }
     # Share of mobility
-    level.size        <- round(((rowSums(mat.level) + colSums(mat.level))/2)/sum(colSums(mat.level)),3)
+    if (is.matrix(mat.level) && nrow(mat.level) > 0) {
+      level.size        <- round(((rowSums(mat.level) + colSums(mat.level))/2)/sum(colSums(mat.level)),3)
+    } else if (length(mat.level) == 1) {
+      level.size <- 1  # Single segment has 100% of mobility
+    } else {
+      level.size <- numeric(0)
+    }
     size               <- rep(NA, length(names))
-    for (i in 1 : length(seg.list.level)) size[seg.list.level[[i]]] <- level.size[i]
+    for (i in seq_along(seg.list.level)) {
+      if (i <= length(level.size)) {
+        size[seg.list.level[[i]]] <- level.size[i]
+      }
+    }
     # Density
     level.density     <- rep(NA, length(names))
     for (i in 1 : length(seg.list.level)) level.density[seg.list.level[[i]]] <- moneca_graph_density(net.edge - which(((1:vcount(net.edge) %in% seg.list.level[[i]]) == FALSE)))
@@ -335,10 +458,20 @@ segment.quality <- function(segments, final.solution = FALSE){
     small.mat[sapply(small.mat, is.nan)] <- Inf
     tsm             <- as.matrix(small.mat)[, -1]
     collapse.mat    <- function(row, n) tail(na.omit(row), n)
-    tsm             <- as.data.frame(t(apply(tsm, 1, collapse.mat, n = 7)))
-    colnames(tsm)   <- c("Membership", "Within mobility", "Share of mobility", "Density", "Nodes", "Max.path", "Share of total size")
-    tsm$Membership  <- small.mat$Membership
-    out.mat         <- tsm
+    
+    # Check if we have any rows
+    if (nrow(tsm) > 0) {
+      # Apply collapse.mat only if we have data
+      if (ncol(tsm) >= 7) {
+        tsm             <- as.data.frame(t(apply(tsm, 1, collapse.mat, n = 7)))
+        colnames(tsm)   <- c("Membership", "Within mobility", "Share of mobility", "Density", "Nodes", "Max.path", "Share of total size")
+      } else {
+        # If we have fewer than 7 columns, just use what we have
+        tsm <- as.data.frame(tsm)
+      }
+      tsm$Membership  <- small.mat$Membership
+      out.mat         <- tsm
+    }
   } 
   
   #colnames(out.mat) <- c("Membership", "Within mobility", "Share of mobility", "Density", "Nodes", "Max.path", "Share of total size")
