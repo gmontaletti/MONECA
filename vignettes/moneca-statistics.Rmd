@@ -1,0 +1,305 @@
+---
+title: "Understanding MONECA Statistics: A Comprehensive Guide"
+author: "MONECA Development Team"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Understanding MONECA Statistics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+library(MONECA)
+```
+
+## Introduction
+
+The `print.moneca()` function provides a comprehensive summary of mobility analysis results from the MONECA clustering algorithm. This vignette explains each statistic in detail with clear definitions, interpretations, and practical examples.
+
+## Overview of MONECA Output
+
+When you run a MONECA analysis and print the results, you receive a structured report containing multiple sections of statistics. Let's start with a complete example:
+
+```{r example-analysis}
+# Generate synthetic mobility data
+mobility_data <- generate_mobility_data(
+  n_classes = 5,
+  immobility_strength = 0.7,
+  class_clustering = 0.8,
+  seed = 123
+)
+
+# Run MONECA analysis
+seg <- moneca(mobility_data, segment.levels = 3, small.cell.reduction = 5)
+
+# Display results
+print(seg)
+```
+
+## Statistics Explained
+
+### 1. Overall Mobility Patterns
+
+#### Overall Population Mobility Rate
+
+**Definition:** The percentage of the total population that experiences any form of social mobility (movement between social classes).
+
+**Calculation:** 
+$$\text{Mobility Rate} = \frac{\text{Total Mobile Population}}{\text{Total Population}} \times 100$$
+
+**Interpretation:**
+- Values range from 0% (complete immobility) to 100% (everyone moves)
+- Higher values indicate more fluid social structures
+- Lower values suggest more rigid class boundaries
+- Typical values in real data: 15-40%
+
+```{r mobility-rate-example}
+# Access the raw mobility rate
+mx <- seg$mat.list[[1]]
+l <- ncol(mx)
+total_population <- mx[l, l]
+mobile_population <- sum(mx[-l, -l])
+mobility_rate <- mobile_population / total_population
+cat("Raw mobility rate:", round(mobility_rate * 100, 1), "%\n")
+```
+
+#### Average Mobility Concentration
+
+**Definition:** The mean percentage of all mobility that occurs through statistically significant pathways (edges with relative risk > 1) across all hierarchical levels.
+
+**Interpretation:**
+- Higher values (>80%) indicate mobility follows predictable, structured patterns
+- Lower values suggest more random or dispersed mobility
+- This metric helps assess whether mobility has clear "highways" or is more diffuse
+
+### 2. Hierarchical Segmentation Analysis
+
+#### Internal Mobility Within Segments
+
+**Definition:** For each hierarchical level, the percentage of mobility that occurs within segments (clusters) rather than between them.
+
+**Level Interpretation:**
+- **Level 1:** Mobility within original social classes (baseline)
+- **Level 2+:** Mobility within identified clusters/segments
+
+**Pattern Analysis:**
+- Increasing percentages across levels indicate successful clustering
+- High values (>70%) at higher levels suggest strong segment cohesion
+- If values don't increase, segments may not capture meaningful structure
+
+```{r internal-mobility-detail}
+# Show how internal mobility is calculated for Level 1
+mx <- seg$mat.list[[1]]
+l <- ncol(mx)
+diagonal_sum <- sum(diag(mx)[-l])
+total_mobility <- sum(mx[-l, -l])
+internal_mobility_pct <- (diagonal_sum / total_mobility) * 100
+cat("Level 1 internal mobility (manual calc):", round(internal_mobility_pct, 1), "%\n")
+```
+
+#### Mobility Concentration in Significant Pathways by Level
+
+**Definition:** For each level, the percentage of mobility that flows through statistically significant pathways (those with relative risk > 1).
+
+**Interpretation:**
+- Shows how "channeled" mobility is at each level
+- Higher values indicate more structured mobility patterns
+- Useful for comparing how well each level captures mobility structure
+
+### 3. Network Structure Metrics
+
+```{r network-viz, fig.cap="Network visualization showing segments and connections"}
+# Visualize the network at Level 2
+plot_moneca_ggraph(seg, level = 2, node_color = "segment", 
+                   edge_width_range = c(0.5, 3), layout = "fr")
+```
+
+#### Active Segments/Classes per Level
+
+**Definition:** The number of distinct segments or classes at each hierarchical level.
+
+**Pattern:**
+- Decreases as segments merge at higher levels
+- Rate of decrease indicates clustering aggressiveness
+- Final count shows the fundamental mobility groups
+
+#### Significant Edges After Cell Size Filtering
+
+**Definition:** The count of statistically significant mobility pathways after removing those based on small cell sizes.
+
+**Interpretation:**
+- More edges = more complex mobility patterns
+- Decrease across levels shows simplification of structure
+- Zero edges would indicate completely isolated segments
+
+#### Network Connectivity Density
+
+**Definition:** The proportion of possible edges that actually exist in the network.
+
+**Calculation:**
+$$\text{Density} = \frac{\text{Actual Edges}}{\text{Possible Edges}}$$
+
+**Interpretation:**
+- Values range from 0 (no connections) to 1 (fully connected)
+- Higher density indicates more interconnected mobility
+- Often increases at higher levels as structure consolidates
+
+#### Isolated Segments
+
+**Definition:** The count of segments/classes with no statistically significant mobility connections to other segments.
+
+**Interpretation:**
+- Higher numbers indicate fragmented social structure
+- Zero isolates means all segments are connected
+- Isolates may represent truly closed social groups
+
+### 4. Detailed Degree Distributions
+
+When `show.degree.stats = TRUE` (default), additional network statistics are displayed:
+
+```{r degree-stats-example}
+# Show results without degree statistics for comparison
+print(seg, show.degree.stats = FALSE)
+```
+
+#### Degree Types Explained
+
+1. **Total Connections (All Degrees):** Sum of inward and outward connections
+2. **Outward Mobility:** Number of destinations a segment sends people to
+3. **Inward Mobility:** Number of origins a segment receives people from
+4. **Edge Weights:** Strength of connections (relative risk values)
+
+#### Reading the Distribution Tables
+
+Each table shows six statistics:
+- **Min:** Lowest value in the distribution
+- **Q1:** First quartile (25th percentile)
+- **Median:** Middle value (50th percentile)
+- **Mean:** Average value
+- **Q3:** Third quartile (75th percentile)
+- **Max:** Highest value in the distribution
+
+## Practical Interpretation Guide
+
+### Step-by-Step Analysis
+
+1. **Start with Total Mobility**
+   - Is the system fluid or rigid?
+   - Compare to known benchmarks or expectations
+
+2. **Check Edge Concentration**
+   - Are there clear mobility pathways?
+   - Or is movement more random?
+
+3. **Examine Diagonal Mobility Progression**
+   - Does clustering reveal meaningful structure?
+   - Are higher levels more cohesive?
+
+4. **Review Network Metrics**
+   - How connected is the system?
+   - Are there isolated groups?
+
+5. **Analyze Degree Distributions (if shown)**
+   - Which segments are mobility hubs?
+   - Which are more peripheral?
+
+### Example Interpretation
+
+Let's interpret our example results:
+
+```{r interpretation-example}
+# Create a different mobility pattern for comparison
+mobility_data2 <- generate_mobility_data(
+  n_classes = 5,
+  immobility_strength = 0.9,  # Much less mobility
+  class_clustering = 0.5,      # Less structured
+  seed = 456
+)
+
+seg2 <- moneca(mobility_data2, segment.levels = 3, small.cell.reduction = 5)
+
+cat("Comparison of two mobility systems:\n\n")
+cat("System 1 (More fluid):\n")
+print(seg, show.degree.stats = FALSE, digits = 1)
+
+cat("\n\nSystem 2 (More rigid):\n")
+print(seg2, show.degree.stats = FALSE, digits = 1)
+```
+
+## Advanced Usage
+
+### Customizing Output
+
+```{r custom-output}
+# Show more decimal places for precise analysis
+print(seg, digits = 2, show.degree.stats = FALSE)
+
+# Adjust small cell reduction threshold
+print(seg, small.cell.reduction = 10, show.degree.stats = FALSE)
+```
+
+### Accessing Raw Statistics
+
+While `print.moneca()` provides formatted output, you can access the raw statistics for further analysis:
+
+```{r raw-stats}
+# The MONECA object contains all the raw data
+str(seg, max.level = 2)
+
+# Access specific components
+cat("Number of levels:", length(seg$segment.list), "\n")
+cat("Segments at level 2:", unique(seg$segment.list[[2]]), "\n")
+```
+
+## Common Patterns and Their Meanings
+
+### Pattern 1: Strong Hierarchical Structure
+- Internal mobility increases substantially across levels
+- Network density increases at higher levels
+- Few or no isolated segments
+- **Interpretation:** Clear nested mobility structure
+
+### Pattern 2: Weak Structure
+- Internal mobility shows little increase
+- Many isolated segments
+- Low edge concentration
+- **Interpretation:** Mobility is more random than structured
+
+### Pattern 3: Polarized System
+- High internal mobility even at Level 1
+- Very low overall mobility rate
+- High number of isolated segments
+- **Interpretation:** Rigid class boundaries with little inter-class movement
+
+## Troubleshooting
+
+### Issue: Very High Network Density
+**Cause:** Small cell reduction threshold too low
+**Solution:** Increase `small.cell.reduction` parameter
+
+### Issue: Many Isolated Segments
+**Cause:** Threshold too high or genuinely fragmented structure
+**Solution:** Check threshold or examine data for truly isolated groups
+
+### Issue: No Change Across Levels
+**Cause:** Data may lack hierarchical structure
+**Solution:** Consider fewer levels or different clustering parameters
+
+## Conclusion
+
+The enhanced `print.moneca()` output provides a comprehensive view of mobility patterns and their hierarchical structure. By understanding each statistic and their relationships, researchers can:
+
+1. Assess overall social fluidity
+2. Identify structured mobility pathways
+3. Discover hierarchical clustering in mobility patterns
+4. Compare different populations or time periods
+5. Validate theoretical models of social mobility
+
+For more information on MONECA methodology, see `vignette("moneca-introduction")`. For visualization options, see the documentation for `plot_moneca_ggraph()`.

@@ -1,3 +1,50 @@
+# MONECA 0.3.2
+
+## Breaking Changes
+
+* **Removed experimental analysis functions**:
+  - Removed `moneca_comprehensive_analysis()` - functionality integrated into enhanced print method
+  - Removed `segment_mobility_analysis()` - use standard analysis functions instead
+  - These functions were experimental and better served by existing core functions
+
+## Improvements
+
+* **Enhanced print.moneca() method**:
+  - Now displays all previously hidden statistics by default
+  - Clearer labeling and organization of output
+  - Shows level-specific mobility concentration (not just average)
+  - Includes detailed degree distributions with `show.degree.stats = TRUE` (default)
+  - Better formatted output with clear section headers
+
+* **New vignette**: "moneca-statistics" explaining all statistics in detail
+
+## Documentation
+
+* Comprehensive guide to interpreting MONECA statistics
+* Clear explanations of each metric with examples
+* Practical interpretation guidelines
+
+# MONECA 0.3.1
+
+## New Features
+
+* **Segment-level mobility analysis**: New `segment_mobility_analysis()` function
+* **Enhanced dendrogram visualization**: Improved `plot_moneca_dendrogram()` with better styling
+
+# MONECA 0.3.0
+
+## New Features
+
+* **Perfect dendrogram visualization**: Zero crossing lines in hierarchical plots
+* **Comprehensive analysis function**: New `moneca_comprehensive_analysis()`
+
+# MONECA 0.2.9
+
+## Improvements
+
+* Enhanced documentation and visualizations
+* Better error handling in analysis functions
+
 # MONECA 0.2.8
 
 ## New Features

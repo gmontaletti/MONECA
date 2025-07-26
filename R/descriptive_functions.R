@@ -1,40 +1,43 @@
-#' Print Method for MONECA Objects
+#' Print Method for MONECA Objects (Enhanced)
 #'
-#' Provides a comprehensive summary of MONECA analysis results including mobility
-#' statistics, network properties, and segmentation quality measures across all
-#' hierarchical levels.
+#' Displays comprehensive mobility analysis results from MONECA clustering with
+#' clear, interpretable statistics and improved labeling. This enhanced version
+#' provides better organization and clearer interpretation of mobility patterns
+#' across hierarchical segmentation levels.
 #'
 #' @param x A MONECA object returned by \code{\link{moneca}}.
 #' @param small.cell.reduction Numeric threshold for small cell handling. If NULL,
 #'   uses the value from the MONECA object.
+#' @param show.degree.stats Logical. If TRUE (default), displays detailed degree 
+#'   distribution statistics for each hierarchical level.
+#' @param digits Integer. Number of decimal places for numeric output (default 1).
 #' @param ... Additional arguments (currently unused).
 #'
-#' @return Invisibly returns a list of descriptive statistics, but primarily called
-#'   for its side effect of printing a formatted summary.
+#' @return Invisibly returns NULL. This function is called for its side effect of
+#'   printing a formatted summary.
 #'
 #' @details
-#' The print method calculates and displays several key statistics:
+#' The enhanced print method provides structured output with:
 #' 
-#' \strong{Mobility Statistics:}
+#' \strong{Overall Mobility Patterns:}
 #' \itemize{
-#'   \item Total mobility rate (proportion of off-diagonal movement)
-#'   \item Diagonal mobility (immobility) by level
-#'   \item Mobility captured by significant edges
+#'   \item Overall population mobility rate (% experiencing any mobility)
+#'   \item Average mobility concentration across all levels
 #' }
 #' 
-#' \strong{Network Properties:}
+#' \strong{Hierarchical Segmentation Analysis:}
 #' \itemize{
-#'   \item Node degrees (in, out, total) by level
-#'   \item Network density by level
-#'   \item Number of isolated nodes
+#'   \item Internal mobility within segments by level
+#'   \item Mobility concentration in significant pathways by level
+#'   \item Network structure metrics (nodes, edges, density, isolates)
+#' }
+#' 
+#' \strong{Detailed Degree Distributions (optional):}
+#' \itemize{
+#'   \item Total connections (in + out degree)
+#'   \item Outward mobility connections
+#'   \item Inward mobility connections
 #'   \item Edge weight distributions
-#' }
-#' 
-#' \strong{Segmentation Quality:}
-#' \itemize{
-#'   \item Number of segments per level
-#'   \item Proportion of mobility within vs. between segments
-#'   \item Network coherence measures
 #' }
 #'
 #' @examples
@@ -42,99 +45,227 @@
 #' mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
 #' seg <- moneca(mobility_data, segment.levels = 3)
 #' 
-#' # Print comprehensive summary
+#' # Print comprehensive summary with all statistics
 #' print(seg)
 #' 
-#' # The summary includes mobility rates, network statistics, and
-#' # segmentation quality measures for each hierarchical level
+#' # Hide detailed degree distributions
+#' print(seg, show.degree.stats = FALSE)
+#' 
+#' # Show more decimal places
+#' print(seg, digits = 2)
 #'
-#' @seealso \code{\link{moneca}}, \code{\link{summary.moneca}}
+#' @seealso \code{\link{moneca}}, \code{\link{summary.moneca}},
+#'   \code{vignette("moneca-statistics")} for interpretation guide
 #' @export
-print.moneca <- function(x, small.cell.reduction=x$small.cell.reduction, ...){
+print.moneca <- function(x, 
+                         small.cell.reduction = x$small.cell.reduction, 
+                         show.degree.stats = TRUE,
+                         digits = 1,
+                         ...) {
+  
   segments <- x
   
-  # Hvor mange procent flytter sig i det hele taget?
-  mx            <- segments$mat.list[[1]]
-  l             <- ncol(mx)
-  total.total   <- mx[l,l]
-  total.mobile  <- sum(mx[-l,-l])
-  total.mobility      <- total.mobile/total.total
-  total.mobility # Til output
+  # Calculate overall mobility rate
+  mx <- segments$mat.list[[1]]
+  l <- ncol(mx)
+  total.total <- mx[l, l]
+  total.mobile <- sum(mx[-l, -l])
+  total.mobility <- total.mobile / total.total
   
-  # Procent af den samlede mobilitet i diagonalen?
-  diag.mobility        <- function(mx){
-    l                    <- ncol(mx)
-    mx.dia               <- diag(mx)
-    mx.dia               <- mx.dia[-l]
-    internal.mobility    <- sum(mx.dia)/sum(mx[-l,-l])
+  # Calculate diagonal mobility function
+  diag.mobility <- function(mx) {
+    l <- ncol(mx)
+    mx.dia <- diag(mx)
+    mx.dia <- mx.dia[-l]
+    internal.mobility <- sum(mx.dia) / sum(mx[-l, -l])
     return(internal.mobility)
   }
-  diagonal.mobility <- unlist(lapply(segments$mat.list, diag.mobility))
-  diagonal.mobility
   
-  ## Hvor meget af den samlede mobilitet ligger i det oversandsynlige?
-  # Sandsynlighedsmatricen
-  mob.in.edges     <- vector(length=length(segments$segment.list))
-  for (i in seq(segments$segment.list)){
-    wm               <- weight.matrix(mx=segments$mat.list[[i]], cut.off=1, diagonal=TRUE, symmetric=FALSE, small.cell.reduction=0)
-    mm               <- segments$mat.list[[i]]
-    l                <- nrow(mm)
+  diagonal.mobility <- unlist(lapply(segments$mat.list, diag.mobility))
+  
+  # Calculate mobility in significant edges
+  mob.in.edges <- vector(length = length(segments$segment.list))
+  
+  for (i in seq_along(segments$segment.list)) {
+    wm <- weight.matrix(mx = segments$mat.list[[i]], 
+                        cut.off = 1, 
+                        diagonal = TRUE, 
+                        symmetric = FALSE, 
+                        small.cell.reduction = 0)
+    mm <- segments$mat.list[[i]]
+    l <- nrow(mm)
     
-    # Handle case where matrix is too small
     if (l <= 2) {
-      mob.in.edges[i] <- 1  # All mobility is in edges for tiny matrices
+      mob.in.edges[i] <- 1
     } else {
-      mm.reduced       <- mm[-l,-l]
-      # Ensure mm.reduced is a matrix
+      mm.reduced <- mm[-l, -l]
       if (!is.matrix(mm.reduced)) {
         mm.reduced <- as.matrix(mm.reduced)
       }
-      row.margin       <- rowSums(mm.reduced)
-      mm.reduced[is.na(wm)]    <- 0
-      rs               <- rowSums(mm.reduced)
-      mob.in.edges[i]  <- sum(rs)/sum(row.margin)
+      row.margin <- rowSums(mm.reduced)
+      mm.reduced[is.na(wm)] <- 0
+      rs <- rowSums(mm.reduced)
+      mob.in.edges[i] <- sum(rs) / sum(row.margin)
     }
   }
   
-  samlet.oversandsynlighed <- mob.in.edges
-  
-  # Degree mål
-  
-  segment.degree <- function(mx, small.cell.reduction){
-  # Brug weight matrix istedet  
-    mx.1 <- weight.matrix(mx, cut.off=1, small.cell.reduction=small.cell.reduction, symmetric=FALSE)
-    mx.1[is.na(mx.1)]  <- 0   
-    gra.diag.null <- moneca_graph_from_adjacency(mx.1, weighted=TRUE, mode="directed", diag = FALSE)
-    gra.diag.true <- moneca_graph_from_adjacency(mx.1, weighted=TRUE, mode="directed")
-    gra.diag.null <- simplify(gra.diag.null, remove.loops=TRUE, remove.multiple = FALSE)
+  # Calculate degree statistics
+  segment.degree <- function(mx, small.cell.reduction) {
+    mx.1 <- weight.matrix(mx, cut.off = 1, 
+                          small.cell.reduction = small.cell.reduction, 
+                          symmetric = FALSE)
+    mx.1[is.na(mx.1)] <- 0
     
-    deg.all                <- degree(gra.diag.null, mode="all")
-    deg.out                <- degree(gra.diag.null, mode="out")
-    deg.in                 <- degree(gra.diag.null, mode="in")
-    nodes                  <- vcount(gra.diag.null)
-    dens                   <- moneca_graph_density(gra.diag.null)
-    isolates               <- sum(deg.all == 0)
-    # Average weight
-    #w <- E(gra.diag.null)$weight
-    #weight.stat <- summary(w)
-    mx.asym                <- weight.matrix(mx, cut.off=1, small.cell.reduction=small.cell.reduction, symmetric=FALSE)
-    weight.stat            <- summary(mx.asym[is.na(mx.asym)==FALSE])
+    gra.diag.null <- moneca_graph_from_adjacency(mx.1, weighted = TRUE, 
+                                                  mode = "directed", diag = FALSE)
+    gra.diag.true <- moneca_graph_from_adjacency(mx.1, weighted = TRUE, 
+                                                  mode = "directed")
+    gra.diag.null <- simplify(gra.diag.null, remove.loops = TRUE, 
+                              remove.multiple = FALSE)
     
-    out <-list(degree.all=summary(deg.all), deg.out=summary(deg.out), deg.in=summary(deg.in), weight.stat=weight.stat, deg.sum=ecount(gra.diag.null), nodes=nodes, density=dens, isolates=isolates)
+    deg.all <- degree(gra.diag.null, mode = "all")
+    deg.out <- degree(gra.diag.null, mode = "out")
+    deg.in <- degree(gra.diag.null, mode = "in")
+    nodes <- vcount(gra.diag.null)
+    dens <- moneca_graph_density(gra.diag.null)
+    isolates <- sum(deg.all == 0)
+    
+    mx.asym <- weight.matrix(mx, cut.off = 1, 
+                             small.cell.reduction = small.cell.reduction, 
+                             symmetric = FALSE)
+    weight.stat <- summary(mx.asym[!is.na(mx.asym)])
+    
+    out <- list(degree.all = summary(deg.all), 
+                deg.out = summary(deg.out), 
+                deg.in = summary(deg.in), 
+                weight.stat = weight.stat, 
+                deg.sum = ecount(gra.diag.null), 
+                nodes = nodes, 
+                density = dens, 
+                isolates = isolates)
     return(out)
   }
   
-  degree.stats <- lapply(segments$mat.list,segment.degree, small.cell.reduction)
+  degree.stats <- lapply(segments$mat.list, segment.degree, small.cell.reduction)
   
-  # Resultatet
+  # Format output with improved labels
+  cat("\n")
+  cat("================================================================================\n")
+  cat("                        MONECA MOBILITY ANALYSIS RESULTS                        \n")
+  cat("================================================================================\n\n")
   
-  out <- list(total.mobility=total.mobility, samlet.oversandsynlighed=samlet.oversandsynlighed, diagonal.mobility=diagonal.mobility, degree.stats=degree.stats)
+  # Overall statistics
+  cat("OVERALL MOBILITY PATTERNS\n")
+  cat("-" , strrep("-", 78), "\n", sep = "")
+  cat(sprintf("%-50s %6.1f%%\n", 
+              "Overall Population Mobility Rate:", 
+              round(total.mobility * 100, digits)))
+  cat(sprintf("%-50s %6.1f%%\n", 
+              "Average Mobility Concentration (all levels):", 
+              round(mean(mob.in.edges) * 100, digits)))
+  cat("\n")
   
+  # Hierarchical level statistics
+  cat("HIERARCHICAL SEGMENTATION ANALYSIS\n")
+  cat("-" , strrep("-", 78), "\n", sep = "")
   
-  # Pretty printing
-  class(out) <- "descriptive.moneca"
-
-  MONECA:::print.descriptive.moneca(out)
+  # Create summary table for levels
+  n_levels <- length(diagonal.mobility)
+  level_names <- paste("Level", 1:n_levels)
+  
+  # Internal mobility
+  cat("\nInternal Mobility Within Segments (%):\n")
+  internal_mob <- round(diagonal.mobility * 100, digits)
+  names(internal_mob) <- level_names
+  print(internal_mob, quote = FALSE)
+  
+  # Mobility concentration by level
+  cat("\nMobility Concentration in Significant Pathways by Level (%):\n")
+  mob_concentration <- round(mob.in.edges * 100, digits)
+  names(mob_concentration) <- level_names
+  print(mob_concentration, quote = FALSE)
+  
+  # Network statistics table
+  cat("\nNetwork Structure by Level:\n")
+  cat(sprintf("%-30s", ""))
+  cat(sprintf("%12s", level_names), "\n")
+  cat("-" , strrep("-", 78), "\n", sep = "")
+  
+  # Extract statistics for each level
+  edges <- sapply(degree.stats, function(x) x$deg.sum)
+  nodes <- sapply(degree.stats, function(x) x$nodes)
+  density <- sapply(degree.stats, function(x) x$density)
+  isolates <- sapply(degree.stats, function(x) x$isolates)
+  
+  cat(sprintf("%-30s", "Active Segments/Classes:"))
+  cat(sprintf("%12d", nodes), "\n")
+  
+  cat(sprintf("%-30s", "Significant Edges:"))
+  cat(sprintf("%12d", edges), "\n")
+  
+  cat(sprintf("%-30s", "Network Density:"))
+  cat(sprintf("%12.3f", density), "\n")
+  
+  cat(sprintf("%-30s", "Isolated Segments:"))
+  cat(sprintf("%12d", isolates), "\n")
+  
+  # Optional degree statistics
+  if (show.degree.stats) {
+    cat("\n")
+    cat("DETAILED DEGREE DISTRIBUTIONS\n")
+    cat("-" , strrep("-", 78), "\n", sep = "")
+    
+    # Create matrices for degree statistics
+    l <- length(degree.stats)
+    all.mat <- matrix(ncol = 6, nrow = l)
+    out.mat <- matrix(ncol = 6, nrow = l)
+    in.mat <- matrix(ncol = 6, nrow = l)
+    weight.mat <- matrix(ncol = 6, nrow = l)
+    
+    for (i in 1:l) {
+      all.mat[i,] <- degree.stats[[i]]$degree.all
+      out.mat[i,] <- degree.stats[[i]]$deg.out
+      in.mat[i,] <- degree.stats[[i]]$deg.in
+      weight.mat[i,] <- degree.stats[[i]]$weight.stat
+    }
+    
+    stat_names <- c("Min", "Q1", "Median", "Mean", "Q3", "Max")
+    
+    # Total degree
+    cat("\nTotal Connections (In + Out):\n")
+    colnames(all.mat) <- stat_names
+    rownames(all.mat) <- level_names
+    print(round(all.mat, 2))
+    
+    # Out degree
+    cat("\nOutward Mobility Connections:\n")
+    colnames(out.mat) <- stat_names
+    rownames(out.mat) <- level_names
+    print(round(out.mat, 2))
+    
+    # In degree
+    cat("\nInward Mobility Connections:\n")
+    colnames(in.mat) <- stat_names
+    rownames(in.mat) <- level_names
+    print(round(in.mat, 2))
+    
+    # Edge weights
+    cat("\nEdge Weight Distribution (Relative Risk Values):\n")
+    colnames(weight.mat) <- stat_names
+    rownames(weight.mat) <- level_names
+    print(round(weight.mat, 2))
+  }
+  
+  cat("\n")
+  cat("================================================================================\n")
+  
+  # Add interpretation guide
+  if (interactive()) {
+    cat("\nFor detailed interpretation of these statistics, see:\n")
+    cat("?print.moneca or vignette('moneca-statistics')\n")
+  }
+  
+  invisible(NULL)
 }
 
 #' Print Method for Descriptive MONECA Statistics
