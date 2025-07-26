@@ -952,9 +952,14 @@ plot_stair_ggraph <- function(segments,
 #' hierarchical clustering, MONECA can create non-binary trees where multiple
 #' categories merge simultaneously.
 #' 
-#' \strong{No-Crossing Layout:} Categories on the x-axis are automatically ordered
-#' using a hierarchical algorithm that completely eliminates line crossings between
-#' all levels. The algorithm processes segments from the most aggregated level down,
+#' \strong{Visual Features:}
+#' \itemize{
+#'   \item \strong{Curved branches}: Uses smooth curves instead of angular segments for better aesthetics
+#'   \item \strong{Horizontal layout}: Levels progress horizontally (left to right) with categories arranged vertically
+#'   \item \strong{No-Crossing Layout}: Categories are automatically ordered using a hierarchical algorithm that completely eliminates line crossings between all levels
+#' }
+#' 
+#' The algorithm processes segments from the most aggregated level down,
 #' ensuring that at each level, categories are grouped optimally to prevent any
 #' crossing lines. This creates the clearest possible visualization of the 
 #' hierarchical structure.
@@ -1014,6 +1019,7 @@ plot_moneca_dendrogram <- function(segments,
   n_categories <- length(cat_names)
   
   # Initialize data structures for dendrogram
+  # Note: x and y are flipped - x represents height (levels), y represents position
   edges <- data.frame(from = character(), to = character(), 
                      x1 = numeric(), y1 = numeric(), 
                      x2 = numeric(), y2 = numeric(),
@@ -1093,12 +1099,13 @@ plot_moneca_dendrogram <- function(segments,
     ordered_cats <- seq_len(n_categories)
   }
   
-  # Level 1: Individual categories with optimized x positions
+  # Level 1: Individual categories with optimized positions
+  # Note: coordinates flipped - x is now height (level), y is position
   node_positions[[1]] <- data.frame(
     node_id = paste0("L1_", seq_len(n_categories)),
     label = cat_names,
-    x = match(seq_len(n_categories), ordered_cats), # Map original indices to new positions
-    y = heights[1],
+    x = heights[1], # Height (level) - now on x-axis
+    y = match(seq_len(n_categories), ordered_cats), # Position - now on y-axis
     level = 1,
     segment_id = seq_len(n_categories),
     original_index = seq_len(n_categories), # Keep track of original indices
@@ -1112,15 +1119,16 @@ plot_moneca_dendrogram <- function(segments,
     
     if (n_segments == 0) next
     
-    # Calculate x positions as centers of constituent nodes
-    x_positions <- numeric(n_segments)
+    # Calculate y positions as centers of constituent nodes  
+    # Note: coordinates flipped - y positions are now the main positioning axis
+    y_positions <- numeric(n_segments)
     segment_labels <- character(n_segments)
     
     for (i in seq_len(n_segments)) {
       members <- segments_at_level[[i]]
-      # Find x positions of members from level 1
-      member_x <- node_positions[[1]]$x[members]
-      x_positions[i] <- mean(member_x)
+      # Find y positions of members from level 1
+      member_y <- node_positions[[1]]$y[members]
+      y_positions[i] <- mean(member_y)
       
       # Create segment label
       if (length(members) <= 3) {
@@ -1133,8 +1141,8 @@ plot_moneca_dendrogram <- function(segments,
     node_positions[[level]] <- data.frame(
       node_id = paste0("L", level, "_", seq_len(n_segments)),
       label = segment_labels,
-      x = x_positions,
-      y = heights[level],
+      x = heights[level], # Height (level) - now on x-axis
+      y = y_positions,    # Position - now on y-axis
       level = level,
       segment_id = seq_len(n_segments),
       original_index = NA, # Add consistent column structure
@@ -1160,15 +1168,15 @@ plot_moneca_dendrogram <- function(segments,
       
       current_node <- node_positions[[level]][i, ]
       
-      # Create edges
+      # Create edges with flipped coordinates
       for (j in seq_len(nrow(prev_nodes))) {
         new_edge <- data.frame(
           from = prev_nodes$node_id[j],
           to = current_node$node_id,
-          x1 = prev_nodes$x[j],
-          y1 = prev_nodes$y[j],
-          x2 = current_node$x,
-          y2 = current_node$y,
+          x1 = prev_nodes$x[j],  # Previous level height
+          y1 = prev_nodes$y[j],  # Previous node position
+          x2 = current_node$x,   # Current level height
+          y2 = current_node$y,   # Current node position
           level = level,
           segment = paste0("S", level, ".", i),
           stringsAsFactors = FALSE
@@ -1218,12 +1226,15 @@ plot_moneca_dendrogram <- function(segments,
   # Create the plot
   p <- ggplot2::ggplot()
   
-  # Add edges (dendrogram branches)
+  # Add edges (dendrogram branches) using curves
   if (nrow(edges) > 0) {
-    p <- p + ggplot2::geom_segment(
+    p <- p + ggplot2::geom_curve(
       data = edges,
       ggplot2::aes(x = x1, y = y1, xend = x2, yend = y2, color = color),
       size = branch_width,
+      curvature = 0.2,  # Moderate curve
+      angle = 90,       # Curve angle
+      ncp = 5,          # Number of control points
       lineend = "round"
     )
   }
@@ -1239,18 +1250,18 @@ plot_moneca_dendrogram <- function(segments,
   # Add labels for bottom level (in optimized order)
   if (show_labels) {
     bottom_nodes <- all_nodes[all_nodes$level == 1, ]
-    # Sort by x position to ensure labels appear in the correct order
-    bottom_nodes <- bottom_nodes[order(bottom_nodes$x), ]
+    # Sort by y position to ensure labels appear in the correct order (coordinates flipped)
+    bottom_nodes <- bottom_nodes[order(bottom_nodes$y), ]
     # Update labels to show categories in their new positions
     bottom_nodes$label <- cat_names[ordered_cats]
     
     p <- p + ggplot2::geom_text(
       data = bottom_nodes,
       ggplot2::aes(x = x, y = y, label = label),
-      vjust = 1.5,
+      hjust = -0.1,  # Position to the left of the leftmost points (since x is now height)
       size = label_size,
-      angle = if (vertical) 45 else 0,
-      hjust = if (vertical) 1 else 0.5
+      angle = if (vertical) 0 else 45,  # Adjust angles for flipped orientation
+      vjust = 0.5
     )
   }
   
@@ -1281,15 +1292,22 @@ plot_moneca_dendrogram <- function(segments,
     p <- p + ggplot2::scale_color_identity()
   }
   
-  # Adjust orientation
-  if (!vertical) {
+  # Since coordinates are now flipped by default (x=height, y=position),
+  # the vertical parameter behavior is reversed
+  if (vertical) {
     p <- p + ggplot2::coord_flip()
   }
   
-  # Expand limits slightly
-  p <- p + ggplot2::expand_limits(
-    y = c(min(heights) - 0.1, max(heights) + 0.1)
-  )
+  # Expand limits slightly (adjust for flipped coordinates)
+  if (vertical) {
+    p <- p + ggplot2::expand_limits(
+      x = c(min(heights) - 0.1, max(heights) + 0.1)
+    )
+  } else {
+    p <- p + ggplot2::expand_limits(
+      y = c(min(heights) - 0.1, max(heights) + 0.1)
+    )
+  }
   
   return(p)
 }
