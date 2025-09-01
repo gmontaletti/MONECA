@@ -2,9 +2,15 @@
 % Please edit documentation in R/descriptive_functions.R
 \name{print.moneca}
 \alias{print.moneca}
-\title{Print Method for MONECA Objects}
+\title{Print Method for MONECA Objects (Enhanced)}
 \usage{
-\method{print}{moneca}(x, small.cell.reduction = x$small.cell.reduction, ...)
+\method{print}{moneca}(
+  x,
+  small.cell.reduction = x$small.cell.reduction,
+  show.degree.stats = TRUE,
+  digits = 1,
+  ...
+)
 }
 \arguments{
 \item{x}{A MONECA object returned by \code{\link{moneca}}.}
@@ -12,54 +18,129 @@
 \item{small.cell.reduction}{Numeric threshold for small cell handling. If NULL,
 uses the value from the MONECA object.}
 
+\item{show.degree.stats}{Logical. If TRUE (default), displays detailed degree 
+distribution statistics for each hierarchical level.}
+
+\item{digits}{Integer. Number of decimal places for numeric output (default 1).}
+
 \item{...}{Additional arguments (currently unused).}
 }
 \value{
-Invisibly returns a list of descriptive statistics, but primarily called
-  for its side effect of printing a formatted summary.
+Invisibly returns NULL. This function is called for its side effect of
+  printing a formatted summary.
 }
 \description{
-Provides a comprehensive summary of MONECA analysis results including mobility
-statistics, network properties, and segmentation quality measures across all
-hierarchical levels.
+Displays comprehensive mobility analysis results from MONECA clustering with
+clear, interpretable statistics and improved labeling. Output is structured to
+follow the natural flow of analysis from overall patterns to detailed metrics.
 }
 \details{
-The print method calculates and displays several key statistics:
+The output is organized into four main sections that follow the analysis workflow:
 
-\strong{Mobility Statistics:}
+\strong{Section 1: OVERALL MOBILITY PATTERNS}
 \itemize{
-  \item Total mobility rate (proportion of off-diagonal movement)
-  \item Diagonal mobility (immobility) by level
-  \item Mobility captured by significant edges
-}
-
-\strong{Network Properties:}
-\itemize{
-  \item Node degrees (in, out, total) by level
-  \item Network density by level
-  \item Number of isolated nodes
-  \item Edge weight distributions
+  \item \strong{Overall Population Mobility Rate}: Percentage of the total 
+    population that experiences any form of mobility (moves from origin to a
+    different destination). Calculated as: (total off-diagonal cells) / (grand total).
+    A rate of 20% means 80% remain in their origin position.
+  \item \strong{Average Mobility Concentration}: Mean percentage of mobility
+    captured by significant pathways (edges with relative risk > 1) across all
+    segmentation levels. Higher values indicate mobility is concentrated in
+    fewer, stronger pathways rather than dispersed randomly.
 }
 
-\strong{Segmentation Quality:}
+\strong{Section 2: HIERARCHICAL SEGMENTATION ANALYSIS}
+
+\emph{Internal Mobility Within Segments (percent):}
 \itemize{
-  \item Number of segments per level
-  \item Proportion of mobility within vs. between segments
-  \item Network coherence measures
+  \item Shows the percentage of mobility that remains within segment boundaries
+    at each level. Level 1 represents original categories (always 100% as each
+    category is its own segment). Higher levels show increasing aggregation.
+  \item Values decrease at higher levels as segments combine different origin
+    categories, naturally reducing internal cohesion.
+  \item High values (>70%) indicate segments successfully capture mobility patterns.
+}
+
+\emph{Mobility Concentration in Significant Pathways by Level (percent):}
+\itemize{
+  \item Percentage of total mobility flowing through edges with relative risk > 1.
+  \item Indicates how much mobility follows stronger-than-expected pathways
+    versus random distribution.
+  \item Higher values suggest clearer mobility structure; lower values indicate
+    more dispersed patterns.
+}
+
+\emph{Network Structure by Level:}
+\itemize{
+  \item \strong{Active Segments/Classes}: Number of nodes in the network.
+    Decreases at higher levels as categories aggregate into segments.
+  \item \strong{Significant Edges}: Count of mobility pathways with relative
+    risk > 1. These represent stronger-than-expected mobility connections.
+  \item \strong{Network Density}: Proportion of possible edges that exist.
+    Calculated as: (actual edges) / (possible edges). Range 0-1.
+  \item \strong{Isolated Segments}: Number of segments with no significant
+    connections to other segments. Isolates represent positions that exchange
+    members primarily internally or have only weak external connections.
+}
+
+\strong{Section 3: DETAILED DEGREE DISTRIBUTIONS (optional)}
+
+Shows distribution statistics (Min, Q1, Median, Mean, Q3, Max) for:
+\itemize{
+  \item \strong{Total Connections}: Sum of incoming and outgoing connections
+    for each node. Indicates overall connectivity in the mobility network.
+  \item \strong{Outward Mobility Connections}: Number of significant destination
+    pathways from each origin. High out-degree indicates positions that send
+    members to many different destinations.
+  \item \strong{Inward Mobility Connections}: Number of significant origin
+    pathways to each destination. High in-degree indicates positions that
+    receive members from many different origins.
+  \item \strong{Edge Weight Distribution}: Distribution of relative risk values
+    for significant edges. Values > 1 indicate mobility above expected levels.
+    Higher values represent stronger mobility pathways.
 }
 }
+\section{Technical Terms}{
+
+\describe{
+  \item{\strong{Isolate}}{A node (category or segment) with no significant 
+    connections to other nodes. In mobility analysis, isolates represent 
+    positions that either have very high internal retention or only weak
+    exchange with other positions. Not necessarily problematic - may indicate
+    genuinely distinct positions.}
+  \item{\strong{Relative Risk}}{Ratio of observed to expected mobility under
+    independence. Values > 1 indicate mobility exceeds random expectation;
+    < 1 indicates below expectation. Used as edge weights in the network.}
+  \item{\strong{Network Density}}{Proportion of all possible connections that
+    actually exist. In a fully connected network (density = 1), every position
+    has significant mobility to every other position. Low density indicates
+    mobility is channeled through specific pathways.}
+  \item{\strong{Degree}}{Number of connections a node has. In directed networks:
+    in-degree = incoming connections, out-degree = outgoing connections,
+    total degree = sum of both. High degree nodes are mobility "hubs".}
+  \item{\strong{Segmentation Level}}{Hierarchical aggregation level. Level 1 =
+    original categories, Level 2 = first aggregation based on cliques, etc.
+    Higher levels represent coarser groupings.}
+}
+}
+
 \examples{
 # Generate data and run analysis
 mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
 seg <- moneca(mobility_data, segment.levels = 3)
 
-# Print comprehensive summary
+# Print comprehensive summary with all statistics
 print(seg)
 
-# The summary includes mobility rates, network statistics, and
-# segmentation quality measures for each hierarchical level
+# Hide detailed degree distributions for cleaner output
+print(seg, show.degree.stats = FALSE)
+
+# Show more decimal places for precision
+print(seg, digits = 2)
 
 }
 \seealso{
-\code{\link{moneca}}, \code{\link{summary.moneca}}
+\code{\link{moneca}} for the main analysis function,
+  \code{\link{segment.quality}} for detailed segment metrics,
+  \code{vignette("moneca-introduction")} for methodology details
 }

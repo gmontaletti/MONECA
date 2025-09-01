@@ -1,3 +1,23 @@
+# MONECA 0.3.3
+
+## Improvements
+
+* **Enhanced network statistics with weighted degrees**:
+  - `print.moneca()` now uses strength (weighted degree) instead of simple degree counts
+  - Statistics now represent mobility **volume** rather than just connection counts
+  - More accurate representation of node importance in weighted mobility networks
+  - Updated documentation explains difference between degree and strength
+  - Section renamed to "Detailed Weighted Degree Distributions (Strength)"
+
+## Technical Changes
+
+* Replaced `degree()` with `strength()` in network statistics calculations
+* Updated output labels to reflect weighted degree metrics:
+  - "Total Weighted Connections (Strength In + Out)"
+  - "Outward Mobility Strength (Weighted Out-Degree)"
+  - "Inward Mobility Strength (Weighted In-Degree)"
+* Enhanced technical documentation with strength vs degree definitions
+
 # MONECA 0.3.2
 
 ## Breaking Changes

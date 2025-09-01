@@ -2455,11 +2455,13 @@ segment.membership.dataframe <- function(moneca_results) {
     for (level in 2:n_levels) {
       # Initialize column with previous assignment or index
       if (level == 2) {
-        # For level 2, default is the index
-        level_assignment <- as.character(1:n_rows)
+        # For level 2, default is the index with l2. prefix
+        level_assignment <- paste0("l2.", 1:n_rows)
       } else {
         # For higher levels, default is the previous level's assignment
-        level_assignment <- df[[paste0("level_", level - 1)]]
+        # Extract the numeric part after the prefix
+        prev_vals <- sub("^l[0-9]+\\.", "", df[[paste0("level_", level - 1)]])
+        level_assignment <- paste0("l", level, ".", prev_vals)
       }
       
       # Get segments for this level
@@ -2468,14 +2470,28 @@ segment.membership.dataframe <- function(moneca_results) {
       # Assign segment numbers to rows that belong to segments
       for (seg_num in seq_along(segments_at_level)) {
         segment_members <- segments_at_level[[seg_num]]
-        # Update assignment for members of this segment
-        level_assignment[segment_members] <- as.character(seg_num)
+        # Update assignment for members of this segment with lx. prefix
+        level_assignment[segment_members] <- paste0("l", level, ".", seg_num)
       }
       
-      # Add to dataframe
-      df[[paste0("level_", level)]] <- level_assignment
+      # Add to dataframe as character
+      df[[paste0("level_", level)]] <- as.character(level_assignment)
     }
   }
+  
+  # Create the final column with concatenated id and all levels
+  # Start with the index
+  id_col <- paste0("id_", df$index)
+  
+  # Add all level columns if they exist
+  level_cols <- grep("^level_[0-9]+$", names(df), value = TRUE)
+  if (length(level_cols) > 0) {
+    for (col in level_cols) {
+      id_col <- paste0(id_col, "_", df[[col]])
+    }
+  }
+  
+  df$id_full <- id_col
   
   return(df)
 }

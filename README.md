@@ -1,8 +1,8 @@
-# MONECA: Mobility Network Clustering Analysis
-
-[![R-CMD-check](https://github.com/antongrau/MONECA/workflows/R-CMD-check/badge.svg)](https://github.com/antongrau/MONECA/actions)
+# MONECA: MObility NEtwork Clustering Analysis
 
 MONECA (Mobility Network Clustering Analysis) is an R package for analyzing social mobility patterns through graph-theoretic approaches. The package creates weighted networks from mobility tables and uses cliques to identify discrete and nested clusters of positions with high internal mobility.
+
+This is a new version of the original MONECA [![R-CMD-check](https://github.com/antongrau/MONECA/workflows/R-CMD-check/badge.svg)](https://github.com/antongrau/MONECA/actions) 
 
 ## Features
 
@@ -19,7 +19,7 @@ MONECA (Mobility Network Clustering Analysis) is an R package for analyzing soci
 # Install development version from GitHub
 install.packages("devtools")
 library(devtools)
-install_github("antongrau/MONECA")
+install_github("gmontaletti/MONECA")
 
 # Install dependencies
 install.packages(c("ggplot2", "ggraph", "igraph", "dplyr", "tidygraph", 
@@ -155,7 +155,8 @@ GPL-3
 ## Authors
 
 - **Jonas Touboel** - Original algorithm and methodology
-- **Anton Grau Larsen** - Package maintenance and development
+- **Anton Grau Larsen** - Original package development
+- **Giampaolo Montaletti** - Actual developer and mantainer
 
 ## Contributing
 
@@ -168,4 +169,4 @@ We welcome contributions! Please see our contributing guidelines and:
 
 ## Issues
 
-Report bugs and feature requests at: https://github.com/antongrau/MONECA/issues
+Report bugs and feature requests at: https://github.com/gmontaletti/MONECA/issues

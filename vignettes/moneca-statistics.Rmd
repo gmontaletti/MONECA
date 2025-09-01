@@ -21,11 +21,18 @@ library(MONECA)
 
 ## Introduction
 
-The `print.moneca()` function provides a comprehensive summary of mobility analysis results from the MONECA clustering algorithm. This vignette explains each statistic in detail with clear definitions, interpretations, and practical examples.
+The `print.moneca()` function provides a comprehensive summary of mobility analysis results from the MONECA clustering algorithm. This vignette explains each statistic in detail with clear definitions, computational formulas, interpretations, and practical examples. The output is structured to follow the natural flow of analysis from overall patterns to detailed network metrics.
 
 ## Overview of MONECA Output
 
-When you run a MONECA analysis and print the results, you receive a structured report containing multiple sections of statistics. Let's start with a complete example:
+When you run a MONECA analysis and print the results, you receive a structured report organized into four main sections:
+
+1. **Overall Mobility Patterns** - Population-level mobility summary
+2. **Hierarchical Segmentation Analysis** - Level-by-level clustering results
+3. **Network Structure Metrics** - Graph-theoretic properties
+4. **Detailed Degree Distributions** - Node connectivity statistics (optional)
+
+Let's start with a complete example:
 
 ```{r example-analysis}
 # Generate synthetic mobility data
@@ -52,7 +59,12 @@ print(seg)
 **Definition:** The percentage of the total population that experiences any form of social mobility (movement between social classes).
 
 **Calculation:** 
-$$\text{Mobility Rate} = \frac{\text{Total Mobile Population}}{\text{Total Population}} \times 100$$
+$$\text{Mobility Rate} = \frac{\sum_{i \neq j} n_{ij}}{N} \times 100$$
+
+Where:
+- $n_{ij}$ = count in cell (i,j) of the mobility table
+- $N$ = grand total (bottom-right cell)
+- The sum excludes diagonal cells (i=j)
 
 **Interpretation:**
 - Values range from 0% (complete immobility) to 100% (everyone moves)
@@ -74,6 +86,16 @@ cat("Raw mobility rate:", round(mobility_rate * 100, 1), "%\n")
 
 **Definition:** The mean percentage of all mobility that occurs through statistically significant pathways (edges with relative risk > 1) across all hierarchical levels.
 
+**Calculation:**
+$$\text{Concentration}_\ell = \frac{\sum_{RR_{ij} > 1} n_{ij}}{\sum_{i} \text{rowSum}_i} \times 100$$
+
+$$\text{Average Concentration} = \frac{1}{L} \sum_{\ell=1}^{L} \text{Concentration}_\ell$$
+
+Where:
+- $RR_{ij}$ = relative risk for edge (i,j)
+- $L$ = number of hierarchical levels
+- Only edges with $RR > 1$ are considered significant
+
 **Interpretation:**
 - Higher values (>80%) indicate mobility follows predictable, structured patterns
 - Lower values suggest more random or dispersed mobility
@@ -85,14 +107,23 @@ cat("Raw mobility rate:", round(mobility_rate * 100, 1), "%\n")
 
 **Definition:** For each hierarchical level, the percentage of mobility that occurs within segments (clusters) rather than between them.
 
+**Calculation:**
+For level $\ell$:
+$$\text{Internal Mobility}_\ell = \frac{\sum_{k} n_{kk}^{(\ell)}}{\sum_{i,j} n_{ij}^{(\ell)}} \times 100$$
+
+Where:
+- $n_{kk}^{(\ell)}$ = diagonal entries in the level $\ell$ aggregated matrix
+- $n_{ij}^{(\ell)}$ = all entries in the level $\ell$ matrix
+
 **Level Interpretation:**
-- **Level 1:** Mobility within original social classes (baseline)
-- **Level 2+:** Mobility within identified clusters/segments
+- **Level 1:** Mobility within original social classes (baseline) - always 100% as each class is its own segment
+- **Level 2+:** Mobility within identified clusters/segments after aggregation
 
 **Pattern Analysis:**
-- Increasing percentages across levels indicate successful clustering
+- Decreasing percentages across levels are expected as segments combine categories
 - High values (>70%) at higher levels suggest strong segment cohesion
-- If values don't increase, segments may not capture meaningful structure
+- Values that decrease too rapidly may indicate poor clustering
+- The rate of decrease indicates how much mobility crosses segment boundaries
 
 ```{r internal-mobility-detail}
 # Show how internal mobility is calculated for Level 1
@@ -125,10 +156,15 @@ plot_moneca_ggraph(seg, level = 2, node_color = "segment",
 
 **Definition:** The number of distinct segments or classes at each hierarchical level.
 
+**Calculation:**
+- Level 1: Number of original categories (excluding row/column totals)
+- Level 2+: Number of segments after removing isolates (segments with size = 1)
+
 **Pattern:**
 - Decreases as segments merge at higher levels
 - Rate of decrease indicates clustering aggressiveness
 - Final count shows the fundamental mobility groups
+- Isolates are excluded from active segment count
 
 #### Significant Edges After Cell Size Filtering
 
@@ -141,24 +177,39 @@ plot_moneca_ggraph(seg, level = 2, node_color = "segment",
 
 #### Network Connectivity Density
 
-**Definition:** The proportion of possible edges that actually exist in the network.
+**Definition:** The proportion of possible edges that actually exist in the network after removing edges with relative risk ≤ 1.
 
 **Calculation:**
-$$\text{Density} = \frac{\text{Actual Edges}}{\text{Possible Edges}}$$
+$$\text{Density} = \frac{\text{Actual Edges}}{\text{Possible Edges}} = \frac{|E|}{n(n-1)}$$
+
+Where:
+- $|E|$ = number of edges with relative risk > 1
+- $n$ = number of nodes (active segments)
+- For directed networks, possible edges = $n(n-1)$
+- Self-loops are excluded
 
 **Interpretation:**
 - Values range from 0 (no connections) to 1 (fully connected)
 - Higher density indicates more interconnected mobility
 - Often increases at higher levels as structure consolidates
+- Very low density (<0.1) suggests sparse, channeled mobility
 
 #### Isolated Segments
 
-**Definition:** The count of segments/classes with no statistically significant mobility connections to other segments.
+**Definition:** The count of segments/classes with no statistically significant mobility connections to other segments. A segment is isolated if it has degree = 0 in the network (no edges with relative risk > 1).
+
+**Technical Details:**
+- Calculated as nodes with total degree = 0 after filtering edges by relative risk
+- Isolates can still have internal mobility (high diagonal values)
+- Different from segments of size 1, which are removed before analysis
 
 **Interpretation:**
 - Higher numbers indicate fragmented social structure
-- Zero isolates means all segments are connected
-- Isolates may represent truly closed social groups
+- Zero isolates means all segments are connected via significant pathways
+- Isolates may represent:
+  - Truly closed social groups with only internal mobility
+  - Positions that exchange members only weakly with others
+  - Categories at the extremes of the social hierarchy
 
 ### 4. Detailed Degree Distributions
 
@@ -193,22 +244,31 @@ Each table shows six statistics:
 1. **Start with Total Mobility**
    - Is the system fluid or rigid?
    - Compare to known benchmarks or expectations
+   - Consider: <30% = rigid, 30-50% = moderate, >50% = fluid
 
 2. **Check Edge Concentration**
    - Are there clear mobility pathways?
    - Or is movement more random?
+   - High concentration (>80%) = structured pathways
+   - Low concentration (<60%) = dispersed mobility
 
-3. **Examine Diagonal Mobility Progression**
-   - Does clustering reveal meaningful structure?
-   - Are higher levels more cohesive?
+3. **Examine Internal Mobility Progression**
+   - Level 1 is always 100% (baseline)
+   - Good clustering: Level 2 >80%, Level 3 >70%
+   - Poor clustering: Rapid drop to <50%
+   - Note: Some decrease is natural and expected
 
 4. **Review Network Metrics**
-   - How connected is the system?
-   - Are there isolated groups?
+   - Density trajectory: Should generally increase with levels
+   - Active segments: Rate of consolidation
+   - Isolates: Presence indicates fragmentation
+   - Edge count: Complexity of mobility patterns
 
 5. **Analyze Degree Distributions (if shown)**
-   - Which segments are mobility hubs?
-   - Which are more peripheral?
+   - Mean > Median = few hubs with many connections
+   - Mean ≈ Median = evenly distributed connections
+   - Max degree identifies central positions
+   - Zero minimum indicates isolates present
 
 ### Example Interpretation
 
@@ -231,6 +291,57 @@ print(seg, show.degree.stats = FALSE, digits = 1)
 
 cat("\n\nSystem 2 (More rigid):\n")
 print(seg2, show.degree.stats = FALSE, digits = 1)
+```
+
+## Understanding the Computational Process
+
+### Relative Risk Calculation
+
+The foundation of MONECA is the relative risk matrix, calculated as:
+
+```{r relative-risk-demo}
+# Demonstrate relative risk calculation
+mx <- seg$mat.list[[1]]
+l <- nrow(mx)
+
+# Extract marginals
+row_totals <- mx[-l, l]
+col_totals <- mx[l, -l]
+grand_total <- mx[l, l]
+
+# Calculate expected values under independence
+expected <- outer(row_totals, col_totals) / grand_total
+
+# Calculate relative risks
+observed <- mx[-l, -l]
+relative_risk <- observed / expected
+
+# Show a subset
+cat("Sample of relative risk matrix (first 3x3):\n")
+print(round(relative_risk[1:3, 1:3], 2))
+```
+
+### Clique Detection Process
+
+MONECA identifies segments through clique detection in the weighted network:
+
+1. Convert relative risk matrix to adjacency matrix (RR > 1)
+2. Find all maximal cliques in the resulting graph
+3. Select cliques that maximize internal mobility
+4. Assign each node to its best clique based on connection strength
+
+### Hierarchical Aggregation
+
+After identifying segments at each level:
+
+```{r aggregation-demo}
+# Show how matrices are aggregated
+cat("Original matrix dimensions:", dim(seg$mat.list[[1]]), "\n")
+cat("Level 2 matrix dimensions:", dim(seg$mat.list[[2]]), "\n")
+cat("Level 3 matrix dimensions:", dim(seg$mat.list[[3]]), "\n")
+
+# The aggregation formula for cell (i,j) at level ℓ+1:
+# n[i,j]^(ℓ+1) = sum of all n[a,b]^(ℓ) where a ∈ segment i and b ∈ segment j
 ```
 
 ## Advanced Usage

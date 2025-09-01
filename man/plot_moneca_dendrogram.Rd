@@ -72,9 +72,14 @@ combined based on the MONECA algorithm's clique detection. Unlike traditional
 hierarchical clustering, MONECA can create non-binary trees where multiple
 categories merge simultaneously.
 
-\strong{No-Crossing Layout:} Categories on the x-axis are automatically ordered
-using a hierarchical algorithm that completely eliminates line crossings between
-all levels. The algorithm processes segments from the most aggregated level down,
+\strong{Visual Features:}
+\itemize{
+  \item \strong{Curved branches}: Uses smooth curves instead of angular segments for better aesthetics
+  \item \strong{Horizontal layout}: Levels progress horizontally (left to right) with categories arranged vertically
+  \item \strong{No-Crossing Layout}: Categories are automatically ordered using a hierarchical algorithm that completely eliminates line crossings between all levels
+}
+
+The algorithm processes segments from the most aggregated level down,
 ensuring that at each level, categories are grouped optimally to prevent any
 crossing lines. This creates the clearest possible visualization of the 
 hierarchical structure.

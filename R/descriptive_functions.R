@@ -1,9 +1,8 @@
 #' Print Method for MONECA Objects (Enhanced)
 #'
 #' Displays comprehensive mobility analysis results from MONECA clustering with
-#' clear, interpretable statistics and improved labeling. This enhanced version
-#' provides better organization and clearer interpretation of mobility patterns
-#' across hierarchical segmentation levels.
+#' clear, interpretable statistics and improved labeling. Output is structured to
+#' follow the natural flow of analysis from overall patterns to detailed metrics.
 #'
 #' @param x A MONECA object returned by \code{\link{moneca}}.
 #' @param small.cell.reduction Numeric threshold for small cell handling. If NULL,
@@ -17,27 +16,94 @@
 #'   printing a formatted summary.
 #'
 #' @details
-#' The enhanced print method provides structured output with:
+#' The output is organized into four main sections that follow the analysis workflow:
 #' 
-#' \strong{Overall Mobility Patterns:}
+#' \strong{Section 1: OVERALL MOBILITY PATTERNS}
 #' \itemize{
-#'   \item Overall population mobility rate (% experiencing any mobility)
-#'   \item Average mobility concentration across all levels
+#'   \item \strong{Overall Population Mobility Rate}: Percentage of the total 
+#'     population that experiences any form of mobility (moves from origin to a
+#'     different destination). Calculated as: (total off-diagonal cells) / (grand total).
+#'     A rate of 20% means 80% remain in their origin position.
+#'   \item \strong{Average Mobility Concentration}: Mean percentage of mobility
+#'     captured by significant pathways (edges with relative risk > 1) across all
+#'     segmentation levels. Higher values indicate mobility is concentrated in
+#'     fewer, stronger pathways rather than dispersed randomly.
 #' }
 #' 
-#' \strong{Hierarchical Segmentation Analysis:}
+#' \strong{Section 2: HIERARCHICAL SEGMENTATION ANALYSIS}
+#' 
+#' \emph{Internal Mobility Within Segments (percent):}
 #' \itemize{
-#'   \item Internal mobility within segments by level
-#'   \item Mobility concentration in significant pathways by level
-#'   \item Network structure metrics (nodes, edges, density, isolates)
+#'   \item Shows the percentage of mobility that remains within segment boundaries
+#'     at each level. Level 1 represents original categories (always 100% as each
+#'     category is its own segment). Higher levels show increasing aggregation.
+#'   \item Values decrease at higher levels as segments combine different origin
+#'     categories, naturally reducing internal cohesion.
+#'   \item High values (>70%) indicate segments successfully capture mobility patterns.
 #' }
 #' 
-#' \strong{Detailed Degree Distributions (optional):}
+#' \emph{Mobility Concentration in Significant Pathways by Level (percent):}
 #' \itemize{
-#'   \item Total connections (in + out degree)
-#'   \item Outward mobility connections
-#'   \item Inward mobility connections
-#'   \item Edge weight distributions
+#'   \item Percentage of total mobility flowing through edges with relative risk > 1.
+#'   \item Indicates how much mobility follows stronger-than-expected pathways
+#'     versus random distribution.
+#'   \item Higher values suggest clearer mobility structure; lower values indicate
+#'     more dispersed patterns.
+#' }
+#' 
+#' \emph{Network Structure by Level:}
+#' \itemize{
+#'   \item \strong{Active Segments/Classes}: Number of nodes in the network.
+#'     Decreases at higher levels as categories aggregate into segments.
+#'   \item \strong{Significant Edges}: Count of mobility pathways with relative
+#'     risk > 1. These represent stronger-than-expected mobility connections.
+#'   \item \strong{Network Density}: Proportion of possible edges that exist.
+#'     Calculated as: (actual edges) / (possible edges). Range 0-1.
+#'   \item \strong{Isolated Segments}: Number of segments with no significant
+#'     connections to other segments. Isolates represent positions that exchange
+#'     members primarily internally or have only weak external connections.
+#' }
+#' 
+#' \strong{Section 3: DETAILED WEIGHTED DEGREE DISTRIBUTIONS (optional)}
+#' 
+#' Shows distribution statistics (Min, Q1, Median, Mean, Q3, Max) for:
+#' \itemize{
+#'   \item \strong{Total Weighted Connections}: Sum of weighted incoming and outgoing 
+#'     connections (strength) for each node. Represents the total volume of mobility
+#'     flows, not just the count of connections.
+#'   \item \strong{Outward Mobility Strength}: Sum of weights on outgoing edges from
+#'     each origin. High out-strength indicates positions that send large volumes
+#'     to other destinations, weighted by relative risk.
+#'   \item \strong{Inward Mobility Strength}: Sum of weights on incoming edges to
+#'     each destination. High in-strength indicates positions that receive large
+#'     volumes from other origins, weighted by relative risk.
+#'   \item \strong{Edge Weight Distribution}: Distribution of relative risk values
+#'     for significant edges. Values > 1 indicate mobility above expected levels.
+#'     Higher values represent stronger mobility pathways.
+#' }
+#'
+#' @section Technical Terms:
+#' \describe{
+#'   \item{\strong{Isolate}}{A node (category or segment) with no significant 
+#'     connections to other nodes. In mobility analysis, isolates represent 
+#'     positions that either have very high internal retention or only weak
+#'     exchange with other positions. Not necessarily problematic - may indicate
+#'     genuinely distinct positions.}
+#'   \item{\strong{Relative Risk}}{Ratio of observed to expected mobility under
+#'     independence. Values > 1 indicate mobility exceeds random expectation;
+#'     < 1 indicates below expectation. Used as edge weights in the network.}
+#'   \item{\strong{Network Density}}{Proportion of all possible connections that
+#'     actually exist. In a fully connected network (density = 1), every position
+#'     has significant mobility to every other position. Low density indicates
+#'     mobility is channeled through specific pathways.}
+#'   \item{\strong{Degree/Strength}}{In weighted networks, we use \strong{strength} 
+#'     instead of simple degree: the sum of edge weights connected to a node.
+#'     In-strength = sum of incoming edge weights, out-strength = sum of outgoing
+#'     edge weights, total strength = sum of both. High strength nodes handle large
+#'     volumes of mobility flow, not just many connections.}
+#'   \item{\strong{Segmentation Level}}{Hierarchical aggregation level. Level 1 =
+#'     original categories, Level 2 = first aggregation based on cliques, etc.
+#'     Higher levels represent coarser groupings.}
 #' }
 #'
 #' @examples
@@ -48,14 +114,15 @@
 #' # Print comprehensive summary with all statistics
 #' print(seg)
 #' 
-#' # Hide detailed degree distributions
+#' # Hide detailed degree distributions for cleaner output
 #' print(seg, show.degree.stats = FALSE)
 #' 
-#' # Show more decimal places
+#' # Show more decimal places for precision
 #' print(seg, digits = 2)
 #'
-#' @seealso \code{\link{moneca}}, \code{\link{summary.moneca}},
-#'   \code{vignette("moneca-statistics")} for interpretation guide
+#' @seealso \code{\link{moneca}} for the main analysis function,
+#'   \code{\link{segment.quality}} for detailed segment metrics,
+#'   \code{vignette("moneca-introduction")} for methodology details
 #' @export
 print.moneca <- function(x, 
                          small.cell.reduction = x$small.cell.reduction, 
@@ -69,8 +136,10 @@ print.moneca <- function(x,
   mx <- segments$mat.list[[1]]
   l <- ncol(mx)
   total.total <- mx[l, l]
-  total.mobile <- sum(mx[-l, -l])
-  total.mobility <- total.mobile / total.total
+  # Calculate off-diagonal sum (excluding diagonal = those who actually move)
+  mx.no.margins <- mx[-l, -l]
+  off.diagonal.sum <- sum(mx.no.margins) - sum(diag(mx.no.margins))
+  total.mobility <- off.diagonal.sum / total.total
   
   # Calculate diagonal mobility function
   diag.mobility <- function(mx) {
@@ -84,28 +153,34 @@ print.moneca <- function(x,
   diagonal.mobility <- unlist(lapply(segments$mat.list, diag.mobility))
   
   # Calculate mobility in significant edges
-  mob.in.edges <- vector(length = length(segments$segment.list))
+  mob.in.edges <- vector(length = length(segments$mat.list))
   
-  for (i in seq_along(segments$segment.list)) {
-    wm <- weight.matrix(mx = segments$mat.list[[i]], 
-                        cut.off = 1, 
-                        diagonal = TRUE, 
-                        symmetric = FALSE, 
-                        small.cell.reduction = 0)
-    mm <- segments$mat.list[[i]]
-    l <- nrow(mm)
-    
-    if (l <= 2) {
+  for (i in seq_along(segments$mat.list)) {
+    # Check if we have segments at this level
+    if (i > length(segments$segment.list)) {
+      # No segments at this level, set to NA or 1
       mob.in.edges[i] <- 1
     } else {
-      mm.reduced <- mm[-l, -l]
-      if (!is.matrix(mm.reduced)) {
-        mm.reduced <- as.matrix(mm.reduced)
+      wm <- weight.matrix(mx = segments$mat.list[[i]], 
+                          cut.off = 1, 
+                          diagonal = TRUE, 
+                          symmetric = FALSE, 
+                          small.cell.reduction = 0)
+      mm <- segments$mat.list[[i]]
+      l <- nrow(mm)
+      
+      if (l <= 2) {
+        mob.in.edges[i] <- 1
+      } else {
+        mm.reduced <- mm[-l, -l]
+        if (!is.matrix(mm.reduced)) {
+          mm.reduced <- as.matrix(mm.reduced)
+        }
+        row.margin <- rowSums(mm.reduced)
+        mm.reduced[is.na(wm)] <- 0
+        rs <- rowSums(mm.reduced)
+        mob.in.edges[i] <- sum(rs) / sum(row.margin)
       }
-      row.margin <- rowSums(mm.reduced)
-      mm.reduced[is.na(wm)] <- 0
-      rs <- rowSums(mm.reduced)
-      mob.in.edges[i] <- sum(rs) / sum(row.margin)
     }
   }
   
@@ -123,9 +198,10 @@ print.moneca <- function(x,
     gra.diag.null <- simplify(gra.diag.null, remove.loops = TRUE, 
                               remove.multiple = FALSE)
     
-    deg.all <- degree(gra.diag.null, mode = "all")
-    deg.out <- degree(gra.diag.null, mode = "out")
-    deg.in <- degree(gra.diag.null, mode = "in")
+    # Use strength (weighted degree) instead of simple degree
+    deg.all <- strength(gra.diag.null, mode = "all")
+    deg.out <- strength(gra.diag.null, mode = "out")
+    deg.in <- strength(gra.diag.null, mode = "in")
     nodes <- vcount(gra.diag.null)
     dens <- moneca_graph_density(gra.diag.null)
     isolates <- sum(deg.all == 0)
@@ -212,7 +288,7 @@ print.moneca <- function(x,
   # Optional degree statistics
   if (show.degree.stats) {
     cat("\n")
-    cat("DETAILED DEGREE DISTRIBUTIONS\n")
+    cat("DETAILED WEIGHTED DEGREE DISTRIBUTIONS (STRENGTH)\n")
     cat("-" , strrep("-", 78), "\n", sep = "")
     
     # Create matrices for degree statistics
@@ -231,20 +307,20 @@ print.moneca <- function(x,
     
     stat_names <- c("Min", "Q1", "Median", "Mean", "Q3", "Max")
     
-    # Total degree
-    cat("\nTotal Connections (In + Out):\n")
+    # Total strength
+    cat("\nTotal Weighted Connections (Strength In + Out):\n")
     colnames(all.mat) <- stat_names
     rownames(all.mat) <- level_names
     print(round(all.mat, 2))
     
-    # Out degree
-    cat("\nOutward Mobility Connections:\n")
+    # Out strength
+    cat("\nOutward Mobility Strength (Weighted Out-Degree):\n")
     colnames(out.mat) <- stat_names
     rownames(out.mat) <- level_names
     print(round(out.mat, 2))
     
-    # In degree
-    cat("\nInward Mobility Connections:\n")
+    # In strength
+    cat("\nInward Mobility Strength (Weighted In-Degree):\n")
     colnames(in.mat) <- stat_names
     rownames(in.mat) <- level_names
     print(round(in.mat, 2))
