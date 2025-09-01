@@ -261,13 +261,15 @@ plot_moneca_ggraph <- function(segments,
           dplyr::mutate(mobility_rate = mobility_rates)
   }
   
-  # Create base plot with validation
+  # Create consistent layout first that will be used for BOTH plotting and hulls
   if (is.character(layout)) {
     # Validate that the graph has nodes
     if (length(V(g)) == 0) {
       stop("Cannot create plot: graph has no nodes")
     }
-    p <- ggraph::ggraph(tidy_graph, layout = layout)
+    # Create the layout once and reuse it consistently
+    actual_layout <- ggraph::create_layout(tidy_graph, layout = layout, ...)
+    p <- ggraph::ggraph(actual_layout)
   } else {
     # Validate layout matrix
     if (!is.matrix(layout) && !is.data.frame(layout)) {
@@ -298,29 +300,25 @@ plot_moneca_ggraph <- function(segments,
       y_coords <- y_coords + runif(length(y_coords), -0.1, 0.1)
     }
     
+    # Create manual layout object with all necessary attributes
+    actual_layout <- data.frame(
+      x = x_coords,
+      y = y_coords,
+      name = node_names,
+      stringsAsFactors = FALSE
+    )
+    # Add all node attributes from tidy_graph
+    node_data <- tidy_graph %>%
+      tidygraph::activate(nodes) %>%
+      tidygraph::as_tibble()
+    
+    actual_layout <- merge(actual_layout, node_data, by = "name", all.x = TRUE)
     p <- ggraph::ggraph(tidy_graph, layout = "manual", x = x_coords, y = y_coords)
   }
   
   # Add segment boundaries (convex hulls) FIRST as background layer
   if (show_segments && identical(node_color, "segment")) {
-    # Get the layout that ggraph is actually using
-    if (is.character(layout)) {
-      actual_layout <- ggraph::create_layout(tidy_graph, layout = layout)
-    } else {
-      # For manual layout, create layout data frame
-      actual_layout <- data.frame(
-        x = x_coords,
-        y = y_coords,
-        name = node_names,
-        stringsAsFactors = FALSE
-      )
-      # Add all node attributes from tidy_graph
-      node_data <- tidy_graph %>%
-        tidygraph::activate(nodes) %>%
-        tidygraph::as_tibble()
-      
-      actual_layout <- merge(actual_layout, node_data, by = "name", all.x = TRUE)
-    }
+    # Use the SAME layout coordinates that the plot is using
     
     # Add segment information to layout if not already present
     if (!"segment" %in% colnames(actual_layout)) {
