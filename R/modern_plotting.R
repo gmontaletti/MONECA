@@ -369,11 +369,20 @@ plot_moneca_ggraph <- function(segments,
         hull_segment <- hull_list[[i]]
         if (nrow(hull_segment) >= 3) {
           # Use ggforce if available for rounded hulls
+          # Get appropriate colors based on palette type
+          if (color_palette %in% c("viridis", "plasma", "inferno", "cividis", "magma")) {
+            # Viridis family palettes
+            segment_colors <- viridis::viridis(length(hull_list), option = color_palette)
+          } else {
+            # ColorBrewer palettes
+            segment_colors <- RColorBrewer::brewer.pal(max(3, length(hull_list)), color_palette)
+          }
+          
           if (requireNamespace("ggforce", quietly = TRUE)) {
             p <- p + ggforce::geom_shape(
               data = hull_segment,
               ggplot2::aes(x = x, y = y),
-              fill = RColorBrewer::brewer.pal(max(3, length(hull_list)), color_palette)[i],
+              fill = segment_colors[i],
               alpha = segment_alpha,
               expand = ggplot2::unit(0.02, "npc"),
               radius = ggplot2::unit(0.03, "npc"),
@@ -384,7 +393,7 @@ plot_moneca_ggraph <- function(segments,
             p <- p + ggplot2::geom_polygon(
               data = hull_segment,
               ggplot2::aes(x = x, y = y),
-              fill = RColorBrewer::brewer.pal(max(3, length(hull_list)), color_palette)[i],
+              fill = segment_colors[i],
               alpha = segment_alpha,
               show.legend = FALSE,
               inherit.aes = FALSE
@@ -425,8 +434,14 @@ plot_moneca_ggraph <- function(segments,
       ggplot2::aes(size = node_size, color = level_name),
       alpha = node_alpha,
       show.legend = FALSE
-    ) +
-    ggplot2::scale_color_brewer(type = "qual", palette = color_palette, guide = "none")
+    )
+    
+    # Add appropriate color scale based on palette type
+    if (color_palette %in% c("viridis", "plasma", "inferno", "cividis", "magma")) {
+      p <- p + ggplot2::scale_color_viridis_d(option = color_palette, guide = "none")
+    } else {
+      p <- p + ggplot2::scale_color_brewer(type = "qual", palette = color_palette, guide = "none")
+    }
   } else if (identical(node_color, "mobility")) {
     p <- p + ggraph::geom_node_point(
       ggplot2::aes(size = node_size, color = mobility_rate),

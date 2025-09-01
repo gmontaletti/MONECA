@@ -497,8 +497,13 @@ lapply(seg_fast$segment.list[[2]], function(x) paste(x, collapse = ", "))
 levels_orig <- sapply(seg_original$segment.list, length)
 levels_fast <- sapply(seg_fast$segment.list, length)
 
+# Ensure both have same length by padding with zeros
+max_levels <- max(length(levels_orig), length(levels_fast))
+levels_orig <- c(levels_orig, rep(0, max_levels - length(levels_orig)))
+levels_fast <- c(levels_fast, rep(0, max_levels - length(levels_fast)))
+
 comparison_df <- data.frame(
-  Level = 1:length(levels_orig),
+  Level = 1:max_levels,
   Original = levels_orig,
   Fast = levels_fast,
   Difference = levels_orig - levels_fast

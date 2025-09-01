@@ -67,11 +67,12 @@ moneca_fast <- function(mx = mx,
     
     mx.1_net <- mx.red / mx.1_exp
     mx.1i <- as.matrix(mx.1_net)
-    mx.1i[mx.1i < cut.off] <- NA
     
     if (symmetric) {
       mx.1i <- mx.1i + t(mx.1i)
     }
+    
+    mx.1i[mx.1i < cut.off] <- NA
     
     if (is.null(diagonal)) {
       diag(mx.1i) <- NA

@@ -20,11 +20,15 @@ knitr::opts_chunk$set(
   comment = "#>",
   fig.path = "figures/",
   warning = FALSE,
-  message = FALSE
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 8,
+  dpi = 150,
+  out.width = "100%"
 )
 
 # Check if required packages are available
-required_packages <- c("ggplot2", "ggraph", "igraph", "dplyr", "tidygraph")
+required_packages <- c("ggplot2", "ggraph", "igraph", "dplyr", "tidygraph", "viridis", "RColorBrewer")
 missing_packages <- required_packages[!sapply(required_packages, requireNamespace, quietly = TRUE)]
 
 if (length(missing_packages) > 0) {
@@ -162,64 +166,131 @@ print(seg$mat.list[[2]])
 
 ## Modern Visualization with ggraph
 
-MONECA now includes modern visualization functions using ggplot2 and ggraph.
+MONECA now includes modern visualization functions using ggplot2 and ggraph, designed with accessibility and clarity as primary concerns.
 
-### Basic Network Plot
+### Visualization Design Principles
 
-```{r plot_basic, eval=TRUE}
-# Create a basic network plot
+All MONECA plotting functions follow evidence-based design principles for maximum accessibility and clarity:
+
+1. **Colorblind Accessibility**: Uses viridis, plasma, and ColorBrewer palettes that are perceptually uniform and distinguishable for all types of color vision
+2. **High Contrast**: Maintains WCAG AA contrast ratios for text and visual elements
+3. **Redundant Encoding**: Uses both color and other visual properties (size, shape, position) to encode information
+4. **Clear Visual Hierarchy**: Guides attention through strategic use of size, transparency, and positioning
+5. **Minimal Cognitive Load**: Reduces visual clutter while maintaining analytical depth
+
+```{r accessibility_demo, eval=FALSE}
+# Example of accessibility-focused plotting
+plot_moneca_ggraph(
+  seg,
+  color_palette = "Set2",       # Colorblind-safe qualitative palette
+  node_alpha = 0.85,            # High contrast
+  edge_alpha = 0.6,             # Balanced visibility
+  show_segments = TRUE,         # Visual grouping
+  segment_alpha = 0.2,          # Subtle boundaries
+  label_size = 3.5              # Readable text
+)
+
+# For continuous variables, use viridis family
+plot_moneca_ggraph(
+  seg,
+  node_color = "mobility",      # Color by mobility rates
+  color_palette = "viridis",    # Colorblind-safe continuous scale
+  node_alpha = 0.85,
+  edge_alpha = 0.6
+)
+```
+
+### Basic Network Plot with Colorblind-Friendly Design
+
+```{r plot_basic, eval=TRUE, fig.width=8, fig.height=6}
+# Create a basic network plot with improved accessibility
+# Using viridis color palette (colorblind-friendly) and optimized layout
 p1 <- plot_moneca_ggraph(
   seg,
-  title = "Basic MONECA Network",
+  title = "Social Mobility Network: Hierarchical Segmentation",
+  subtitle = "Node colors represent segment membership, sizes show total mobility",
+  layout = "stress",  # Better layout for clear network structure
   node_color = "segment",
-  node_size = "total"
+  node_size = "total",
+  color_palette = "Set2",  # Colorblind-friendly palette
+  node_alpha = 0.85,
+  edge_alpha = 0.7,
+  show_segments = TRUE,
+  segment_alpha = 0.2,
+  label_size = 3.5
 )
 
 print(p1)
 ```
 
-### Customized Visualization
+### Advanced Network Visualization with Clear Segment Boundaries
 
-```{r plot_custom, eval=TRUE}
-# Create a customized plot with different layout and styling
+```{r plot_custom, eval=TRUE, fig.width=10, fig.height=8}
+# Create an advanced plot emphasizing segment structure and accessibility
 p2 <- plot_moneca_ggraph(
   seg,
-  layout = "kk",  # Kamada-Kawai layout
+  layout = "fr",  # Force-directed layout for balanced positioning
   node_color = "segment",
+  node_size = "mobility",  # Size by mobility rate for analytical insight
   edge_width = "weight",
-  color_palette = "Spectral",
+  color_palette = "Dark2",  # High-contrast ColorBrewer palette
+  edge_color = "grey30",  # Darker edges for better visibility
   theme_style = "minimal",
-  title = "Customized MONECA Visualization",
-  show_labels = TRUE
+  title = "Advanced MONECA Network Analysis",
+  subtitle = "Segments highlighted with convex hulls, node sizes show mobility rates",
+  show_labels = TRUE,
+  label_size = 4,
+  show_segments = TRUE,
+  segment_alpha = 0.15,
+  node_alpha = 0.9,
+  edge_alpha = 0.6
 )
 
 print(p2)
 ```
 
-### Ego Network Analysis
+### Ego Network Analysis: Focus on Individual Position Dynamics
 
-Ego networks show mobility patterns from a single position:
+Ego networks reveal mobility patterns from a single focal position, showing both incoming and outgoing flows:
 
-```{r ego_plot, eval=TRUE}
-# Create ego network for the middle class (position 3)
+```{r ego_plot, eval=TRUE, fig.width=9, fig.height=7}
+# Create ego network for the middle class (position 3) with enhanced accessibility
 p3 <- plot_ego_ggraph(
   seg,
   basic_data,
   ego_id = 3,
-  title = "Mobility from Middle Class",
-  highlight_color = "red"
+  layout = "stress",  # Stress layout for cleaner ego networks
+  title = "Ego Network Analysis: Middle Class Mobility Patterns",
+  subtitle = "Red nodes: focal position and same-segment connections; Flow width indicates volume",
+  highlight_color = "#D55E00",  # Colorblind-safe orange-red
+  flow_color = "plasma",  # Perceptually uniform color scale
+  node_size_range = c(3, 12),
+  edge_width_range = c(0.5, 4),
+  min_weight = 5  # Filter weak connections for clarity
 )
 
 print(p3)
 ```
 
-### Stair Plots: Visualizing Segmentation Levels
+### Multi-Level Segmentation: Hierarchical Structure Visualization
 
-```{r stair_plot, eval=TRUE}
-# Create stair plots showing different segmentation levels
-stair_plots <- plot_stair_ggraph(seg, levels = 2:3)
+```{r stair_plot, eval=TRUE, fig.width=12, fig.height=10}
+# Create stair plots showing progressive segmentation with consistent layout
+# Using consistent positioning to track segment evolution across levels
+stair_plots <- plot_stair_ggraph(
+  seg, 
+  levels = 2:3,
+  layout = NULL,  # Use consistent layout.matrix for position stability
+  segment_naming = "auto",
+  color_palette = "Set2",  # Colorblind-friendly qualitative palette
+  node_size = "total",
+  edge_alpha = 0.6,
+  node_alpha = 0.85,
+  segment_alpha = 0.2,
+  label_size = 3.5
+)
 
-# Display individual plots
+# Display individual plots with improved spacing
 print(stair_plots$`Level 2`)
 print(stair_plots$`Level 3`)
 ```
@@ -243,27 +314,147 @@ print("Fluid system segments:")
 print(segment.membership(fluid_seg))
 ```
 
-### Visualizing Different Mobility Regimes
+### Comparing Mobility Regimes: Accessibility-Focused Visualizations
 
-```{r compare_plots, eval=TRUE}
-# Plot rigid system
+```{r compare_plots, eval=TRUE, fig.width=12, fig.height=6}
+# Compare rigid vs fluid systems using colorblind-safe palettes and clear differentiation
+
+# Plot rigid system - emphasis on strong boundaries
 p_rigid <- plot_moneca_ggraph(
   rigid_seg,
-  title = "Rigid Class System",
+  title = "Rigid Class System: Strong Internal Cohesion",
+  subtitle = "High immobility rates create distinct, well-separated segments",
+  layout = "stress",
   node_color = "segment",
-  color_palette = "Reds"
+  node_size = "total",
+  color_palette = "Oranges",  # Sequential palette for rigid structure
+  edge_color = "grey20",
+  show_segments = TRUE,
+  segment_alpha = 0.25,
+  node_alpha = 0.9,
+  edge_alpha = 0.5,
+  label_size = 3.5
 )
 
-# Plot fluid system
+# Plot fluid system - emphasis on connectivity
 p_fluid <- plot_moneca_ggraph(
   fluid_seg,
-  title = "Fluid Mobility System", 
+  title = "Fluid Mobility System: High Inter-Segment Flow",
+  subtitle = "Strong cross-segment mobility creates overlapping, less distinct boundaries",
+  layout = "stress",
   node_color = "segment",
-  color_palette = "Blues"
+  node_size = "mobility",  # Size by mobility rate to show fluidity
+  color_palette = "Purples",  # Different sequential palette for contrast
+  edge_color = "grey30",
+  show_segments = TRUE,
+  segment_alpha = 0.15,  # Lower alpha for fluid boundaries
+  node_alpha = 0.85,
+  edge_alpha = 0.7,  # Higher edge alpha to show connectivity
+  label_size = 3.5
 )
 
 print(p_rigid)
 print(p_fluid)
+```
+
+### Advanced Visualization Techniques
+
+#### Dendrogram Visualization for Hierarchical Structure
+
+```{r dendrogram_plot, eval=TRUE, fig.width=10, fig.height=8}
+# Create a dendrogram showing the hierarchical clustering structure
+# This provides a clear view of how categories are progressively aggregated
+dendro_plot <- plot_moneca_dendrogram(
+  seg,
+  height_method = "uniform",          # Equal spacing between levels
+  color_segments = TRUE,              # Color branches by final segments
+  show_labels = TRUE,                 # Show category names
+  label_size = 3.5,
+  branch_width = 1.2,
+  title = "MONECA Hierarchical Structure",
+  subtitle = "Shows progressive aggregation from individual categories to segments",
+  color_palette = "Set2",             # Colorblind-friendly palette
+  theme_style = "minimal"
+)
+
+print(dendro_plot)
+```
+
+#### Quality Assessment Visualization
+
+```{r quality_plots, eval=TRUE, fig.width=12, fig.height=10}
+# Comprehensive segment quality analysis
+quality_overview <- plot_segment_quality(
+  seg,
+  plot_type = "overview",
+  level = 2,
+  color_palette = "Set3",
+  theme_style = "minimal",
+  show_labels = TRUE,
+  label_size = 3
+)
+
+print(quality_overview)
+
+# Cohesion vs Size Analysis
+cohesion_plot <- plot_segment_quality(
+  seg,
+  plot_type = "cohesion",
+  level = 2,
+  title = "Segment Quality Analysis: Cohesion vs Size",
+  color_palette = "Dark2",
+  show_labels = TRUE,
+  label_size = 3.5
+)
+
+print(cohesion_plot)
+```
+
+### Interpretation Guidelines for Visualizations
+
+When interpreting MONECA network visualizations, consider these key elements:
+
+#### Network Layout Interpretation
+- **Node Position**: Reflects mathematical similarity in mobility patterns
+- **Edge Thickness**: Proportional to relative risk of mobility between positions  
+- **Cluster Proximity**: Positions with similar mobility profiles appear closer together
+- **Segment Boundaries**: Convex hulls show positions with high internal mobility
+
+#### Color and Size Encoding
+- **Node Colors**: Represent segment membership at the specified hierarchical level
+- **Node Sizes**: Can represent total mobility volume, mobility rates, or custom metrics
+- **Edge Colors**: Often represent flow direction or connection strength
+- **Transparency**: Used to manage visual complexity while preserving information
+
+#### Accessibility Features
+All plots include several accessibility enhancements:
+
+```{r accessibility_features, eval=FALSE}
+# Example showing all accessibility features
+accessible_plot <- plot_moneca_ggraph(
+  seg,
+  # Colorblind-safe palettes
+  color_palette = "Set2",           # For categorical: "Set2", "Dark2", "Paired"
+                                    # For continuous: "viridis", "plasma", "inferno"
+  
+  # High contrast settings
+  node_alpha = 0.85,               # Strong node visibility
+  edge_alpha = 0.6,                # Balanced edge visibility
+  edge_color = "grey30",           # Dark edges for contrast
+  
+  # Redundant encoding (color + size + position)
+  node_color = "segment",          # Color by segment
+  node_size = "total",             # Size by mobility volume
+  
+  # Clear labeling
+  show_labels = TRUE,              # Display node names
+  label_size = 3.5,                # Readable text size
+  show_segments = TRUE,            # Segment boundaries
+  
+  # Informative titles
+  title = "Descriptive Title",     # Clear context
+  subtitle = "Detailed explanation" # Additional information
+)
 ```
 
 ## Analytical Functions
@@ -282,8 +473,10 @@ print("Level 2 mobility matrix (aggregated):")
 print(level2_matrix)
 
 # Calculate internal mobility rates
-internal_mobility <- diag(level2_matrix[-nrow(level2_matrix), -ncol(level2_matrix)])
-total_mobility <- level2_matrix[-nrow(level2_matrix), ncol(level2_matrix)]
+# Exclude the totals row and column to get the core mobility matrix
+n_segments <- nrow(level2_matrix) - 1
+internal_mobility <- diag(level2_matrix[1:n_segments, 1:n_segments])
+total_mobility <- level2_matrix[1:n_segments, ncol(level2_matrix)]
 immobility_rates <- internal_mobility / total_mobility
 
 print("Immobility rates by segment:")
@@ -372,6 +565,63 @@ print(validation)
 1. **Number of levels**: Start with 3-4 levels, adjust based on your data size
 2. **Cut-off values**: Default (1.0) works well for relative risk; adjust for sensitivity
 3. **Small cell reduction**: Use to handle sparse data in large matrices
+
+### Visualization Best Practices
+
+#### Color Palette Selection
+Choose palettes based on your data type and accessibility needs:
+
+```{r palette_examples, eval=FALSE}
+# For categorical data (segments)
+plot_moneca_ggraph(seg, color_palette = "Set2")    # Colorblind-safe qualitative
+plot_moneca_ggraph(seg, color_palette = "Dark2")   # High contrast qualitative
+
+# For continuous data (mobility rates)
+plot_moneca_ggraph(seg, node_color = "mobility", color_palette = "viridis")  # Perceptually uniform
+plot_moneca_ggraph(seg, node_color = "mobility", color_palette = "plasma")   # Alternative continuous
+
+# For comparing different systems
+plot_moneca_ggraph(rigid_seg, color_palette = "Oranges")   # Sequential for one system
+plot_moneca_ggraph(fluid_seg, color_palette = "Purples")   # Different sequential for comparison
+```
+
+#### Layout Algorithm Selection
+Different layouts work better for different network characteristics:
+
+```{r layout_examples, eval=FALSE}
+# Force-directed layouts
+plot_moneca_ggraph(seg, layout = "fr")      # Fruchterman-Reingold (balanced)
+plot_moneca_ggraph(seg, layout = "kk")      # Kamada-Kawai (minimize edge crossings)
+
+# Optimization-based layouts
+plot_moneca_ggraph(seg, layout = "stress")  # Stress majorization (clean, clear)
+plot_moneca_ggraph(seg, layout = "mds")     # Multidimensional scaling
+
+# For consistent comparisons
+consistent_layout <- layout.matrix(seg)     # MONECA's specialized layout
+plot_moneca_ggraph(seg, layout = consistent_layout)
+```
+
+#### Node and Edge Styling
+Optimize visual elements for clarity and accessibility:
+
+```{r styling_examples, eval=FALSE}
+# High contrast for presentations
+plot_moneca_ggraph(seg,
+  node_alpha = 0.9,        # Strong nodes
+  edge_alpha = 0.4,        # Subtle edges
+  edge_color = "grey20",   # Dark edges
+  label_size = 4           # Large labels
+)
+
+# Detailed analysis version
+plot_moneca_ggraph(seg,
+  node_size = "mobility",  # Size by analytical variable
+  edge_width = "weight",   # Width by connection strength
+  show_segments = TRUE,    # Show cluster boundaries
+  segment_alpha = 0.15     # Subtle boundaries
+)
+```
 
 ### Interpretation Guidelines
 
