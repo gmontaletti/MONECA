@@ -205,10 +205,10 @@ plot_moneca_ggraph(
 ```{r plot_basic, eval=TRUE, fig.width=8, fig.height=6}
 # Create a basic network plot with improved accessibility
 # Using viridis color palette (colorblind-friendly) and optimized layout
+# Note: Node colors represent segment membership, sizes show total mobility
 p1 <- plot_moneca_ggraph(
   seg,
   title = "Social Mobility Network: Hierarchical Segmentation",
-  subtitle = "Node colors represent segment membership, sizes show total mobility",
   layout = "stress",  # Better layout for clear network structure
   node_color = "segment",
   node_size = "total",
@@ -227,6 +227,7 @@ print(p1)
 
 ```{r plot_custom, eval=TRUE, fig.width=10, fig.height=8}
 # Create an advanced plot emphasizing segment structure and accessibility
+# Note: Segments highlighted with convex hulls, node sizes show mobility rates
 p2 <- plot_moneca_ggraph(
   seg,
   layout = "fr",  # Force-directed layout for balanced positioning
@@ -237,7 +238,6 @@ p2 <- plot_moneca_ggraph(
   edge_color = "grey30",  # Darker edges for better visibility
   theme_style = "minimal",
   title = "Advanced MONECA Network Analysis",
-  subtitle = "Segments highlighted with convex hulls, node sizes show mobility rates",
   show_labels = TRUE,
   label_size = 4,
   show_segments = TRUE,
@@ -255,13 +255,13 @@ Ego networks reveal mobility patterns from a single focal position, showing both
 
 ```{r ego_plot, eval=TRUE, fig.width=9, fig.height=7}
 # Create ego network for the middle class (position 3) with enhanced accessibility
+# Note: Red nodes show focal position and same-segment connections; Flow width indicates volume
 p3 <- plot_ego_ggraph(
   seg,
   basic_data,
   ego_id = 3,
   layout = "stress",  # Stress layout for cleaner ego networks
   title = "Ego Network Analysis: Middle Class Mobility Patterns",
-  subtitle = "Red nodes: focal position and same-segment connections; Flow width indicates volume",
   highlight_color = "#D55E00",  # Colorblind-safe orange-red
   flow_color = "plasma",  # Perceptually uniform color scale
   node_size_range = c(3, 12),
@@ -320,10 +320,10 @@ print(segment.membership(fluid_seg))
 # Compare rigid vs fluid systems using colorblind-safe palettes and clear differentiation
 
 # Plot rigid system - emphasis on strong boundaries
+# Note: High immobility rates create distinct, well-separated segments
 p_rigid <- plot_moneca_ggraph(
   rigid_seg,
   title = "Rigid Class System: Strong Internal Cohesion",
-  subtitle = "High immobility rates create distinct, well-separated segments",
   layout = "stress",
   node_color = "segment",
   node_size = "total",
@@ -337,10 +337,10 @@ p_rigid <- plot_moneca_ggraph(
 )
 
 # Plot fluid system - emphasis on connectivity
+# Note: Strong cross-segment mobility creates overlapping, less distinct boundaries
 p_fluid <- plot_moneca_ggraph(
   fluid_seg,
   title = "Fluid Mobility System: High Inter-Segment Flow",
-  subtitle = "Strong cross-segment mobility creates overlapping, less distinct boundaries",
   layout = "stress",
   node_color = "segment",
   node_size = "mobility",  # Size by mobility rate to show fluidity
@@ -452,8 +452,7 @@ accessible_plot <- plot_moneca_ggraph(
   show_segments = TRUE,            # Segment boundaries
   
   # Informative titles
-  title = "Descriptive Title",     # Clear context
-  subtitle = "Detailed explanation" # Additional information
+  title = "Descriptive Title"      # Clear context
 )
 ```
 

@@ -149,7 +149,7 @@ cat("Level 1 internal mobility (manual calc):", round(internal_mobility_pct, 1),
 ```{r network-viz, fig.cap="Network visualization showing segments and connections"}
 # Visualize the network at Level 2
 plot_moneca_ggraph(seg, level = 2, node_color = "segment", 
-                   edge_width_range = c(0.5, 3), layout = "fr")
+                   edge_width = "weight", layout = "fr")
 ```
 
 #### Active Segments/Classes per Level
