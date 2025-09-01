@@ -858,16 +858,32 @@ plot_stair_ggraph <- function(segments,
   
   # Add first level plot (individual nodes) if requested
   if (include_first_level) {
-    p_first <- plot_moneca_ggraph(
-      segments,
-      level = 1,
-      layout = layout,
-      title = "Level 1: Individual Classes",
-      segment_naming = segment_naming,
-      show_segments = FALSE,  # No hulls for individual level
-      show_labels = TRUE,
-      ...
-    )
+    # Extract title from ... if provided, otherwise use default
+    dots <- list(...)
+    if ("title" %in% names(dots)) {
+      # User provided a title - don't override it
+      p_first <- plot_moneca_ggraph(
+        segments,
+        level = 1,
+        layout = layout,
+        segment_naming = segment_naming,
+        show_segments = FALSE,  # No hulls for individual level
+        show_labels = TRUE,
+        ...
+      )
+    } else {
+      # Use default title
+      p_first <- plot_moneca_ggraph(
+        segments,
+        level = 1,
+        layout = layout,
+        segment_naming = segment_naming,
+        show_segments = FALSE,  # No hulls for individual level
+        show_labels = TRUE,
+        title = "Level 1: Individual Classes",
+        ...
+      )
+    }
     
     # Remove all legends
     p_first <- p_first + ggplot2::theme(legend.position = "none")
@@ -888,14 +904,28 @@ plot_stair_ggraph <- function(segments,
   for (i in seq_along(plot_levels)) {
     level_idx <- plot_levels[i]
     
-    p <- plot_moneca_ggraph(
-      segments,
-      level = 1:level_idx,
-      layout = layout,
-      title = paste("Level", level_idx, "Segmentation"),
-      segment_naming = segment_naming,
-      ...
-    )
+    # Extract title from ... if provided, otherwise use default
+    dots <- list(...)
+    if ("title" %in% names(dots)) {
+      # User provided a title - don't override it
+      p <- plot_moneca_ggraph(
+        segments,
+        level = 1:level_idx,
+        layout = layout,
+        segment_naming = segment_naming,
+        ...
+      )
+    } else {
+      # Use default title
+      p <- plot_moneca_ggraph(
+        segments,
+        level = 1:level_idx,
+        layout = layout,
+        segment_naming = segment_naming,
+        title = paste("Level", level_idx, "Segmentation"),
+        ...
+      )
+    }
     
     # Remove all legends - hulls are now handled by plot_moneca_ggraph() in proper layer order
     p <- p + ggplot2::theme(legend.position = "none")
