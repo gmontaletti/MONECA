@@ -1,26 +1,36 @@
 # moneca: Mobility Network Clustering Analysis
 
-moneca (Mobility Network Clustering Analysis) is an R package for analyzing social mobility patterns through graph-theoretic approaches. The package creates weighted networks from mobility tables and uses cliques to identify discrete and nested clusters of positions with high internal mobility.
+**Author: Giampaolo Montaletti**  
+ORCID: https://orcid.org/0009-0002-5327-1122  
+Email: giampaolo.montaletti@gmail.com  
+GitHub: https://github.com/gmontaletti
 
-## About this Fork
+moneca (Mobility Network Clustering Analysis) is a comprehensive R package for analyzing social mobility patterns through graph-theoretic approaches. This package represents a complete rewrite and modernization of the original MONECA package, featuring entirely new visualization systems, synthetic data generation capabilities, comprehensive testing, and modern R programming practices.
 
-This is a maintained fork of the original [MONECA package](https://github.com/antongrau/MONECA) [![R-CMD-check](https://github.com/antongrau/MONECA/workflows/R-CMD-check/badge.svg)](https://github.com/antongrau/MONECA/actions) with comprehensive modernization and active maintenance.
+## Package History
 
-**Original Authors & Credits:**
-- **Jonas Touboel** - Original algorithm design and methodology
-- **Anton Grau Larsen** - Original package development and implementation
+**moneca** (lowercase, 2024-present) is the current package developed and maintained by **Giampaolo Montaletti**. While it implements the core clustering algorithm originally proposed by Touboel & Larsen, this package features:
 
-**Current Maintainer:**
-- **Giampaolo Montaletti** - Package modernization, maintenance, and new features
+- **Entirely new codebase** for visualization using ggraph and tidygraph
+- **Original synthetic data generation system** for reproducible research
+- **Comprehensive test suite** written from scratch  
+- **Modern documentation and vignettes** authored by Giampaolo Montaletti
+- **Complete package infrastructure** redesign and modernization
+- **New analysis functions** including enhanced membership analysis and quality metrics
 
-**Key Improvements in this Fork:**
-- Modern ggraph-based visualizations with enhanced aesthetics
-- Comprehensive synthetic data generation for reproducible examples
-- Complete testing suite with testthat (30+ tests)
-- Enhanced documentation and vignettes
-- igraph compatibility layer supporting versions 1.3.0+
-- Improved error handling and input validation
-- Performance optimizations and code modernization 
+**Original MONECA** (uppercase, 2017) by Jonas Touboel and Anton Grau Larsen provided:
+- The core clustering algorithm and mathematical methodology
+- Basic implementation of the segmentation approach
+- Original research and theoretical foundation (Touboel & Larsen, 2017)
+
+## Author and Maintainer
+
+**Giampaolo Montaletti** - Package author, developer, and maintainer
+- Complete package modernization and rewrite (2024)
+- Development of modern visualization system
+- Creation of synthetic data generation framework
+- Implementation of comprehensive testing suite
+- Authorship of current documentation and vignettes 
 
 ## Features
 
@@ -154,13 +164,14 @@ MONECA implements a sophisticated algorithm for detecting mobility patterns:
 
 ## Citation
 
-If you use MONECA in your research, please cite:
+If you use moneca in your research, please cite:
 
 ```
-Touboel, J. & Larsen, A.G. (2024). moneca: Mobility Network Clustering Analysis. 
+# Current package:
+Montaletti, G. (2024). moneca: Mobility Network Clustering Analysis. 
 R package version 0.4.0. https://github.com/gmontaletti/moneca
 
-# Original methodology:
+# Original algorithm and methodology:
 Touboel, J., & Larsen, A. G. (2017). Mapping the Social Class Structure: 
 From Occupational Mobility to Social Class Categories Using Network Analysis.
 Sociology, 51(6), 1257-1276.
@@ -170,11 +181,19 @@ Sociology, 51(6), 1257-1276.
 
 GPL-3
 
-## Authors
+## Credits
 
-- **Jonas Touboel** - Original algorithm and methodology
-- **Anton Grau Larsen** - Original package development
-- **Giampaolo Montaletti** - Actual developer and mantainer
+**Current Package (moneca):**
+- **Giampaolo Montaletti** - Package author, developer, and maintainer
+  - Complete package rewrite and modernization
+  - All current documentation and vignettes  
+  - Modern visualization system (ggraph/tidygraph)
+  - Synthetic data generation framework
+  - Comprehensive testing suite
+
+**Original Algorithm (MONECA):**
+- **Jonas Touboel** - Original clustering algorithm and mathematical methodology
+- **Anton Grau Larsen** - Original MONECA package implementation
 
 ## Contributing
 

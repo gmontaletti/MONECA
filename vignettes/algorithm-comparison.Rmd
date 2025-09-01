@@ -1,6 +1,6 @@
 ---
-title: "MONECA Algorithm Comparison: moneca() vs moneca_fast()"
-author: "Jonas Touboel and Anton Grau Larsen"
+title: "moneca Algorithm Comparison: moneca() vs moneca_fast()"
+author: "Giampaolo Montaletti"
 date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
@@ -9,7 +9,7 @@ output:
     fig_width: 8
     fig_height: 6
 vignette: >
-  %\VignetteIndexEntry{MONECA Algorithm Comparison: moneca() vs moneca_fast()}
+  %\VignetteIndexEntry{moneca Algorithm Comparison: moneca() vs moneca_fast()}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

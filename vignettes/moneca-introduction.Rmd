@@ -1,6 +1,6 @@
 ---
-title: "Introduction to MONECA: Mobility Network Clustering Analysis"
-author: "Jonas Touboel and Anton Grau Larsen"
+title: "Introduction to moneca: Mobility Network Clustering Analysis"
+author: "Giampaolo Montaletti"
 date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
@@ -9,7 +9,7 @@ output:
     fig_width: 8
     fig_height: 6
 vignette: >
-  %\VignetteIndexEntry{Introduction to MONECA: Mobility Network Clustering Analysis}
+  %\VignetteIndexEntry{Introduction to moneca: Mobility Network Clustering Analysis}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -37,6 +37,14 @@ if (length(missing_packages) > 0) {
 ## Introduction
 
 moneca (Mobility Network Clustering Analysis) is an R package that analyzes social mobility patterns through graph-theoretic approaches. The package creates weighted networks from mobility tables and uses cliques to identify discrete and nested clusters of positions with high internal mobility.
+
+### About This Vignette
+
+This vignette was written by **Giampaolo Montaletti** as part of the comprehensive modernization of the moneca package (2024). It provides a complete guide to using the modern features and capabilities of the package, including the new visualization system, synthetic data generation, and enhanced analysis tools.
+
+### Package Background
+
+The **moneca** package (lowercase) is a complete rewrite and modernization of the original MONECA package. While it implements the clustering algorithm originally developed by Touboel & Larsen (2017), the current package features entirely new code for visualization, testing, data generation, and documentation authored by Giampaolo Montaletti.
 
 ### Key Features
 

@@ -1,10 +1,10 @@
 ---
-title: "Understanding MONECA Statistics: A Comprehensive Guide"
-author: "MONECA Development Team"
+title: "Understanding moneca Statistics: A Comprehensive Guide"
+author: "Giampaolo Montaletti"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Understanding MONECA Statistics}
+  %\VignetteIndexEntry{Understanding moneca Statistics}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
