@@ -26,7 +26,7 @@ moneca.plot(
 )
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
 \item{layout}{A matrix of node coordinates, typically from \code{\link{layout.matrix}}.}
 

@@ -7,7 +7,7 @@
 segment.quality(segments, final.solution = FALSE)
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
 \item{final.solution}{Logical indicating whether to return only the final 
 (most aggregated) solution for each unique segment. Default is FALSE, which
@@ -41,7 +41,7 @@ A data frame with the following columns for each hierarchical level:
 }
 \description{
 Calculates comprehensive quality metrics for each segment across all hierarchical 
-levels of a MONECA analysis. This function provides detailed statistics about 
+levels of a moneca analysis. This function provides detailed statistics about 
 segment cohesion, size, network properties, and mobility patterns.
 }
 \details{

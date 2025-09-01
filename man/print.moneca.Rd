@@ -2,7 +2,7 @@
 % Please edit documentation in R/descriptive_functions.R
 \name{print.moneca}
 \alias{print.moneca}
-\title{Print Method for MONECA Objects (Enhanced)}
+\title{Print Method for moneca Objects (Enhanced)}
 \usage{
 \method{print}{moneca}(
   x,
@@ -13,10 +13,10 @@
 )
 }
 \arguments{
-\item{x}{A MONECA object returned by \code{\link{moneca}}.}
+\item{x}{A moneca object returned by \code{\link{moneca}}.}
 
 \item{small.cell.reduction}{Numeric threshold for small cell handling. If NULL,
-uses the value from the MONECA object.}
+uses the value from the moneca object.}
 
 \item{show.degree.stats}{Logical. If TRUE (default), displays detailed degree 
 distribution statistics for each hierarchical level.}
@@ -30,7 +30,7 @@ Invisibly returns NULL. This function is called for its side effect of
   printing a formatted summary.
 }
 \description{
-Displays comprehensive mobility analysis results from MONECA clustering with
+Displays comprehensive mobility analysis results from moneca clustering with
 clear, interpretable statistics and improved labeling. Output is structured to
 follow the natural flow of analysis from overall patterns to detailed metrics.
 }

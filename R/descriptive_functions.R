@@ -1,12 +1,12 @@
-#' Print Method for MONECA Objects (Enhanced)
+#' Print Method for moneca Objects (Enhanced)
 #'
-#' Displays comprehensive mobility analysis results from MONECA clustering with
+#' Displays comprehensive mobility analysis results from moneca clustering with
 #' clear, interpretable statistics and improved labeling. Output is structured to
 #' follow the natural flow of analysis from overall patterns to detailed metrics.
 #'
-#' @param x A MONECA object returned by \code{\link{moneca}}.
+#' @param x A moneca object returned by \code{\link{moneca}}.
 #' @param small.cell.reduction Numeric threshold for small cell handling. If NULL,
-#'   uses the value from the MONECA object.
+#'   uses the value from the moneca object.
 #' @param show.degree.stats Logical. If TRUE (default), displays detailed degree 
 #'   distribution statistics for each hierarchical level.
 #' @param digits Integer. Number of decimal places for numeric output (default 1).
@@ -227,7 +227,7 @@ print.moneca <- function(x,
   # Format output with improved labels
   cat("\n")
   cat("================================================================================\n")
-  cat("                        MONECA MOBILITY ANALYSIS RESULTS                        \n")
+  cat("                        moneca MOBILITY ANALYSIS RESULTS                        \n")
   cat("================================================================================\n\n")
   
   # Overall statistics
@@ -477,10 +477,10 @@ return(list(out.mobility=out.mat, in.mat=in.mat))
 #' Evaluate Segment Quality Metrics
 #' 
 #' Calculates comprehensive quality metrics for each segment across all hierarchical 
-#' levels of a MONECA analysis. This function provides detailed statistics about 
+#' levels of a moneca analysis. This function provides detailed statistics about 
 #' segment cohesion, size, network properties, and mobility patterns.
 #' 
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
 #' @param final.solution Logical indicating whether to return only the final 
 #'   (most aggregated) solution for each unique segment. Default is FALSE, which
 #'   returns metrics for all levels.

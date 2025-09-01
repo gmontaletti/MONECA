@@ -1,6 +1,6 @@
-#' Fast MONECA - Optimized Mobility Network Clustering Analysis
+#' Fast moneca - Optimized Mobility Network Clustering Analysis
 #'
-#' An optimized version of the MONECA algorithm with improved performance for large datasets.
+#' An optimized version of the moneca algorithm with improved performance for large datasets.
 #' Uses maximal cliques instead of all cliques and implements various performance optimizations.
 #'
 #' @param mx A mobility table (square matrix) with row and column totals in the last
@@ -375,7 +375,7 @@ moneca_fast <- function(mx = mx,
   return(out)
 }
 
-#' Export fast MONECA functions for use in package
+#' Export fast moneca functions for use in package
 #' @keywords internal
 moneca_graph_from_adjacency <- function(...) {
   if (exists(".moneca_env") && exists("moneca_graph_from_adjacency", envir = .moneca_env)) {

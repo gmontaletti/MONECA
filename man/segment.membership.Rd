@@ -7,7 +7,7 @@
 segment.membership(segments, level = seq(segments$segment.list))
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
 \item{level}{Integer vector specifying which hierarchical levels to include.
 Default includes all available levels.}
@@ -22,7 +22,7 @@ A data frame with two columns:
 }
 \description{
 Returns a data frame showing which segment each original category belongs to
-across the specified hierarchical levels of a MONECA analysis.
+across the specified hierarchical levels of a moneca analysis.
 }
 \details{
 The membership strings indicate both the hierarchical level and the specific

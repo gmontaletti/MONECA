@@ -27,7 +27,7 @@ plot_moneca_ggraph(
 )
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
 \item{level}{Integer vector specifying which hierarchical levels to visualize.
 Default displays all levels except the first (which represents individual categories).}

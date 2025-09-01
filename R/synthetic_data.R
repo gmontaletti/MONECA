@@ -1,7 +1,7 @@
 #' Generate Realistic Synthetic Mobility Data
 #'
 #' Creates synthetic social mobility tables with configurable patterns that mimic
-#' real-world mobility structures. This function is essential for testing MONECA
+#' real-world mobility structures. This function is essential for testing moneca
 #' algorithms, creating examples, and understanding how different mobility patterns
 #' affect segmentation results.
 #'
@@ -23,7 +23,7 @@
 #' @param seed Integer for random seed to ensure reproducible results. Default is NULL
 #'   (no seed set).
 #'
-#' @return A square matrix in MONECA format with:
+#' @return A square matrix in moneca format with:
 #'   \describe{
 #'     \item{Core matrix}{Upper-left (n_classes x n_classes) contains mobility flows}
 #'     \item{Row margins}{Last column contains origin class totals}
@@ -44,7 +44,7 @@
 #' }
 #' 
 #' The generated data can be used to test how different mobility regimes affect
-#' MONECA segmentation and to create realistic examples for demonstrations.
+#' moneca segmentation and to create realistic examples for demonstrations.
 #' 
 #' Parameter combinations:
 #' \itemize{
@@ -87,7 +87,7 @@
 #'   noise_level = 0.3
 #' )
 #' 
-#' # Use in MONECA analysis
+#' # Use in moneca analysis
 #' seg <- moneca(test_data, segment.levels = 3)
 #' plot_moneca_ggraph(seg, title = "Synthetic Mobility Analysis")
 #' 
@@ -172,7 +172,7 @@ generate_mobility_data <- function(n_classes = 10,
     mobility_matrix[i, ] <- as.integer(mobility_counts)
   }
   
-  # Add row and column totals (MONECA format requirement)
+  # Add row and column totals (moneca format requirement)
   row_totals <- rowSums(mobility_matrix)
   col_totals <- colSums(mobility_matrix)
   total_total <- sum(mobility_matrix)
@@ -196,7 +196,7 @@ generate_mobility_data <- function(n_classes = 10,
 #'
 #' Creates a collection of predefined mobility datasets with different structural
 #' characteristics. These examples are useful for tutorials, testing different
-#' MONECA parameters, and demonstrating various mobility regime types.
+#' moneca parameters, and demonstrating various mobility regime types.
 #'
 #' @return A named list containing mobility matrices with different characteristics:
 #'   \describe{
@@ -207,14 +207,14 @@ generate_mobility_data <- function(n_classes = 10,
 #'     \item{polarized}{Example with strong upper/lower class divide}
 #'     \item{gradual}{Example with smooth class transitions}
 #'   }
-#'   Each matrix is in standard MONECA format with row/column totals.
+#'   Each matrix is in standard moneca format with row/column totals.
 #'
 #' @details
 #' This function provides ready-to-use examples that demonstrate different types
 #' of social mobility structures:
 #' 
 #' \itemize{
-#'   \item \strong{Simple}: Good for learning MONECA basics
+#'   \item \strong{Simple}: Good for learning moneca basics
 #'   \item \strong{Complex}: Tests algorithm performance on larger structures
 #'   \item \strong{Rigid}: Shows segmentation in low-mobility societies
 #'   \item \strong{Fluid}: Tests segmentation in high-mobility contexts
@@ -225,7 +225,7 @@ generate_mobility_data <- function(n_classes = 10,
 #' These examples are particularly useful for:
 #' \itemize{
 #'   \item Tutorial and teaching materials
-#'   \item Comparing MONECA parameters across mobility types
+#'   \item Comparing moneca parameters across mobility types
 #'   \item Testing visualization functions
 #'   \item Benchmarking algorithm performance
 #' }

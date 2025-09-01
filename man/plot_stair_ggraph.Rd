@@ -15,7 +15,7 @@ plot_stair_ggraph(
 )
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
 \item{levels}{Integer vector specifying which hierarchical levels to visualize.
 Default includes all levels.}
@@ -44,7 +44,7 @@ If \code{combine_plots = FALSE}, returns a list of ggplot objects, one for each 
 }
 \description{
 Creates a series of network plots showing how segmentation evolves across
-hierarchical levels in a MONECA analysis. This "stair plot" provides insight
+hierarchical levels in a moneca analysis. This "stair plot" provides insight
 into the progressive clustering of social positions.
 }
 \details{

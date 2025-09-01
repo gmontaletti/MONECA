@@ -182,7 +182,7 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
 #' # Generate synthetic mobility data
 #' mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
 #' 
-#' # Run MONECA analysis
+#' # Run moneca analysis
 #' seg <- moneca(mobility_data, segment.levels = 3)
 #' print(seg)
 #' 
@@ -351,7 +351,7 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
 #' 
 #' Converts a mobility table into a relative risk matrix by comparing observed
 #' mobility flows to expected flows under independence. This matrix forms the
-#' basis for network construction in MONECA analysis.
+#' basis for network construction in moneca analysis.
 #' 
 #' @param mx A mobility table (square matrix) with row and column totals in the 
 #'   last row/column.
@@ -460,7 +460,7 @@ weight.matrix <- function(mx, cut.off = 1, symmetric = TRUE, diagonal = NULL, sm
 #' Creates a grayscale color scheme for MONECA segments based on internal
 #' mobility rates. Darker colors indicate higher immobility (lower internal mobility).
 #' 
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
 #' 
 #' @return A list of color vectors, one for each hierarchical level.
 #' 
@@ -526,7 +526,7 @@ layout.matrix <- function(segments, attraction=c(320, 40, 10, 4, 2), level=seq(s
   # Validate input matrix
   mx_input <- segments$mat.list[[1]]
   if (is.null(mx_input)) {
-    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete or corrupted. Please re-run the moneca() function to generate a valid segments object.")
+    stop("segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete or corrupted. Please re-run the moneca() function to generate a valid segments object.")
   }
   if (!is.matrix(mx_input)) {
     mx_input <- as.matrix(mx_input)
@@ -592,7 +592,7 @@ layout.matrix <- function(segments, attraction=c(320, 40, 10, 4, 2), level=seq(s
 #' Creates an adjacency matrix representing edges between segments based on
 #' mobility flows. This function is used for network visualization and analysis.
 #' 
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
 #' @param cut.off Numeric threshold for minimum relative risk to include an edge.
 #'   Default is 1.
 #' @param mode Character string specifying the graph mode ("directed" or "undirected").
@@ -695,7 +695,7 @@ segment.edges <- function(segments, cut.off=1, mode="directed", level=NULL, segm
 #' Creates a network visualization of MONECA segmentation results using base
 #' graphics and igraph. For modern visualizations, use \code{\link{plot_moneca_ggraph}}.
 #' 
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
 #' @param layout A matrix of node coordinates, typically from \code{\link{layout.matrix}}.
 #' @param edges An adjacency matrix of edges, typically from \code{\link{segment.edges}}.
 #' @param mode Character string specifying graph mode ("directed" or "undirected").
@@ -751,10 +751,10 @@ moneca.plot <- function(segments,
     stop("segments must be a moneca object created by the moneca() function")
   }
   if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
-    stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+    stop("segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function.")
   }
   if (is.null(segments$mat.list[[1]])) {
-    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+    stop("segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function.")
   }
   
   # Set default level if not provided, after validation
@@ -802,9 +802,9 @@ moneca.plot <- function(segments,
 #' Extract Segment Membership Information
 #' 
 #' Returns a data frame showing which segment each original category belongs to
-#' across the specified hierarchical levels of a MONECA analysis.
+#' across the specified hierarchical levels of a moneca analysis.
 #' 
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
 #' @param level Integer vector specifying which hierarchical levels to include.
 #'   Default includes all available levels.
 #' 
@@ -866,7 +866,7 @@ out.mat
 #' extends \code{\link{segment.membership}} by adding intelligent naming 
 #' strategies for aggregated segments.
 #' 
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
 #' @param level Integer vector specifying which hierarchical levels to include.
 #'   Default includes all available levels.
 #' @param naming_strategy Character string specifying the naming approach:
@@ -952,10 +952,10 @@ segment.membership.enhanced <- function(segments,
     stop("segments must be a moneca object created by the moneca() function")
   }
   if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
-    stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+    stop("segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function.")
   }
   if (is.null(segments$mat.list[[1]])) {
-    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+    stop("segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function.")
   }
   
   # Get basic membership information
@@ -2407,7 +2407,7 @@ generate_segment_plot <- function(segment_matrix, enhanced_membership,
 #' Creates a dataframe showing segment membership for each row of the original mobility matrix
 #' across all segmentation levels.
 #'
-#' @param moneca_results A MONECA object returned by \code{\link{moneca}} or \code{moneca_fast}.
+#' @param moneca_results A moneca object returned by \code{\link{moneca}} or \code{moneca_fast}.
 #' @return A dataframe with:
 #'   \itemize{
 #'     \item name: The name of the row from the original matrix
@@ -2421,7 +2421,7 @@ generate_segment_plot <- function(segment_matrix, enhanced_membership,
 #' # Generate example data
 #' mx <- generate_mobility_data(n_classes = 5, immobility_strength = 1.5)
 #' 
-#' # Run MONECA analysis
+#' # Run moneca analysis
 #' seg <- moneca_fast(mx, segment.levels = 3)
 #' 
 #' # Generate membership dataframe
@@ -2430,7 +2430,7 @@ generate_segment_plot <- function(segment_matrix, enhanced_membership,
 segment.membership.dataframe <- function(moneca_results) {
   # Validate input
   if (!inherits(moneca_results, "moneca")) {
-    stop("Input must be a MONECA object from moneca() or moneca_fast()")
+    stop("Input must be a moneca object from moneca() or moneca_fast()")
   }
   
   # Get the original matrix (excluding sum row/column)

@@ -50,13 +50,13 @@ if(getRversion() >= "2.15.1") {
 # border.text.color  = "black"
 # border.text.vjust  = -0.2
 
-#' Legacy ggplot2 Visualization for MONECA Objects
+#' Legacy ggplot2 Visualization for moneca Objects
 #' 
-#' Creates network visualizations of MONECA clustering results using ggplot2.
+#' Creates network visualizations of moneca clustering results using ggplot2.
 #' This function provides extensive customization options but has been superseded
 #' by \code{\link{plot_moneca_ggraph}} for most use cases.
 #' 
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
 #' @param level Integer vector specifying which hierarchical levels to display.
 #' @param layout Matrix of node coordinates or layout function result.
 #' @param edges Edge matrix or transformed edge weights for visualization.
@@ -99,7 +99,7 @@ if(getRversion() >= "2.15.1") {
 #' 
 #' @details
 #' This function provides a highly customizable but complex interface for creating
-#' MONECA visualizations. It requires the eliter package for some functionality.
+#' moneca visualizations. It requires the eliter package for some functionality.
 #' For most users, \code{\link{plot_moneca_ggraph}} offers a more modern and
 #' user-friendly interface with better defaults.
 #' 
@@ -109,12 +109,13 @@ if(getRversion() >= "2.15.1") {
 #' 
 #' @examples 
 #' \dontrun{
-#' # Requires eliter package
-#' data(occupations)
-#' gg.moneca(mob.seg)
+#' # Using synthetic data
+#' mobility_data <- generate_mobility_data(n_classes = 5, seed = 123)
+#' seg <- moneca(mobility_data, segment.levels = 2)
+#' gg.moneca(seg)
 #' 
 #' # Custom styling
-#' gg.moneca(mob.seg, 
+#' gg.moneca(seg, 
 #'          vertex.fill = "red",
 #'          edge.color = "blue",
 #'          show.borders = FALSE)
@@ -180,10 +181,10 @@ if (!inherits(segments, "moneca")) {
   stop("segments must be a moneca object created by the moneca() function")
 }
 if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
-  stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  stop("segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function.")
 }
 if (is.null(segments$mat.list[[1]])) {
-  stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+  stop("segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function.")
 }
 
 # Set default values after validation
@@ -500,8 +501,8 @@ vertex.coord <- function(graph, layout=layout.fruchterman.reingold(graph)){
 #' using the legacy ggplot2 plotting system. For modern ego network analysis,
 #' use \code{\link{plot_ego_ggraph}}.
 #'
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
-#' @param mxa.b The original mobility matrix used in the MONECA analysis.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
+#' @param mxa.b The original mobility matrix used in the moneca analysis.
 #' @param id Integer or character specifying the focal node (ego) for the analysis.
 #' @param lay Layout matrix for node positioning, typically from \code{\link{layout.matrix}}.
 #' @param edge.size Numeric value for edge thickness. Default is 0.8.
@@ -536,12 +537,13 @@ vertex.coord <- function(graph, layout=layout.fruchterman.reingold(graph)){
 #'
 #' @examples
 #' \dontrun{
-#' # Requires legacy data and eliter package
-#' data(occupations)
-#' ego.plot(mob.seg, mob.mat, id = 2)
+#' # Using synthetic data
+#' mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+#' seg <- moneca(mobility_data, segment.levels = 2)
+#' ego.plot(seg, mobility_data, id = 2)
 #' 
 #' # Customized ego plot
-#' ego.plot(mob.seg, mob.mat, 
+#' ego.plot(seg, mobility_data, 
 #'          id = 3,
 #'          edge.size = 1.2,
 #'          color.scheme = "Blues",
@@ -573,10 +575,10 @@ ego.plot <- function(segments, mxa.b, id = 1,
     stop("segments must be a moneca object created by the moneca() function")
   }
   if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
-    stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+    stop("segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function.")
   }
   if (is.null(segments$mat.list[[1]])) {
-    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+    stop("segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function.")
   }
   
   # Set default layout after validation
@@ -653,7 +655,7 @@ ego.plot <- function(segments, mxa.b, id = 1,
 #' levels using the legacy ggplot2 system. For modern stair plots, use
 #' \code{\link{plot_stair_ggraph}}.
 #' 
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
 #' @param level Integer vector specifying which levels to include in the stair plot.
 #' @param layout Layout matrix for consistent node positioning across plots.
 #' @param edges Edge matrix or specification for network edges.
@@ -705,13 +707,14 @@ ego.plot <- function(segments, mxa.b, id = 1,
 #' 
 #' @examples
 #' \dontrun{
-#' # Requires legacy data and eliter package
-#' data(occupations)
-#' plots <- stair.plot(mob.seg)
+#' # Using synthetic data
+#' mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+#' seg <- moneca(mobility_data, segment.levels = 3)
+#' plots <- stair.plot(seg)
 #' plots[[2]]  # Display second level
 #' 
 #' # Customized stair plot
-#' custom_stairs <- stair.plot(mob.seg,
+#' custom_stairs <- stair.plot(seg,
 #'                            level = c(2, 3, 4),
 #'                            vertex.size = "total",
 #'                            show.borders = TRUE,
@@ -779,10 +782,10 @@ stair.plot              <- function(segments,
     stop("segments must be a moneca object created by the moneca() function")
   }
   if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
-    stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+    stop("segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function.")
   }
   if (is.null(segments$mat.list[[1]])) {
-    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+    stop("segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function.")
   }
   
   # Set default values after validation

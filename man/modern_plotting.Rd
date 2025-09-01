@@ -4,7 +4,7 @@
 \alias{modern_plotting}
 \title{Modern MONECA Plotting with ggraph}
 \description{
-Enhanced plotting functions using ggplot2 and ggraph for MONECA objects.
+Enhanced plotting functions using ggplot2 and ggraph for moneca objects.
 These functions replace the old plotting system with modern, customizable
 network visualizations.
 }

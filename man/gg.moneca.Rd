@@ -2,7 +2,7 @@
 % Please edit documentation in R/ggplotting.R
 \name{gg.moneca}
 \alias{gg.moneca}
-\title{Legacy ggplot2 Visualization for MONECA Objects}
+\title{Legacy ggplot2 Visualization for moneca Objects}
 \usage{
 gg.moneca(
   segments,
@@ -47,7 +47,7 @@ gg.moneca(
 )
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
 \item{level}{Integer vector specifying which hierarchical levels to display.}
 
@@ -127,13 +127,13 @@ gg.moneca(
 A ggplot2 object.
 }
 \description{
-Creates network visualizations of MONECA clustering results using ggplot2.
+Creates network visualizations of moneca clustering results using ggplot2.
 This function provides extensive customization options but has been superseded
 by \code{\link{plot_moneca_ggraph}} for most use cases.
 }
 \details{
 This function provides a highly customizable but complex interface for creating
-MONECA visualizations. It requires the eliter package for some functionality.
+moneca visualizations. It requires the eliter package for some functionality.
 For most users, \code{\link{plot_moneca_ggraph}} offers a more modern and
 user-friendly interface with better defaults.
 
@@ -143,12 +143,13 @@ plotting functions instead.
 }
 \examples{
 \dontrun{
-# Requires eliter package
-data(occupations)
-gg.moneca(mob.seg)
+# Using synthetic data
+mobility_data <- generate_mobility_data(n_classes = 5, seed = 123)
+seg <- moneca(mobility_data, segment.levels = 2)
+gg.moneca(seg)
 
 # Custom styling
-gg.moneca(mob.seg, 
+gg.moneca(seg, 
          vertex.fill = "red",
          edge.color = "blue",
          show.borders = FALSE)

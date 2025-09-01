@@ -20,9 +20,9 @@ ego.plot(
 )
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
-\item{mxa.b}{The original mobility matrix used in the MONECA analysis.}
+\item{mxa.b}{The original mobility matrix used in the moneca analysis.}
 
 \item{id}{Integer or character specifying the focal node (ego) for the analysis.}
 
@@ -73,12 +73,13 @@ better performance and more modern styling options.
 }
 \examples{
 \dontrun{
-# Requires legacy data and eliter package
-data(occupations)
-ego.plot(mob.seg, mob.mat, id = 2)
+# Using synthetic data
+mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+seg <- moneca(mobility_data, segment.levels = 2)
+ego.plot(seg, mobility_data, id = 2)
 
 # Customized ego plot
-ego.plot(mob.seg, mob.mat, 
+ego.plot(seg, mobility_data, 
          id = 3,
          edge.size = 1.2,
          color.scheme = "Blues",

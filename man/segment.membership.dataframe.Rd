@@ -7,7 +7,7 @@
 segment.membership.dataframe(moneca_results)
 }
 \arguments{
-\item{moneca_results}{A MONECA object returned by \code{\link{moneca}} or \code{moneca_fast}.}
+\item{moneca_results}{A moneca object returned by \code{\link{moneca}} or \code{moneca_fast}.}
 }
 \value{
 A dataframe with:
@@ -27,7 +27,7 @@ across all segmentation levels.
 # Generate example data
 mx <- generate_mobility_data(n_classes = 5, immobility_strength = 1.5)
 
-# Run MONECA analysis
+# Run moneca analysis
 seg <- moneca_fast(mx, segment.levels = 3)
 
 # Generate membership dataframe

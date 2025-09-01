@@ -7,7 +7,7 @@
 segment.colors(segments)
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 }
 \value{
 A list of color vectors, one for each hierarchical level.

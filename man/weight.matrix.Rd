@@ -40,7 +40,7 @@ A matrix of relative risks where:
 \description{
 Converts a mobility table into a relative risk matrix by comparing observed
 mobility flows to expected flows under independence. This matrix forms the
-basis for network construction in MONECA analysis.
+basis for network construction in moneca analysis.
 }
 \details{
 The relative risk for cell (i,j) is calculated as:

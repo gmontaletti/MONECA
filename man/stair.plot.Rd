@@ -47,7 +47,7 @@ stair.plot(
 )
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
 \item{level}{Integer vector specifying which levels to include in the stair plot.}
 
@@ -142,13 +142,14 @@ which offers better performance and modern styling.
 }
 \examples{
 \dontrun{
-# Requires legacy data and eliter package
-data(occupations)
-plots <- stair.plot(mob.seg)
+# Using synthetic data
+mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+seg <- moneca(mobility_data, segment.levels = 3)
+plots <- stair.plot(seg)
 plots[[2]]  # Display second level
 
 # Customized stair plot
-custom_stairs <- stair.plot(mob.seg,
+custom_stairs <- stair.plot(seg,
                            level = c(2, 3, 4),
                            vertex.size = "total",
                            show.borders = TRUE,

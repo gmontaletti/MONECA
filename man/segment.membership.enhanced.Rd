@@ -15,7 +15,7 @@ segment.membership.enhanced(
 )
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
 \item{level}{Integer vector specifying which hierarchical levels to include.
 Default includes all available levels.}

@@ -40,7 +40,7 @@ classes are named "Class 1", "Class 2", etc. Length must equal n_classes.}
 (no seed set).}
 }
 \value{
-A square matrix in MONECA format with:
+A square matrix in moneca format with:
   \describe{
     \item{Core matrix}{Upper-left (n_classes x n_classes) contains mobility flows}
     \item{Row margins}{Last column contains origin class totals}
@@ -51,7 +51,7 @@ A square matrix in MONECA format with:
 }
 \description{
 Creates synthetic social mobility tables with configurable patterns that mimic
-real-world mobility structures. This function is essential for testing MONECA
+real-world mobility structures. This function is essential for testing moneca
 algorithms, creating examples, and understanding how different mobility patterns
 affect segmentation results.
 }
@@ -67,7 +67,7 @@ common patterns in social mobility research:
 }
 
 The generated data can be used to test how different mobility regimes affect
-MONECA segmentation and to create realistic examples for demonstrations.
+moneca segmentation and to create realistic examples for demonstrations.
 
 Parameter combinations:
 \itemize{
@@ -110,7 +110,7 @@ fluid_data <- generate_mobility_data(
   noise_level = 0.3
 )
 
-# Use in MONECA analysis
+# Use in moneca analysis
 seg <- moneca(test_data, segment.levels = 3)
 plot_moneca_ggraph(seg, title = "Synthetic Mobility Analysis")
 

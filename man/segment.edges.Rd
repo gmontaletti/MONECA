@@ -17,7 +17,7 @@ segment.edges(
 )
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
 \item{cut.off}{Numeric threshold for minimum relative risk to include an edge.
 Default is 1.}

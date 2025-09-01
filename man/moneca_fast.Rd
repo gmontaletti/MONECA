@@ -2,7 +2,7 @@
 % Please edit documentation in R/moneca_fast.R
 \name{moneca_fast}
 \alias{moneca_fast}
-\title{Fast MONECA - Optimized Mobility Network Clustering Analysis}
+\title{Fast moneca - Optimized Mobility Network Clustering Analysis}
 \usage{
 moneca_fast(
   mx = mx,
@@ -45,6 +45,6 @@ a significant tie. Default is 1.}
 An object of class "moneca" with the same structure as the original moneca() function.
 }
 \description{
-An optimized version of the MONECA algorithm with improved performance for large datasets.
+An optimized version of the moneca algorithm with improved performance for large datasets.
 Uses maximal cliques instead of all cliques and implements various performance optimizations.
 }

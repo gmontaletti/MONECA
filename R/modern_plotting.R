@@ -1,6 +1,6 @@
 #' Modern MONECA Plotting with ggraph
 #'
-#' Enhanced plotting functions using ggplot2 and ggraph for MONECA objects.
+#' Enhanced plotting functions using ggplot2 and ggraph for moneca objects.
 #' These functions replace the old plotting system with modern, customizable
 #' network visualizations.
 #'
@@ -29,7 +29,7 @@ if(getRversion() >= "2.15.1") {
 #' ggraph and ggplot2. This function provides modern, highly customizable plots
 #' with support for multiple layout algorithms, node aesthetics, and segment highlighting.
 #'
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
 #' @param level Integer vector specifying which hierarchical levels to visualize.
 #'   Default displays all levels except the first (which represents individual categories).
 #' @param layout Character string or matrix specifying the layout algorithm:
@@ -174,10 +174,10 @@ plot_moneca_ggraph <- function(segments,
     stop("segments must be a moneca object created by the moneca() function")
   }
   if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
-    stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+    stop("segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function.")
   }
   if (is.null(segments$mat.list[[1]])) {
-    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+    stop("segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function.")
   }
   
   # Set default level after validation
@@ -513,8 +513,8 @@ plot_moneca_ggraph <- function(segments,
 #' (ego). This function shows all incoming and outgoing mobility flows for a
 #' specific category, making it ideal for understanding individual position dynamics.
 #'
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
-#' @param mobility_matrix The original mobility matrix used in the MONECA analysis.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
+#' @param mobility_matrix The original mobility matrix used in the moneca analysis.
 #'   Should include row and column totals.
 #' @param ego_id Integer or character specifying the focal node. Can be:
 #'   \itemize{
@@ -751,10 +751,10 @@ plot_ego_ggraph <- function(segments,
 #' Multi-Level Segmentation Visualization (Stair Plot)
 #'
 #' Creates a series of network plots showing how segmentation evolves across
-#' hierarchical levels in a MONECA analysis. This "stair plot" provides insight
+#' hierarchical levels in a moneca analysis. This "stair plot" provides insight
 #' into the progressive clustering of social positions.
 #'
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
 #' @param levels Integer vector specifying which hierarchical levels to visualize.
 #'   Default includes all levels.
 #' @param layout Layout specification for consistency across plots. Can be:
@@ -842,10 +842,10 @@ plot_stair_ggraph <- function(segments,
     stop("segments must be a moneca object created by the moneca() function")
   }
   if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
-    stop("segments$mat.list is empty - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+    stop("segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function.")
   }
   if (is.null(segments$mat.list[[1]])) {
-    stop("segments$mat.list[[1]] is NULL - the MONECA object appears to be incomplete. Please re-run the moneca() function.")
+    stop("segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function.")
   }
   
   # Create consistent layout if not provided
@@ -912,10 +912,10 @@ plot_stair_ggraph <- function(segments,
 #' Plot MONECA Results as Dendrogram
 #'
 #' Creates a dendrogram-like visualization of the hierarchical clustering results
-#' from MONECA analysis. This function shows how categories are progressively
+#' from moneca analysis. This function shows how categories are progressively
 #' aggregated across segmentation levels, making the hierarchical structure clear.
 #'
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
 #' @param height_method Character string specifying how to calculate dendrogram heights:
 #'   \itemize{
 #'     \item "uniform" (default): Equal spacing between levels
@@ -1318,7 +1318,7 @@ plot_moneca_dendrogram <- function(segments,
 #' analysis. This function provides multiple plot types to help assess the 
 #' quality and characteristics of the segmentation.
 #'
-#' @param segments A MONECA object returned by \code{\link{moneca}}.
+#' @param segments A moneca object returned by \code{\link{moneca}}.
 #' @param plot_type Character string specifying the type of visualization:
 #'   \itemize{
 #'     \item "overview" (default): Multi-panel overview of key metrics

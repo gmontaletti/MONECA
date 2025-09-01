@@ -73,8 +73,8 @@ MONECA identifies these clusters by:
 ## Installation and Setup
 
 ```{r installation, eval=FALSE}
-# Install from GitHub (when available)
-# devtools::install_github("antongrau/MONECA")
+# Install from GitHub
+devtools::install_github("gmontaletti/moneca")
 
 # Load the package
 library(moneca)

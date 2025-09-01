@@ -17,7 +17,7 @@ plot_segment_quality(
 )
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
 \item{plot_type}{Character string specifying the type of visualization:
 \itemize{

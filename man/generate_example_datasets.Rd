@@ -16,19 +16,19 @@ A named list containing mobility matrices with different characteristics:
     \item{polarized}{Example with strong upper/lower class divide}
     \item{gradual}{Example with smooth class transitions}
   }
-  Each matrix is in standard MONECA format with row/column totals.
+  Each matrix is in standard moneca format with row/column totals.
 }
 \description{
 Creates a collection of predefined mobility datasets with different structural
 characteristics. These examples are useful for tutorials, testing different
-MONECA parameters, and demonstrating various mobility regime types.
+moneca parameters, and demonstrating various mobility regime types.
 }
 \details{
 This function provides ready-to-use examples that demonstrate different types
 of social mobility structures:
 
 \itemize{
-  \item \strong{Simple}: Good for learning MONECA basics
+  \item \strong{Simple}: Good for learning moneca basics
   \item \strong{Complex}: Tests algorithm performance on larger structures
   \item \strong{Rigid}: Shows segmentation in low-mobility societies
   \item \strong{Fluid}: Tests segmentation in high-mobility contexts
@@ -39,7 +39,7 @@ of social mobility structures:
 These examples are particularly useful for:
 \itemize{
   \item Tutorial and teaching materials
-  \item Comparing MONECA parameters across mobility types
+  \item Comparing moneca parameters across mobility types
   \item Testing visualization functions
   \item Benchmarking algorithm performance
 }

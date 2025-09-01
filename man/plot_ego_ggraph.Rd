@@ -20,9 +20,9 @@ plot_ego_ggraph(
 )
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
-\item{mobility_matrix}{The original mobility matrix used in the MONECA analysis.
+\item{mobility_matrix}{The original mobility matrix used in the moneca analysis.
 Should include row and column totals.}
 
 \item{ego_id}{Integer or character specifying the focal node. Can be:

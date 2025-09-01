@@ -81,7 +81,7 @@
 #' # Generate synthetic mobility data
 #' mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
 #' 
-#' # Run MONECA analysis
+#' # Run moneca analysis
 #' seg <- moneca(mobility_data, segment.levels = 3)
 #' print(seg)
 #' 

@@ -19,7 +19,7 @@ plot_moneca_dendrogram(
 )
 }
 \arguments{
-\item{segments}{A MONECA object returned by \code{\link{moneca}}.}
+\item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
 \item{height_method}{Character string specifying how to calculate dendrogram heights:
 \itemize{
@@ -56,7 +56,7 @@ A ggplot2 object representing the dendrogram.
 }
 \description{
 Creates a dendrogram-like visualization of the hierarchical clustering results
-from MONECA analysis. This function shows how categories are progressively
+from moneca analysis. This function shows how categories are progressively
 aggregated across segmentation levels, making the hierarchical structure clear.
 }
 \details{
