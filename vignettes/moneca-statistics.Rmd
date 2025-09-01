@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
   fig.width = 7,
   fig.height = 5
 )
-library(MONECA)
+library(moneca)
 ```
 
 ## Introduction
@@ -366,7 +366,7 @@ str(seg, max.level = 2)
 
 # Access specific components
 cat("Number of levels:", length(seg$segment.list), "\n")
-cat("Segments at level 2:", unique(seg$segment.list[[2]]), "\n")
+cat("Segments at level 2:", paste(unique(seg$segment.list[[2]]), collapse = ", "), "\n")
 ```
 
 ## Common Patterns and Their Meanings

@@ -1,8 +1,26 @@
-# MONECA: MObility NEtwork Clustering Analysis
+# moneca: Mobility Network Clustering Analysis
 
-MONECA (Mobility Network Clustering Analysis) is an R package for analyzing social mobility patterns through graph-theoretic approaches. The package creates weighted networks from mobility tables and uses cliques to identify discrete and nested clusters of positions with high internal mobility.
+moneca (Mobility Network Clustering Analysis) is an R package for analyzing social mobility patterns through graph-theoretic approaches. The package creates weighted networks from mobility tables and uses cliques to identify discrete and nested clusters of positions with high internal mobility.
 
-This is a new version of the original MONECA [![R-CMD-check](https://github.com/antongrau/MONECA/workflows/R-CMD-check/badge.svg)](https://github.com/antongrau/MONECA/actions) 
+## About this Fork
+
+This is a maintained fork of the original [MONECA package](https://github.com/antongrau/MONECA) [![R-CMD-check](https://github.com/antongrau/MONECA/workflows/R-CMD-check/badge.svg)](https://github.com/antongrau/MONECA/actions) with comprehensive modernization and active maintenance.
+
+**Original Authors & Credits:**
+- **Jonas Touboel** - Original algorithm design and methodology
+- **Anton Grau Larsen** - Original package development and implementation
+
+**Current Maintainer:**
+- **Giampaolo Montaletti** - Package modernization, maintenance, and new features
+
+**Key Improvements in this Fork:**
+- Modern ggraph-based visualizations with enhanced aesthetics
+- Comprehensive synthetic data generation for reproducible examples
+- Complete testing suite with testthat (30+ tests)
+- Enhanced documentation and vignettes
+- igraph compatibility layer supporting versions 1.3.0+
+- Improved error handling and input validation
+- Performance optimizations and code modernization 
 
 ## Features
 
@@ -19,7 +37,7 @@ This is a new version of the original MONECA [![R-CMD-check](https://github.com/
 # Install development version from GitHub
 install.packages("devtools")
 library(devtools)
-install_github("gmontaletti/MONECA")
+install_github("gmontaletti/moneca")
 
 # Install dependencies
 install.packages(c("ggplot2", "ggraph", "igraph", "dplyr", "tidygraph", 
@@ -29,7 +47,7 @@ install.packages(c("ggplot2", "ggraph", "igraph", "dplyr", "tidygraph",
 ## Quick Start
 
 ```r
-library(MONECA)
+library(moneca)
 
 # Generate synthetic mobility data
 mobility_data <- generate_mobility_data(
@@ -49,39 +67,32 @@ plot_moneca_ggraph(seg,
                   node_color = "segment", 
                   title = "Social Mobility Network")
 
-# Comprehensive analysis
-analysis <- moneca_comprehensive_analysis(seg)
-print(analysis$summary_report)
-print(analysis$level_plot)
-
 # Ego network analysis
 plot_ego_ggraph(seg, mobility_data, ego_id = 3)
+
+# Analyze segment membership
+membership <- segment.membership(seg)
+print(membership)
 ```
 
-## Comprehensive Analysis
+## Analysis and Visualization
 
-The `moneca_comprehensive_analysis()` function provides a complete analytical workflow that:
-- Extracts and compares matrices at different hierarchical levels
-- Computes graph metrics across all levels (density, reciprocity, centrality, etc.)
-- Generates publication-quality network visualizations
-- Creates detailed centrality and mobility reports
-- Produces structured data frame summaries for further analysis
+MONECA provides several tools for analyzing and visualizing mobility patterns:
 
 ```r
-# Run comprehensive analysis
-analysis <- moneca_comprehensive_analysis(seg, plot_level = 3)
+# Enhanced segment membership analysis
+enhanced_membership <- segment.membership.enhanced(seg, node_naming = "semantic")
+print(enhanced_membership)
 
-# Access different components
-print(analysis$matrices)           # Original and max-level matrices with names
-print(analysis$metrics_comparison) # Graph metrics across all levels
-print(analysis$centrality_report)  # Centrality measures for each segment
-print(analysis$mobility_report)    # Mobility patterns and flow analysis
-print(analysis$summary_report)     # Structured summary as data frame
-print(analysis$level_plot)         # Network visualization
+# Quality assessment of segments
+quality <- segment.quality(seg)
+print(quality)
 
-# Save outputs to directory
-analysis_with_files <- moneca_comprehensive_analysis(seg, 
-                                                     output_dir = "results/")
+# Visualize segment quality
+plot_segment_quality(seg, title = "Segment Quality Assessment")
+
+# Multi-level stair plot
+plot_stair_ggraph(seg, title = "Hierarchical Segmentation")
 ```
 
 ## Key Functions
@@ -101,8 +112,10 @@ analysis_with_files <- moneca_comprehensive_analysis(seg,
 - `plot_ego_ggraph()` - Ego network visualization  
 - `plot_stair_ggraph()` - Multi-level segmentation plots
 
-### Comprehensive Analysis
-- `moneca_comprehensive_analysis()` - Complete analysis workflow with reports
+### Analysis Tools
+- `segment.membership.enhanced()` - Enhanced segment membership with naming
+- `segment.quality()` - Assess segmentation quality across levels
+- `plot_segment_quality()` - Visualize quality metrics
 
 ### Legacy Functions
 - `moneca.plot()` - Base R plotting (still supported)
@@ -112,7 +125,7 @@ analysis_with_files <- moneca_comprehensive_analysis(seg,
 
 - **Vignette**: See `vignette("moneca-introduction")` for comprehensive examples
 - **Function help**: Use `?function_name` for detailed documentation
-- **Package overview**: `?MONECA` for general information
+- **Package overview**: `?moneca` for general information
 
 ## Development and Testing
 
@@ -144,8 +157,13 @@ MONECA implements a sophisticated algorithm for detecting mobility patterns:
 If you use MONECA in your research, please cite:
 
 ```
-Touboel, J. & Larsen, A.G. (2024). MONECA: Mobility Network Clustering Analysis. 
-R package version 0.1. https://github.com/antongrau/MONECA
+Touboel, J. & Larsen, A.G. (2024). moneca: Mobility Network Clustering Analysis. 
+R package version 0.4.0. https://github.com/gmontaletti/moneca
+
+# Original methodology:
+Touboel, J., & Larsen, A. G. (2017). Mapping the Social Class Structure: 
+From Occupational Mobility to Social Class Categories Using Network Analysis.
+Sociology, 51(6), 1257-1276.
 ```
 
 ## License
@@ -169,4 +187,4 @@ We welcome contributions! Please see our contributing guidelines and:
 
 ## Issues
 
-Report bugs and feature requests at: https://github.com/gmontaletti/MONECA/issues
+Report bugs and feature requests at: https://github.com/gmontaletti/moneca/issues

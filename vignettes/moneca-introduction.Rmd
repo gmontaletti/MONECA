@@ -36,7 +36,7 @@ if (length(missing_packages) > 0) {
 
 ## Introduction
 
-MONECA (Mobility Network Clustering Analysis) is an R package that analyzes social mobility patterns through graph-theoretic approaches. The package creates weighted networks from mobility tables and uses cliques to identify discrete and nested clusters of positions with high internal mobility.
+moneca (Mobility Network Clustering Analysis) is an R package that analyzes social mobility patterns through graph-theoretic approaches. The package creates weighted networks from mobility tables and uses cliques to identify discrete and nested clusters of positions with high internal mobility.
 
 ### Key Features
 
@@ -69,7 +69,7 @@ MONECA identifies these clusters by:
 # devtools::install_github("antongrau/MONECA")
 
 # Load the package
-library(MONECA)
+library(moneca)
 
 # Load additional packages for visualization
 library(ggplot2)
@@ -78,7 +78,7 @@ library(ggraph)
 
 ```{r load_package, echo=FALSE}
 # For vignette building
-library(MONECA)
+library(moneca)
 ```
 
 ## Working with Synthetic Data

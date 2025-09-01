@@ -1,4 +1,42 @@
-# MONECA 0.3.3
+# moneca 0.4.0
+
+## Major Changes
+
+* **Package renamed to moneca** (lowercase):
+  - All references updated throughout codebase
+  - Installation command now: `install_github("gmontaletti/moneca")`
+  - Load with: `library(moneca)`
+
+* **New maintainer**: Giampaolo Montaletti <giampaolo.montaletti@gmail.com>
+  - This is now a maintained fork of the original MONECA package
+  - Full attribution to original authors preserved
+  - Active maintenance and development continues
+
+* **Enhanced authorship attribution**:
+  - **Jonas Touboel**: Original algorithm design and methodology
+  - **Anton Grau Larsen**: Original package development and implementation  
+  - **Giampaolo Montaletti**: Current maintainer, modernization, and new features
+
+## Documentation Updates
+
+* **README.md**: Added comprehensive "About this Fork" section with:
+  - Clear explanation of fork relationship to original MONECA
+  - Full credits to original authors
+  - Summary of key improvements and modernizations
+  - Updated installation instructions
+
+* **DESCRIPTION**: Updated with proper Authors@R field and ORCID information
+
+* **Package documentation**: Updated throughout to reflect new package name
+
+## Technical Notes
+
+* All existing functionality remains unchanged
+* Backward compatibility maintained for all functions
+* No breaking changes to user-facing APIs
+* Package namespace updated to moneca throughout
+
+# moneca 0.3.3 (former MONECA)
 
 ## Improvements
 
@@ -18,7 +56,7 @@
   - "Inward Mobility Strength (Weighted In-Degree)"
 * Enhanced technical documentation with strength vs degree definitions
 
-# MONECA 0.3.2
+# moneca 0.3.2
 
 ## Breaking Changes
 
@@ -40,32 +78,32 @@
 
 ## Documentation
 
-* Comprehensive guide to interpreting MONECA statistics
+* Comprehensive guide to interpreting moneca statistics
 * Clear explanations of each metric with examples
 * Practical interpretation guidelines
 
-# MONECA 0.3.1
+# moneca 0.3.1
 
 ## New Features
 
 * **Segment-level mobility analysis**: New `segment_mobility_analysis()` function
 * **Enhanced dendrogram visualization**: Improved `plot_moneca_dendrogram()` with better styling
 
-# MONECA 0.3.0
+# moneca 0.3.0
 
 ## New Features
 
 * **Perfect dendrogram visualization**: Zero crossing lines in hierarchical plots
 * **Comprehensive analysis function**: New `moneca_comprehensive_analysis()`
 
-# MONECA 0.2.9
+# moneca 0.2.9
 
 ## Improvements
 
 * Enhanced documentation and visualizations
 * Better error handling in analysis functions
 
-# MONECA 0.2.8
+# moneca 0.2.8
 
 ## New Features
 
@@ -95,7 +133,7 @@
 * More robust coordinate handling for custom layouts
 * Enhanced documentation with detailed algorithm internals
 
-# MONECA 0.2.7
+# moneca 0.2.7
 
 ## Bug Fixes
 
@@ -109,7 +147,7 @@
 * Cleaner console output with suppressed igraph warnings
 * Better handling of directed vs undirected graphs in clique operations
 
-# MONECA 0.2.6
+# moneca 0.2.6
 
 ## Code Modernization
 
@@ -132,7 +170,7 @@
 * More intuitive variable naming throughout the package
 * Enhanced maintainability for future development
 
-# MONECA 0.2.5
+# moneca 0.2.5
 
 ## Major Fixes
 
@@ -156,7 +194,7 @@
 * Consistent visualization approach across all modern plotting functions
 * Better documentation for stair plot parameters
 
-# MONECA 0.2.4
+# moneca 0.2.4
 
 ## Bug Fixes
 
@@ -171,7 +209,7 @@
 * Enhanced layout coordinate handling for better hull-vertex alignment
 * More robust segment boundary rendering across different layout types
 
-# MONECA 0.2.3
+# moneca 0.2.3
 
 ## Bug Fixes
 
@@ -189,7 +227,7 @@
 * Cleaned up redundant hull rendering code in `plot_stair_ggraph()`
 * More consistent behavior across all modern plotting functions
 
-# MONECA 0.2.2
+# moneca 0.2.2
 
 ## Improvements
 
@@ -209,7 +247,7 @@
 * Edge transparency now reflects connection strength
 * Cleaner, more professional network visualizations
 
-# MONECA 0.2.1
+# moneca 0.2.1
 
 ## New Features
 
@@ -235,7 +273,7 @@
 * Added comprehensive tests for `moneca_fast()`
 * Added example demonstrating performance improvements in `inst/examples/moneca_fast_example.R`
 
-# MONECA 0.2.0
+# moneca 0.2.0
 
 ## Major Update - Comprehensive Modernization
 

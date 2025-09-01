@@ -1,4 +1,4 @@
 library(testthat)
-library(MONECA)
+library(moneca)
 
-test_check("MONECA")
+test_check("moneca")

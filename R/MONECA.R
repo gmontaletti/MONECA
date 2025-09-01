@@ -1,12 +1,12 @@
-#' MONECA: Mobility Network Clustering Analysis
+#' moneca: Mobility Network Clustering Analysis
 #'
-#' MONECA creates weighted networks from mobility tables and uses cliques to identify
+#' moneca creates weighted networks from mobility tables and uses cliques to identify
 #' discrete and nested clusters of social positions with high internal mobility.
 #' The package provides comprehensive tools for analyzing social mobility patterns
 #' through graph-theoretic approaches with modern visualization capabilities.
 #' 
 #' @details
-#' The MONECA package implements a sophisticated hierarchical clustering algorithm
+#' The moneca package implements a sophisticated hierarchical clustering algorithm
 #' that detects mobility patterns in social networks. It identifies segments with
 #' high internal mobility by finding cliques in weighted network representations
 #' of mobility data, creating nested hierarchical structures that reveal the
@@ -118,8 +118,9 @@
 #' plot_moneca_ggraph(simple_seg, title = "Simple Mobility Structure")
 #' }
 #' 
-#' @author Jonas Touboel \email{jonas.touboel@@ku.dk}
-#' @author Anton Grau Larsen \email{agl.ioa@@cbs.dk} (maintainer)
+#' @author Jonas Touboel \email{jt@@soc.ku.dk} (original algorithm and methodology)
+#' @author Anton Grau Larsen \email{agl.ioa@@cbs.dk} (original package development)
+#' @author Giampaolo Montaletti \email{giampaolo.montaletti@@gmail.com} (maintainer)
 #' 
 #' @references
 #' Touboel, J., & Larsen, A. G. (2017). Mapping the Social Class Structure: 
@@ -138,7 +139,7 @@
 #' @import toOrdinal
 #' @importFrom stats cor dist hclust cutree na.omit aggregate
 #' @name _PACKAGE
-#' @aliases MONECA-package
+#' @aliases moneca-package
 #' @importFrom grDevices rgb col2rgb
 #' @importFrom utils tail setTxtProgressBar txtProgressBar packageVersion
 NULL

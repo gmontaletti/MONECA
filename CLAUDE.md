@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## About MONECA
+## About moneca
 
-MONECA (Mobility Network Clustering Analysis) is an R package that creates weighted networks from mobility tables and uses cliques to create discrete and nested clusters. The package analyzes social mobility patterns through graph-theoretic approaches. The package has been comprehensively modernized with ggraph visualizations, synthetic data generation, complete testing suite, and detailed documentation.
+moneca (Mobility Network Clustering Analysis) is an R package that creates weighted networks from mobility tables and uses cliques to create discrete and nested clusters. The package analyzes social mobility patterns through graph-theoretic approaches. The package has been comprehensively modernized with ggraph visualizations, synthetic data generation, complete testing suite, and detailed documentation.
 
 ## Package Development Commands
 
@@ -14,7 +14,7 @@ MONECA (Mobility Network Clustering Analysis) is an R package that creates weigh
 R CMD build .
 
 # Check package (comprehensive validation)
-R CMD check MONECA_0.1.tar.gz
+R CMD check moneca_0.4.0.tar.gz
 
 # Install from source
 R CMD INSTALL .
@@ -185,7 +185,7 @@ devtools::build_vignettes()
 ```
 
 ### File Organization
-- **R/MONECA.R**: Package-level documentation
+- **R/moneca.R**: Package-level documentation
 - **R/analytical_functions.R**: Core algorithm (`moneca()`, `find.segments()`, etc.)
 - **R/modern_plotting.R**: New ggraph visualization functions
 - **R/synthetic_data.R**: Data generation functions
@@ -196,6 +196,9 @@ devtools::build_vignettes()
 - **man/**: Auto-generated function documentation
 
 ### Migration Notes for Existing Users
+- **Package name**: Changed from MONECA to moneca (lowercase)
+- **Installation**: Use `install_github("gmontaletti/moneca")` instead of the original repository
+- **Loading**: Use `library(moneca)` instead of `library(MONECA)`
 - **Plotting**: Recommend migrating from `gg.moneca()` to `plot_moneca_ggraph()`
 - **Data**: Use `generate_mobility_data()` instead of external datasets for examples
 - **Testing**: All existing functions continue to work unchanged

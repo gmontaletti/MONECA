@@ -1,6 +1,6 @@
 # Data generation
 
-# library(MONECA)
+# library(moneca)
 # mob.mat      <- read.csv("~/Dropbox/DINECA/Data/Moneca.csv", row.names = 1, header = TRUE, sep = ';', fileEncoding  ="UTF-8", check.names = FALSE)
 # mob.mat      <- as.matrix(mob.mat)
 # l            <- ncol(mob.mat)

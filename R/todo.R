@@ -2,7 +2,7 @@
 # 
 # # Få den fucking plot funktion til at virke igen - vi skal til sna pakken
 # library(igraph)
-# library(MONECA)
+# library(moneca)
 # library(soc.elite)
 # 
 # # devtools::install_github("gaborcsardi/pkgconfig")
@@ -94,7 +94,7 @@
 # # # Ego kort
 # # # Vi har ikke styr på rækker og kolonner her, så vi ved ikke hvad der sender og modtager
 # #
-# # library(MONECA)
+# # library(moneca)
 # # data(occupations)
 # # mxa.b <- mob.mat
 # # segmenter <- anton(mxa.b, segment.levels = 3)

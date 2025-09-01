@@ -1,6 +1,6 @@
 # Example demonstrating moneca_fast() performance improvements
 
-library(MONECA)
+library(moneca)
 
 # Generate test data of different sizes
 sizes <- c(5, 10, 15, 20)

@@ -36,7 +36,7 @@ if (length(missing_packages) > 0) {
 
 ## Introduction
 
-The MONECA package provides two main algorithms for mobility network clustering analysis: the original `moneca()` function and the optimized `moneca_fast()` function. This vignette provides a detailed comparison of both algorithms, explaining their internal workflows, differences, and trade-offs to help users choose the most appropriate method for their analysis.
+The moneca package provides two main algorithms for mobility network clustering analysis: the original `moneca()` function and the optimized `moneca_fast()` function. This vignette provides a detailed comparison of both algorithms, explaining their internal workflows, differences, and trade-offs to help users choose the most appropriate method for their analysis.
 
 Both algorithms implement the same core MONECA methodology but with different optimization strategies and computational approaches. Understanding these differences is crucial for selecting the right tool based on your data size, computational resources, and accuracy requirements.
 
@@ -61,7 +61,7 @@ The original `moneca()` function implements a conservative, thorough approach th
 
 ```{r eval=FALSE}
 # Load the package and create sample data
-library(MONECA)
+library(moneca)
 mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
 
 # Run the original algorithm
@@ -424,7 +424,7 @@ Expected performance differences:
 ### Example 1: Small Dataset Comparison
 
 ```{r small-example}
-library(MONECA)
+library(moneca)
 
 # Generate a small mobility dataset
 small_data <- generate_mobility_data(n_classes = 5, immobility_strength = 0.8, seed = 42)

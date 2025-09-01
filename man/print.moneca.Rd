@@ -83,18 +83,19 @@ The output is organized into four main sections that follow the analysis workflo
     members primarily internally or have only weak external connections.
 }
 
-\strong{Section 3: DETAILED DEGREE DISTRIBUTIONS (optional)}
+\strong{Section 3: DETAILED WEIGHTED DEGREE DISTRIBUTIONS (optional)}
 
 Shows distribution statistics (Min, Q1, Median, Mean, Q3, Max) for:
 \itemize{
-  \item \strong{Total Connections}: Sum of incoming and outgoing connections
-    for each node. Indicates overall connectivity in the mobility network.
-  \item \strong{Outward Mobility Connections}: Number of significant destination
-    pathways from each origin. High out-degree indicates positions that send
-    members to many different destinations.
-  \item \strong{Inward Mobility Connections}: Number of significant origin
-    pathways to each destination. High in-degree indicates positions that
-    receive members from many different origins.
+  \item \strong{Total Weighted Connections}: Sum of weighted incoming and outgoing 
+    connections (strength) for each node. Represents the total volume of mobility
+    flows, not just the count of connections.
+  \item \strong{Outward Mobility Strength}: Sum of weights on outgoing edges from
+    each origin. High out-strength indicates positions that send large volumes
+    to other destinations, weighted by relative risk.
+  \item \strong{Inward Mobility Strength}: Sum of weights on incoming edges to
+    each destination. High in-strength indicates positions that receive large
+    volumes from other origins, weighted by relative risk.
   \item \strong{Edge Weight Distribution}: Distribution of relative risk values
     for significant edges. Values > 1 indicate mobility above expected levels.
     Higher values represent stronger mobility pathways.
@@ -115,9 +116,11 @@ Shows distribution statistics (Min, Q1, Median, Mean, Q3, Max) for:
     actually exist. In a fully connected network (density = 1), every position
     has significant mobility to every other position. Low density indicates
     mobility is channeled through specific pathways.}
-  \item{\strong{Degree}}{Number of connections a node has. In directed networks:
-    in-degree = incoming connections, out-degree = outgoing connections,
-    total degree = sum of both. High degree nodes are mobility "hubs".}
+  \item{\strong{Degree/Strength}}{In weighted networks, we use \strong{strength} 
+    instead of simple degree: the sum of edge weights connected to a node.
+    In-strength = sum of incoming edge weights, out-strength = sum of outgoing
+    edge weights, total strength = sum of both. High strength nodes handle large
+    volumes of mobility flow, not just many connections.}
   \item{\strong{Segmentation Level}}{Hierarchical aggregation level. Level 1 =
     original categories, Level 2 = first aggregation based on cliques, etc.
     Higher levels represent coarser groupings.}
