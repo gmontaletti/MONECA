@@ -100,18 +100,32 @@ MONECA includes functions to generate synthetic mobility data for demonstrations
 ### Creating Basic Synthetic Data
 
 ```{r synthetic_basic}
-# Generate a simple 5-class mobility table
+# Generate a large 30-class mobility table for better statistical analysis
 basic_data <- generate_mobility_data(
-  n_classes = 5,
-  n_total = 2000,
+  n_classes = 30,
+  n_total = 50000,  # Larger population for better statistical power
   immobility_strength = 0.7,
   class_clustering = 0.2,
-  class_names = c("Upper", "Upper-Mid", "Middle", "Lower-Mid", "Working"),
+  class_names = paste("Class", sprintf("%02d", 1:30)),
   seed = 42
 )
 
-# View the structure
-print(basic_data)
+# View a subset of the structure to show key portions
+cat("Mobility matrix dimensions:", dim(basic_data), "\n")
+cat("Total population:", basic_data[31, 31], "\n\n")
+
+# Show first 8x8 corner with totals to demonstrate structure
+cat("First 8x8 corner of mobility matrix with marginal totals:\n")
+subset_matrix <- basic_data[c(1:8, 31), c(1:8, 31)]
+print(subset_matrix)
+
+# Show diagonal (immobility) for first 10 classes
+cat("\nImmobility rates for first 10 classes:\n")
+diagonal_values <- diag(basic_data[1:30, 1:30])[1:10]
+row_totals <- basic_data[1:10, 31]
+immobility_rates <- round(diagonal_values / row_totals * 100, 1)
+names(immobility_rates) <- paste("Class", sprintf("%02d", 1:10))
+print(immobility_rates)
 ```
 
 The mobility matrix shows:
@@ -123,17 +137,70 @@ The mobility matrix shows:
 ### Creating Different Mobility Scenarios
 
 ```{r synthetic_scenarios}
-# Get multiple example datasets
+# Get multiple example datasets (note: these are pre-configured examples)
 examples <- generate_example_datasets()
+cat("Available example datasets:\\n")
 names(examples)
 
-# Examine the rigid class system
-print("Rigid class system:")
-print(examples$rigid)
+# For demonstration of larger networks, create custom 30x30 examples
+cat("\\n\\nCreating custom 30x30 examples for comparison:\\n")
+
+# Create 30x30 rigid system
+examples_30x30 <- list()
+examples_30x30$rigid <- generate_mobility_data(
+  n_classes = 30,
+  n_total = 45000,
+  immobility_strength = 0.85,  # Very rigid
+  class_clustering = 0.9,
+  class_names = paste("Class", sprintf("%02d", 1:30)),
+  seed = 100
+)
+
+# Create 30x30 fluid system
+examples_30x30$fluid <- generate_mobility_data(
+  n_classes = 30,
+  n_total = 45000,
+  immobility_strength = 0.4,  # Very fluid
+  class_clustering = 0.6,
+  class_names = paste("Class", sprintf("%02d", 1:30)),
+  seed = 200
+)
+
+# Examine the rigid class system - show key portions
+cat("Rigid class system (30x30 matrix):\n")
+cat("Matrix dimensions:", dim(examples_30x30$rigid), "\n")
+cat("Total population:", examples_30x30$rigid[31, 31], "\n\n")
+
+# Show first 6x6 corner with totals
+cat("First 6x6 corner with marginal totals:\n")
+rigid_subset <- examples_30x30$rigid[c(1:6, 31), c(1:6, 31)]
+print(rigid_subset)
+
+# Show immobility rates for first 8 classes
+cat("\nImmobility rates (%) for first 8 classes in rigid system:\n")
+rigid_diag <- diag(examples_30x30$rigid[1:30, 1:30])[1:8]
+rigid_totals <- examples_30x30$rigid[1:8, 31]
+rigid_rates <- round(rigid_diag / rigid_totals * 100, 1)
+names(rigid_rates) <- paste("Class", sprintf("%02d", 1:8))
+print(rigid_rates)
 
 # Examine the fluid (highly mobile) system
-print("Fluid mobility system:")
-print(examples$fluid)
+cat("\nFluid mobility system (30x30 matrix):\n")
+cat("Matrix dimensions:", dim(examples_30x30$fluid), "\n")
+cat("Total population:", examples_30x30$fluid[31, 31], "\n\n")
+
+# Show first 6x6 corner with totals
+cat("First 6x6 corner with marginal totals:\n")
+fluid_subset <- examples_30x30$fluid[c(1:6, 31), c(1:6, 31)]
+print(fluid_subset)
+
+# Show immobility rates for first 8 classes
+cat("\nImmobility rates (%) for first 8 classes in fluid system:\n")
+fluid_diag <- diag(examples_30x30$fluid[1:30, 1:30])[1:8]
+fluid_totals <- examples_30x30$fluid[1:8, 31]
+fluid_rates <- round(fluid_diag / fluid_totals * 100, 1)
+names(fluid_rates) <- paste("Class", sprintf("%02d", 1:8))
+print(fluid_rates)
 ```
 
 ## Running MONECA Analysis
@@ -157,9 +224,26 @@ The MONECA object contains:
 ```{r understand_results}
 # View segment membership
 membership <- segment.membership(seg)
-print(membership)
+cat("Segment membership summary:\n")
+cat("Number of levels:", length(membership), "\n")
+for(i in 1:length(membership)) {
+  cat("Level", i, "- Number of segments:", length(unique(membership[[i]])), "\n")
+}
+
+# Show first 15 class memberships at each level
+cat("\nSegment membership for first 15 classes:\n")
+membership_subset <- data.frame(
+  Class = paste("Class", sprintf("%02d", 1:15)),
+  Level_1 = membership[[1]][1:15],
+  Level_2 = membership[[2]][1:15]
+)
+if(length(membership) >= 3) {
+  membership_subset$Level_3 <- membership[[3]][1:15]
+}
+print(membership_subset)
 
 # View the aggregated matrix for level 2
+cat("\nLevel 2 aggregated matrix dimensions:", dim(seg$mat.list[[2]]), "\n")
 print("Level 2 aggregated matrix:")
 print(seg$mat.list[[2]])
 ```
@@ -225,9 +309,9 @@ print(p1)
 
 ### Advanced Network Visualization with Clear Segment Boundaries
 
-```{r plot_custom, eval=TRUE, fig.width=10, fig.height=8}
-# Create an advanced plot emphasizing segment structure and accessibility
-# Note: Segments highlighted with convex hulls, node sizes show mobility rates
+```{r plot_custom, eval=TRUE, fig.width=12, fig.height=10}
+# Create an advanced plot emphasizing segment structure for 30-node network
+# Note: For larger networks, reduce label clutter and focus on structure
 p2 <- plot_moneca_ggraph(
   seg,
   layout = "fr",  # Force-directed layout for balanced positioning
@@ -237,9 +321,8 @@ p2 <- plot_moneca_ggraph(
   color_palette = "Dark2",  # High-contrast ColorBrewer palette
   edge_color = "grey30",  # Darker edges for better visibility
   theme_style = "minimal",
-  title = "Advanced MONECA Network Analysis",
-  show_labels = TRUE,
-  label_size = 4,
+  title = "Advanced MONECA Network Analysis (30 Classes)",
+  show_labels = FALSE,  # Turn off labels for 30-node network to reduce clutter
   show_segments = TRUE,
   segment_alpha = 0.15,
   node_alpha = 0.9,
@@ -247,6 +330,13 @@ p2 <- plot_moneca_ggraph(
 )
 
 print(p2)
+
+# Also create a subset visualization focusing on the largest segments
+cat("\nLargest segments at Level 2:\n")
+level2_segments <- seg$segment.list[[2]]
+segment_sizes <- sapply(level2_segments, length)
+largest_segments <- order(segment_sizes, decreasing = TRUE)[1:3]
+cat("Segment sizes:", segment_sizes[largest_segments], "\n")
 ```
 
 ### Ego Network Analysis: Focus on Individual Position Dynamics
@@ -254,28 +344,34 @@ print(p2)
 Ego networks reveal mobility patterns from a single focal position, showing both incoming and outgoing flows:
 
 ```{r ego_plot, eval=TRUE, fig.width=9, fig.height=7}
-# Create ego network for the middle class (position 3) with enhanced accessibility
+# Create ego network for class 15 (middle of the range) with enhanced accessibility
 # Note: Red nodes show focal position and same-segment connections; Flow width indicates volume
 p3 <- plot_ego_ggraph(
   seg,
   basic_data,
-  ego_id = 3,
+  ego_id = 15,  # Class 15 out of 30 classes
   layout = "stress",  # Stress layout for cleaner ego networks
-  title = "Ego Network Analysis: Middle Class Mobility Patterns",
+  title = "Ego Network Analysis: Class 15 Mobility Patterns (30-Class System)",
   highlight_color = "#D55E00",  # Colorblind-safe orange-red
   flow_color = "plasma",  # Perceptually uniform color scale
   node_size_range = c(3, 12),
   edge_width_range = c(0.5, 4),
-  min_weight = 5  # Filter weak connections for clarity
+  min_weight = 50  # Higher threshold for 30-class system to filter weak connections
 )
 
 print(p3)
+
+# Show ego network statistics
+cat("\nEgo network statistics for Class 15:\n")
+ego_connections <- which(basic_data[15, 1:30] > 50 | basic_data[1:30, 15] > 50)
+cat("Classes connected to Class 15 (flows > 50):", length(ego_connections), "\n")
+cat("Connected classes:", paste(ego_connections, collapse = ", "), "\n")
 ```
 
 ### Multi-Level Segmentation: Hierarchical Structure Visualization
 
 ```{r stair_plot, eval=TRUE, fig.width=12, fig.height=10}
-# Create stair plots showing progressive segmentation with consistent layout
+# Create stair plots showing progressive segmentation for 30-class system
 # Using consistent positioning to track segment evolution across levels
 stair_plots <- plot_stair_ggraph(
   seg, 
@@ -287,12 +383,20 @@ stair_plots <- plot_stair_ggraph(
   edge_alpha = 0.6,
   node_alpha = 0.85,
   segment_alpha = 0.2,
-  label_size = 3.5
+  label_size = 2.5  # Smaller labels for 30-node network
 )
 
 # Display individual plots with improved spacing
 print(stair_plots$`Level 2`)
 print(stair_plots$`Level 3`)
+
+# Provide numerical summary of segmentation progression
+cat("\nSegmentation progression summary:\n")
+for(level in 2:3) {
+  n_segments <- length(seg$segment.list[[level]])
+  avg_size <- mean(sapply(seg$segment.list[[level]], length))
+  cat("Level", level, ":", n_segments, "segments, average size", round(avg_size, 1), "classes\n")
+}
 ```
 
 ## Advanced Analysis Examples
@@ -300,30 +404,61 @@ print(stair_plots$`Level 3`)
 ### Comparing Different Mobility Regimes
 
 ```{r compare_regimes}
-# Analyze the rigid class system
-rigid_seg <- moneca(examples$rigid, segment.levels = 3)
+# Analyze the rigid class system (30x30)
+rigid_seg <- moneca(examples_30x30$rigid, segment.levels = 3)
 
-# Analyze the fluid mobility system  
-fluid_seg <- moneca(examples$fluid, segment.levels = 3)
+# Analyze the fluid mobility system (30x30)
+fluid_seg <- moneca(examples_30x30$fluid, segment.levels = 3)
 
-# Compare segment memberships
-print("Rigid system segments:")
-print(segment.membership(rigid_seg))
+# Compare segment memberships - show summary statistics
+rigid_membership <- segment.membership(rigid_seg)
+fluid_membership <- segment.membership(fluid_seg)
 
-print("Fluid system segments:")
-print(segment.membership(fluid_seg))
+cat("Rigid system segmentation summary:\n")
+for(i in 1:length(rigid_membership)) {
+  n_segments <- length(unique(rigid_membership[[i]]))
+  segment_sizes <- table(rigid_membership[[i]])
+  avg_size <- mean(segment_sizes)
+  max_size <- max(segment_sizes)
+  cat("Level", i, ":", n_segments, "segments, avg size", round(avg_size, 1), 
+      ", largest segment", max_size, "classes\n")
+}
+
+cat("\nFluid system segmentation summary:\n")
+for(i in 1:length(fluid_membership)) {
+  n_segments <- length(unique(fluid_membership[[i]]))
+  segment_sizes <- table(fluid_membership[[i]])
+  avg_size <- mean(segment_sizes)
+  max_size <- max(segment_sizes)
+  cat("Level", i, ":", n_segments, "segments, avg size", round(avg_size, 1), 
+      ", largest segment", max_size, "classes\n")
+}
+
+# Show first 12 class memberships for comparison
+cat("\nSegment membership comparison for first 12 classes:\n")
+comparison_df <- data.frame(
+  Class = paste("Class", sprintf("%02d", 1:12)),
+  Rigid_L2 = rigid_membership[[2]][1:12],
+  Fluid_L2 = fluid_membership[[2]][1:12]
+)
+if(length(rigid_membership) >= 3 && length(fluid_membership) >= 3) {
+  comparison_df$Rigid_L3 <- rigid_membership[[3]][1:12]
+  comparison_df$Fluid_L3 <- fluid_membership[[3]][1:12]
+}
+print(comparison_df)
 ```
 
 ### Comparing Mobility Regimes: Accessibility-Focused Visualizations
 
-```{r compare_plots, eval=TRUE, fig.width=12, fig.height=6}
-# Compare rigid vs fluid systems using colorblind-safe palettes and clear differentiation
+```{r compare_plots, eval=TRUE, fig.width=12, fig.height=8}
+# Compare rigid vs fluid systems for 30-class networks
+# Using colorblind-safe palettes and clear differentiation
 
 # Plot rigid system - emphasis on strong boundaries
 # Note: High immobility rates create distinct, well-separated segments
 p_rigid <- plot_moneca_ggraph(
   rigid_seg,
-  title = "Rigid Class System: Strong Internal Cohesion",
+  title = "Rigid Class System: Strong Internal Cohesion (30 Classes)",
   layout = "stress",
   node_color = "segment",
   node_size = "total",
@@ -333,14 +468,14 @@ p_rigid <- plot_moneca_ggraph(
   segment_alpha = 0.25,
   node_alpha = 0.9,
   edge_alpha = 0.5,
-  label_size = 3.5
+  show_labels = FALSE  # No labels for 30-node network
 )
 
 # Plot fluid system - emphasis on connectivity
 # Note: Strong cross-segment mobility creates overlapping, less distinct boundaries
 p_fluid <- plot_moneca_ggraph(
   fluid_seg,
-  title = "Fluid Mobility System: High Inter-Segment Flow",
+  title = "Fluid Mobility System: High Inter-Segment Flow (30 Classes)",
   layout = "stress",
   node_color = "segment",
   node_size = "mobility",  # Size by mobility rate to show fluidity
@@ -350,11 +485,24 @@ p_fluid <- plot_moneca_ggraph(
   segment_alpha = 0.15,  # Lower alpha for fluid boundaries
   node_alpha = 0.85,
   edge_alpha = 0.7,  # Higher edge alpha to show connectivity
-  label_size = 3.5
+  show_labels = FALSE  # No labels for 30-node network
 )
 
 print(p_rigid)
 print(p_fluid)
+
+# Add network density comparison
+cat("\nNetwork characteristics comparison:\n")
+cat("Rigid system - segments at Level 2:", length(rigid_seg$segment.list[[2]]), "\n")
+cat("Fluid system - segments at Level 2:", length(fluid_seg$segment.list[[2]]), "\n")
+
+# Calculate edge densities
+rigid_edges <- sum(!is.na(segment.edges(rigid_seg, level = 1)) & segment.edges(rigid_seg, level = 1) > 1)
+fluid_edges <- sum(!is.na(segment.edges(fluid_seg, level = 1)) & segment.edges(fluid_seg, level = 1) > 1)
+max_edges <- 30 * 29  # Directed graph
+
+cat("Rigid system edge density:", round(rigid_edges / max_edges * 100, 1), "%\n")
+cat("Fluid system edge density:", round(fluid_edges / max_edges * 100, 1), "%\n")
 ```
 
 ### Advanced Visualization Techniques
@@ -461,40 +609,91 @@ accessible_plot <- plot_moneca_ggraph(
 ### Segment Quality Assessment
 
 ```{r quality_assessment}
-# Assess the quality of segmentation
-# (Note: this function may need to be implemented)
-# quality_metrics <- segment.quality(seg)
-# print(quality_metrics)
-
-# Alternative: examine within vs. between segment mobility
+# Assess the quality of segmentation for 30-class system
 level2_matrix <- seg$mat.list[[2]]
+cat("Level 2 aggregated matrix dimensions:", dim(level2_matrix), "\n")
 print("Level 2 mobility matrix (aggregated):")
 print(level2_matrix)
 
-# Calculate internal mobility rates
-# Exclude the totals row and column to get the core mobility matrix
+# Calculate internal mobility rates for each segment
 n_segments <- nrow(level2_matrix) - 1
 internal_mobility <- diag(level2_matrix[1:n_segments, 1:n_segments])
 total_mobility <- level2_matrix[1:n_segments, ncol(level2_matrix)]
 immobility_rates <- internal_mobility / total_mobility
 
-print("Immobility rates by segment:")
-print(immobility_rates)
+cat("\nImmobility rates by segment at Level 2:\n")
+segment_summary <- data.frame(
+  Segment = paste("Segment", 1:n_segments),
+  Size = sapply(seg$segment.list[[2]], length),
+  Total_Population = total_mobility,
+  Internal_Mobility = internal_mobility,
+  Immobility_Rate = round(immobility_rates * 100, 1)
+)
+print(segment_summary)
+
+# Calculate overall segmentation quality metrics
+overall_internal <- sum(internal_mobility)
+overall_total <- sum(level2_matrix[1:n_segments, 1:n_segments])
+overall_immobility_rate <- overall_internal / overall_total
+
+cat("\nOverall Level 2 segmentation quality:\n")
+cat("Total segments:", n_segments, "\n")
+cat("Average segment size:", round(mean(segment_summary$Size), 1), "classes\n")
+cat("Overall internal mobility rate:", round(overall_immobility_rate * 100, 1), "%\n")
+
+# Compare to Level 1 (original classes)
+level1_internal <- sum(diag(basic_data[1:30, 1:30]))
+level1_total <- sum(basic_data[1:30, 1:30])
+level1_rate <- level1_internal / level1_total
+
+cat("Level 1 internal mobility rate:", round(level1_rate * 100, 1), "%\n")
+cat("Improvement in clustering:", round((overall_immobility_rate - level1_rate) * 100, 1), "percentage points\n")
 ```
 
 ### Edge Analysis
 
 ```{r edge_analysis}
-# Examine edge weights between segments
+# Examine edge weights between classes (Level 1) for 30-class system
 edges <- segment.edges(seg, level = 1)
-print("Edge weights matrix:")
-print(edges)
+cat("Edge weights matrix dimensions:", dim(edges), "\n")
+cat("Number of significant edges (RR > 1):", sum(!is.na(edges) & edges > 1), "\n")
+
+# Show subset of edge weights matrix (first 10x10)
+cat("\nEdge weights matrix (first 10x10 subset):\n")
+edges_subset <- edges[1:10, 1:10]
+print(round(edges_subset, 2))
 
 # Focus on strongest connections
 strong_edges <- edges
 strong_edges[strong_edges < 2] <- NA
-print("Strong connections (relative risk > 2):")
-print(strong_edges)
+strong_connections <- sum(!is.na(strong_edges))
+cat("\nNumber of strong connections (relative risk > 2):", strong_connections, "\n")
+
+# Show distribution of edge weights
+all_edges <- as.vector(edges)
+valid_edges <- all_edges[!is.na(all_edges) & all_edges > 1]
+cat("\nEdge weight distribution (RR > 1):\n")
+cat("Min:", round(min(valid_edges), 2), "\n")
+cat("Median:", round(median(valid_edges), 2), "\n")
+cat("Mean:", round(mean(valid_edges), 2), "\n")
+cat("Max:", round(max(valid_edges), 2), "\n")
+cat("95th percentile:", round(quantile(valid_edges, 0.95), 2), "\n")
+
+# Show strongest connections in the network
+if(length(valid_edges) > 0) {
+  threshold_95 <- quantile(valid_edges, 0.95)
+  strongest_indices <- which(edges > threshold_95, arr.ind = TRUE)
+  if(nrow(strongest_indices) > 0) {
+    cat("\nStrongest connections (top 5% of edge weights):\n")
+    for(i in 1:min(10, nrow(strongest_indices))) {
+      row <- strongest_indices[i, 1]
+      col <- strongest_indices[i, 2]
+      weight <- edges[row, col]
+      cat("Class", sprintf("%02d", row), "-> Class", sprintf("%02d", col), 
+          ": RR =", round(weight, 2), "\n")
+    }
+  }
+}
 ```
 
 ## Working with Real Data
@@ -511,19 +710,29 @@ When working with your own mobility data, ensure it follows the MONECA format:
 # - Last column: row totals
 # - Bottom-right cell: grand total
 
-# Example of properly formatted data structure:
+# Example of properly formatted data structure (showing 5x5 for clarity):
 example_structure <- matrix(c(
-  100, 20, 10, 130,  # Origin 1: 100 stay, 20 to pos 2, 10 to pos 3, total 130
-  15, 200, 25, 240,  # Origin 2: 15 to pos 1, 200 stay, 25 to pos 3, total 240  
-  10, 30, 180, 220,  # Origin 3: 10 to pos 1, 30 to pos 2, 180 stay, total 220
-  125, 250, 215, 590 # Totals: 125 end in pos 1, 250 in pos 2, 215 in pos 3, grand total 590
-), nrow = 4, ncol = 4)
+  180, 25, 15, 8, 2, 230,    # Origin 1: mostly immobile with some movement
+  20, 190, 30, 12, 3, 255,   # Origin 2: similar pattern
+  12, 28, 175, 25, 10, 250,  # Origin 3: high diagonal mobility
+  6, 15, 20, 160, 19, 220,   # Origin 4: concentrated mobility
+  3, 8, 12, 22, 145, 190,    # Origin 5: strong immobility
+  221, 266, 252, 227, 179, 1145  # Column totals and grand total
+), nrow = 6, ncol = 6)
 
-rownames(example_structure) <- c("Class_A", "Class_B", "Class_C", "Total")
-colnames(example_structure) <- c("Class_A", "Class_B", "Class_C", "Total")
+rownames(example_structure) <- c("Class_A", "Class_B", "Class_C", "Class_D", "Class_E", "Total")
+colnames(example_structure) <- c("Class_A", "Class_B", "Class_C", "Class_D", "Class_E", "Total")
 
-print("Properly formatted mobility matrix:")
+print("Properly formatted mobility matrix (5x5 example):")
 print(example_structure)
+
+cat("\nKey features of mobility matrix format:\n")
+cat("- Matrix size: (n+1) x (n+1) where n is number of classes\n")
+cat("- Diagonal: immobility (people staying in same class)\n")
+cat("- Off-diagonal: mobility between classes\n")
+cat("- Row totals: total outflow from each origin class\n")
+cat("- Column totals: total inflow to each destination class\n")
+cat("- Grand total: total population in the mobility table\n")
 ```
 
 ### Data Validation
@@ -545,16 +754,35 @@ validate_mobility_matrix <- function(mat) {
   calculated_grand_total <- sum(mat[1:n, 1:n])
   actual_grand_total <- mat[n + 1, n + 1]
   
-  list(
+  # Additional validation checks for larger matrices
+  validation_results <- list(
+    matrix_size = paste(dim(mat), collapse = " x "),
+    n_classes = n,
     row_totals_match = all.equal(calculated_row_totals, actual_row_totals),
     col_totals_match = all.equal(calculated_col_totals, actual_col_totals),
-    grand_total_matches = all.equal(calculated_grand_total, actual_grand_total)
+    grand_total_matches = all.equal(calculated_grand_total, actual_grand_total),
+    has_negative_values = any(mat < 0),
+    total_population = actual_grand_total,
+    sparsity = round(sum(mat[1:n, 1:n] == 0) / (n^2) * 100, 1)
   )
+  
+  return(validation_results)
 }
 
-# Validate our example
-validation <- validate_mobility_matrix(example_structure)
-print(validation)
+# Validate our 5x5 example
+cat("Validation of 5x5 example matrix:\n")
+validation_small <- validate_mobility_matrix(example_structure)
+print(validation_small)
+
+# Validate our large 30x30 synthetic data
+cat("\nValidation of 30x30 synthetic mobility matrix:\n")
+validation_large <- validate_mobility_matrix(basic_data)
+print(validation_large)
+
+# Show validation function usage for user data
+cat("\nTo validate your own data:\n")
+cat("validation_results <- validate_mobility_matrix(your_matrix)\n")
+cat("print(validation_results)\n")
 ```
 
 ## Best Practices and Tips

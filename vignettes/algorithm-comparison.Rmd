@@ -60,9 +60,14 @@ The key differences between `moneca()` and `moneca_fast()` lie in how they imple
 The original `moneca()` function implements a conservative, thorough approach that prioritizes accuracy and reproducibility. Here's the detailed workflow:
 
 ```{r eval=FALSE}
-# Load the package and create sample data
+# Load the package and create sample data with larger dimensions
 library(moneca)
-mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+mobility_data <- generate_mobility_data(
+  n_classes = 30, 
+  n_total = 45000,
+  class_names = paste("Class", sprintf("%02d", 1:30)),
+  seed = 123
+)
 
 # Run the original algorithm
 result_original <- moneca(mobility_data, segment.levels = 3)
@@ -72,22 +77,29 @@ result_original <- moneca(mobility_data, segment.levels = 3)
 
 #### Step 1: Input Validation and Preprocessing
 ```{r eval=FALSE}
-# The function begins with input validation
-mx <- mobility_data  # Input mobility table
+# The function begins with input validation for 30x30 matrix
+mx <- mobility_data  # Input mobility table (30x30 + totals = 31x31)
 segment.levels <- 3  # Number of hierarchical levels
 cut.off <- 1         # Minimum relative risk threshold
+cat("Processing matrix dimensions:", dim(mx), "\n")
+cat("Total population:", mx[31, 31], "\n")
 ```
 
 The algorithm expects a square mobility table with row and column totals in the last row and column.
 
 #### Step 2: Relative Risk Matrix Calculation
 ```{r eval=FALSE}
-# Internal function: weight.matrix()
+# Internal function: weight.matrix() for 30x30 system
 # Calculates observed/expected ratios for each cell
-l <- nrow(mx)
-o.r.s <- mx[-l, l]        # Origin totals
-o.c.s <- mx[l, -l]        # Destination totals
+l <- nrow(mx)  # 31 for 30-class system
+o.r.s <- mx[-l, l]        # Origin totals (30 values)
+o.c.s <- mx[l, -l]        # Destination totals (30 values)
 total.total <- mx[l,l]    # Grand total
+
+cat("Weight matrix calculation:\n")
+cat("Origin totals range:", min(o.r.s), "-", max(o.r.s), "\n")
+cat("Destination totals range:", min(o.c.s), "-", max(o.c.s), "\n")
+cat("Grand total:", total.total, "\n")
 
 # Expected values under independence
 row.share <- o.r.s/total.total
@@ -95,12 +107,14 @@ col.share <- o.c.s/total.total
 total.mobility <- sum(mx[-l,-l])
 mx.1_exp <- row.share %*% t(col.share) * total.mobility
 
-# Relative risks
+# Relative risks (30x30 matrix)
 mx.1_net <- mx[-l,-l] / mx.1_exp
 mx.1i <- as.matrix(mx.1_net)
 mx.1i[mx.1i < cut.off] <- NA  # Apply threshold
 mx.1i <- mx.1i + t(mx.1i)     # Make symmetric
 diag(mx.1i) <- NA             # Remove diagonal
+
+cat("Significant edges (RR > 1):", sum(!is.na(mx.1i)), "out of", 30*29, "possible\n")
 ```
 
 #### Step 3: Network Construction
@@ -120,8 +134,17 @@ gra.1ii <- moneca_graph_from_adjacency(
 
 #### Step 4: Clique Detection
 ```{r eval=FALSE}
-# Find ALL cliques in the network
+# Find ALL cliques in the 30-node network
 clique <- moneca_cliques(gra.1ii)
+cat("Total cliques found:", length(clique), "\n")
+if(length(clique) > 0) {
+  clique_sizes <- sapply(clique, length)
+  cat("Clique size distribution:\n")
+  cat("  Min size:", min(clique_sizes), "\n")
+  cat("  Max size:", max(clique_sizes), "\n")
+  cat("  Mean size:", round(mean(clique_sizes), 1), "\n")
+  cat("  Size frequency:", paste(names(table(clique_sizes)), "nodes:", table(clique_sizes), "cliques", collapse = "; "), "\n")
+}
 ```
 
 **Key characteristic**: The original algorithm finds ALL cliques in the network, including overlapping ones. This provides comprehensive coverage but can be computationally expensive for dense networks.
@@ -212,26 +235,34 @@ for (i in 2:segment.levels) {
 The `moneca_fast()` function implements several optimization strategies while maintaining the core MONECA methodology. It prioritizes computational efficiency while preserving algorithmic accuracy for most practical use cases.
 
 ```{r eval=FALSE}
-# Run the optimized algorithm
+# Run the optimized algorithm on 30x30 data
 result_fast <- moneca_fast(
   mobility_data, 
   segment.levels = 3,
   use.sparse = FALSE,        # Optional sparse matrix support
   min.density = 0.01,        # Early stopping threshold
-  max.clique.size = NULL,    # Clique size limitation
+  max.clique.size = 8,       # Limit clique size for 30-node network
   progress = TRUE            # Progress monitoring
 )
+
+cat("Fast algorithm completed for 30x30 matrix\n")
+cat("Levels processed:", length(result_fast$segment.list), "\n")
 ```
 
 ### Step-by-Step Workflow
 
 #### Step 1: Enhanced Input Validation and Configuration
 ```{r eval=FALSE}
-# Additional parameters for optimization
+# Additional parameters for optimization (tuned for 30x30 system)
 use.sparse <- FALSE           # Sparse matrix support
 min.density <- 0.01          # Minimum edge density for continuation
-max.clique.size <- NULL      # Maximum clique size to consider
+max.clique.size <- 10        # Limit for computational efficiency with 30 nodes
 progress <- TRUE             # Progress bar display
+
+cat("Optimization parameters for 30-class system:\n")
+cat("  Sparse matrices:", use.sparse, "\n")
+cat("  Min density threshold:", min.density, "\n")
+cat("  Max clique size limit:", max.clique.size, "\n")
 ```
 
 #### Step 2: Optimized Relative Risk Calculation
@@ -272,11 +303,21 @@ if (use.sparse && requireNamespace("Matrix", quietly = TRUE)) {
 
 #### Step 4: Maximal Clique Detection
 ```{r eval=FALSE}
-# Use MAXIMAL cliques instead of ALL cliques
+# Use MAXIMAL cliques instead of ALL cliques (critical for 30-node networks)
 if (is.null(max.clique.size)) {
   cliques <- moneca_max_cliques(graph, min = 2)
+  cat("Finding all maximal cliques\n")
 } else {
   cliques <- moneca_max_cliques(graph, min = 2, max = max.clique.size)
+  cat("Finding maximal cliques with size limit:", max.clique.size, "\n")
+}
+
+cat("Maximal cliques found:", length(cliques), "\n")
+if(length(cliques) > 0) {
+  max_clique_sizes <- sapply(cliques, length)
+  cat("Maximal clique sizes - Min:", min(max_clique_sizes), 
+      "Max:", max(max_clique_sizes), 
+      "Mean:", round(mean(max_clique_sizes), 1), "\n")
 }
 ```
 
@@ -426,46 +467,104 @@ Expected performance differences:
 ```{r small-example}
 library(moneca)
 
-# Generate a small mobility dataset
-small_data <- generate_mobility_data(n_classes = 5, immobility_strength = 0.8, seed = 42)
-print(small_data)
+# Generate a medium-sized mobility dataset (30 classes) for meaningful comparison
+medium_data <- generate_mobility_data(
+  n_classes = 30, 
+  n_total = 40000,
+  immobility_strength = 0.8, 
+  class_names = paste("Class", sprintf("%02d", 1:30)),
+  seed = 42
+)
+
+cat("Generated 30x30 mobility matrix\n")
+cat("Dimensions:", dim(medium_data), "\n")
+cat("Total population:", medium_data[31, 31], "\n")
+cat("Overall mobility rate:", 
+    round((1 - sum(diag(medium_data[1:30, 1:30])) / sum(medium_data[1:30, 1:30])) * 100, 1), "%\n\n")
+
+# Show representative portion of the matrix
+cat("First 6x6 corner with totals:\n")
+print(medium_data[c(1:6, 31), c(1:6, 31)])
 
 # Run both algorithms
-result_original <- moneca(small_data, segment.levels = 2)
-result_fast <- moneca_fast(small_data, segment.levels = 2, progress = FALSE)
+result_original <- moneca(medium_data, segment.levels = 2)
+result_fast <- moneca_fast(medium_data, segment.levels = 2, max.clique.size = 8, progress = FALSE)
 
 # Compare results
-cat("Original algorithm segments at level 2:\n")
-print(result_original$segment.list[[2]])
+cat("\nOriginal algorithm - Level 2 segmentation:\n")
+original_segments <- result_original$segment.list[[2]]
+cat("Number of segments:", length(original_segments), "\n")
+segment_sizes_orig <- sapply(original_segments, length)
+cat("Segment sizes:", paste(sort(segment_sizes_orig, decreasing = TRUE), collapse = ", "), "\n")
 
-cat("\nFast algorithm segments at level 2:\n")
-print(result_fast$segment.list[[2]])
+cat("\nFast algorithm - Level 2 segmentation:\n")
+fast_segments <- result_fast$segment.list[[2]]
+cat("Number of segments:", length(fast_segments), "\n")
+segment_sizes_fast <- sapply(fast_segments, length)
+cat("Segment sizes:", paste(sort(segment_sizes_fast, decreasing = TRUE), collapse = ", "), "\n")
 
 # Check if results are identical
 identical_results <- identical(result_original$segment.list, result_fast$segment.list)
 cat("\nResults identical:", identical_results, "\n")
+
+# If not identical, show differences
+if(!identical_results) {
+  cat("\nAlgorithm comparison summary:\n")
+  cat("Original - Segments:", length(original_segments), ", Avg size:", round(mean(segment_sizes_orig), 1), "\n")
+  cat("Fast - Segments:", length(fast_segments), ", Avg size:", round(mean(segment_sizes_fast), 1), "\n")
+}
 ```
 
 ### Example 2: Performance Comparison
 
 ```{r performance-example}
-# Generate medium-sized dataset
-medium_data <- generate_mobility_data(n_classes = 8, seed = 123)
+# Generate large dataset for meaningful performance comparison (30 classes)
+large_data <- generate_mobility_data(
+  n_classes = 30, 
+  n_total = 50000,
+  class_names = paste("Class", sprintf("%02d", 1:30)),
+  seed = 123
+)
+
+cat("Performance test with 30x30 mobility matrix\n")
+cat("Matrix dimensions:", dim(large_data), "\n")
+cat("Population:", large_data[31, 31], "\n\n")
 
 # Time both algorithms
 cat("Timing original algorithm...\n")
 time_original <- system.time({
-  result_orig <- moneca(medium_data, segment.levels = 2)
+  result_orig <- moneca(large_data, segment.levels = 2, small.cell.reduction = 15)
 })
 
 cat("Timing fast algorithm...\n")
 time_fast <- system.time({
-  result_fast <- moneca_fast(medium_data, segment.levels = 2, progress = FALSE)
+  result_fast <- moneca_fast(
+    large_data, 
+    segment.levels = 2, 
+    max.clique.size = 8,
+    progress = FALSE
+  )
 })
 
-cat("Original algorithm time:", time_original["elapsed"], "seconds\n")
-cat("Fast algorithm time:", time_fast["elapsed"], "seconds\n")
-cat("Speedup factor:", round(time_original["elapsed"] / time_fast["elapsed"], 2), "x\n")
+cat("\nPerformance Results:\n")
+cat("Original algorithm time:", round(time_original["elapsed"], 2), "seconds\n")
+cat("Fast algorithm time:", round(time_fast["elapsed"], 2), "seconds\n")
+if(time_fast["elapsed"] > 0) {
+  speedup <- time_original["elapsed"] / time_fast["elapsed"]
+  cat("Speedup factor:", round(speedup, 2), "x\n")
+} else {
+  cat("Fast algorithm completed in < 0.01 seconds\n")
+}
+
+# Compare segmentation quality
+cat("\nSegmentation quality comparison:\n")
+cat("Original - Segments:", length(result_orig$segment.list[[2]]), "\n")
+cat("Fast - Segments:", length(result_fast$segment.list[[2]]), "\n")
+
+# Check memory usage approximation
+cat("\nApproximate object sizes:\n")
+cat("Original result:", round(object.size(result_orig) / 1024^2, 2), "MB\n")
+cat("Fast result:", round(object.size(result_fast) / 1024^2, 2), "MB\n")
 ```
 
 ### Example 3: Different Segmentation Outcomes
@@ -473,25 +572,47 @@ cat("Speedup factor:", round(time_original["elapsed"] / time_fast["elapsed"], 2)
 Sometimes the algorithms may produce different results due to their different clique detection strategies:
 
 ```{r different-outcomes}
-# Create a dataset where algorithms might differ
+# Create a complex 30-class dataset where algorithms might differ
 complex_data <- generate_mobility_data(
-  n_classes = 6, 
+  n_classes = 30, 
+  n_total = 35000,
   immobility_strength = 0.6,  # Lower immobility for more complex structure
-  class_clustering = 0.3,      # Some clustering
-  noise_level = 0.1,          # Some noise
+  class_clustering = 0.3,     # Some clustering
+  noise_level = 0.1,         # Some noise
+  class_names = paste("Class", sprintf("%02d", 1:30)),
   seed = 789
 )
 
+cat("Complex 30-class mobility system:\n")
+cat("Dimensions:", dim(complex_data), "\n")
+cat("Population:", complex_data[31, 31], "\n")
+cat("Mobility rate:", 
+    round((1 - sum(diag(complex_data[1:30, 1:30])) / sum(complex_data[1:30, 1:30])) * 100, 1), "%\n\n")
+
 # Run both algorithms
-seg_original <- moneca(complex_data, segment.levels = 3)
-seg_fast <- moneca_fast(complex_data, segment.levels = 3, progress = FALSE)
+seg_original <- moneca(complex_data, segment.levels = 3, small.cell.reduction = 10)
+seg_fast <- moneca_fast(complex_data, segment.levels = 3, max.clique.size = 6, progress = FALSE)
 
 # Compare segment structures
-cat("Original algorithm - Level 2 segments:\n")
-lapply(seg_original$segment.list[[2]], function(x) paste(x, collapse = ", "))
+cat("Algorithm comparison for Level 2 segmentation:\n")
+original_level2 <- seg_original$segment.list[[2]]
+fast_level2 <- seg_fast$segment.list[[2]]
 
-cat("\nFast algorithm - Level 2 segments:\n") 
-lapply(seg_fast$segment.list[[2]], function(x) paste(x, collapse = ", "))
+cat("Original algorithm - ", length(original_level2), "segments:\n")
+for(i in 1:length(original_level2)) {
+  segment_classes <- original_level2[[i]]
+  cat("  Segment", i, "(", length(segment_classes), "classes): ", 
+      paste(segment_classes[1:min(5, length(segment_classes))], collapse = ", "),
+      if(length(segment_classes) > 5) "..." else "", "\n")
+}
+
+cat("\nFast algorithm - ", length(fast_level2), "segments:\n")
+for(i in 1:length(fast_level2)) {
+  segment_classes <- fast_level2[[i]]
+  cat("  Segment", i, "(", length(segment_classes), "classes): ", 
+      paste(segment_classes[1:min(5, length(segment_classes))], collapse = ", "),
+      if(length(segment_classes) > 5) "..." else "", "\n")
+}
 
 # Compare number of segments at each level
 levels_orig <- sapply(seg_original$segment.list, length)
@@ -508,7 +629,21 @@ comparison_df <- data.frame(
   Fast = levels_fast,
   Difference = levels_orig - levels_fast
 )
+cat("\nSegmentation comparison across levels:\n")
 print(comparison_df)
+
+# Calculate segmentation statistics
+cat("\nSegmentation quality metrics:\n")
+for(level in 2:min(3, length(seg_original$segment.list))) {
+  orig_sizes <- sapply(seg_original$segment.list[[level]], length)
+  fast_sizes <- sapply(seg_fast$segment.list[[level]], length)
+  
+  cat("Level", level, ":\n")
+  cat("  Original - Avg size:", round(mean(orig_sizes), 1), 
+      ", Max size:", max(orig_sizes), "\n")
+  cat("  Fast - Avg size:", round(mean(fast_sizes), 1), 
+      ", Max size:", max(fast_sizes), "\n")
+}
 ```
 
 ## Parameter Tuning for moneca_fast()
@@ -520,17 +655,64 @@ The `moneca_fast()` function provides several parameters for performance tuning:
 Controls early stopping based on network density:
 
 ```{r density-tuning}
-# Test different density thresholds
-data_test <- generate_mobility_data(n_classes = 6, seed = 456)
+# Test different density thresholds with 30-class system
+data_test <- generate_mobility_data(
+  n_classes = 30, 
+  n_total = 25000,
+  class_names = paste("Class", sprintf("%02d", 1:30)),
+  seed = 456
+)
+
+cat("Testing density thresholds with 30-class system:\n")
+cat("Matrix dimensions:", dim(data_test), "\n")
+cat("Population:", data_test[31, 31], "\n\n")
 
 # Conservative (lower threshold - more processing)
-result_conservative <- moneca_fast(data_test, min.density = 0.001, progress = FALSE)
+cat("Running conservative analysis (min.density = 0.001)...\n")
+result_conservative <- moneca_fast(
+  data_test, 
+  min.density = 0.001, 
+  max.clique.size = 8,
+  progress = FALSE
+)
 
 # Aggressive (higher threshold - less processing)  
-result_aggressive <- moneca_fast(data_test, min.density = 0.05, progress = FALSE)
+cat("Running aggressive analysis (min.density = 0.05)...\n")
+result_aggressive <- moneca_fast(
+  data_test, 
+  min.density = 0.05, 
+  max.clique.size = 8,
+  progress = FALSE
+)
 
-cat("Conservative approach - levels:", length(result_conservative$segment.list), "\n")
-cat("Aggressive approach - levels:", length(result_aggressive$segment.list), "\n")
+# Standard threshold for comparison
+cat("Running standard analysis (min.density = 0.01)...\n")
+result_standard <- moneca_fast(
+  data_test, 
+  min.density = 0.01, 
+  max.clique.size = 8,
+  progress = FALSE
+)
+
+cat("\nDensity threshold comparison:\n")
+cat("Conservative (0.001) - levels:", length(result_conservative$segment.list), 
+    ", L2 segments:", length(result_conservative$segment.list[[2]]), "\n")
+cat("Standard (0.01) - levels:", length(result_standard$segment.list), 
+    ", L2 segments:", length(result_standard$segment.list[[2]]), "\n")
+cat("Aggressive (0.05) - levels:", length(result_aggressive$segment.list), 
+    ", L2 segments:", length(result_aggressive$segment.list[[2]]), "\n")
+
+# Show effect on segmentation quality
+if(length(result_conservative$segment.list) >= 2) {
+  cons_sizes <- sapply(result_conservative$segment.list[[2]], length)
+  std_sizes <- sapply(result_standard$segment.list[[2]], length)
+  agg_sizes <- sapply(result_aggressive$segment.list[[2]], length)
+  
+  cat("\nLevel 2 segmentation characteristics:\n")
+  cat("Conservative - Avg segment size:", round(mean(cons_sizes), 1), "\n")
+  cat("Standard - Avg segment size:", round(mean(std_sizes), 1), "\n")
+  cat("Aggressive - Avg segment size:", round(mean(agg_sizes), 1), "\n")
+}
 ```
 
 ### max.clique.size Parameter
@@ -538,14 +720,55 @@ cat("Aggressive approach - levels:", length(result_aggressive$segment.list), "\n
 Limits maximum clique size to control computation:
 
 ```{r clique-size-tuning}
-# Unlimited clique size
-result_unlimited <- moneca_fast(data_test, max.clique.size = NULL, progress = FALSE)
+# Test different clique size limits with 30-class system
+cat("Testing clique size limits with 30-class system:\n")
 
-# Limited clique size
-result_limited <- moneca_fast(data_test, max.clique.size = 4, progress = FALSE)
+# Unlimited clique size (computationally intensive for 30 nodes)
+cat("Running with unlimited clique size...\n")
+time_unlimited <- system.time({
+  result_unlimited <- moneca_fast(data_test, max.clique.size = NULL, progress = FALSE)
+})
 
-cat("Unlimited cliques - segments at level 2:", length(result_unlimited$segment.list[[2]]), "\n")
-cat("Limited cliques - segments at level 2:", length(result_limited$segment.list[[2]]), "\n")
+# Moderately limited clique size
+cat("Running with clique size limit = 6...\n")
+time_moderate <- system.time({
+  result_moderate <- moneca_fast(data_test, max.clique.size = 6, progress = FALSE)
+})
+
+# Strictly limited clique size
+cat("Running with clique size limit = 4...\n")
+time_strict <- system.time({
+  result_strict <- moneca_fast(data_test, max.clique.size = 4, progress = FALSE)
+})
+
+cat("\nClique size limit comparison:\n")
+cat("Unlimited cliques:", 
+    "- Time:", round(time_unlimited["elapsed"], 2), "sec",
+    "- L2 segments:", length(result_unlimited$segment.list[[2]]), "\n")
+cat("Moderate limit (6):", 
+    "- Time:", round(time_moderate["elapsed"], 2), "sec",
+    "- L2 segments:", length(result_moderate$segment.list[[2]]), "\n")
+cat("Strict limit (4):", 
+    "- Time:", round(time_strict["elapsed"], 2), "sec",
+    "- L2 segments:", length(result_strict$segment.list[[2]]), "\n")
+
+# Compare segmentation quality
+if(length(result_unlimited$segment.list) >= 2) {
+  unl_sizes <- sapply(result_unlimited$segment.list[[2]], length)
+  mod_sizes <- sapply(result_moderate$segment.list[[2]], length)
+  str_sizes <- sapply(result_strict$segment.list[[2]], length)
+  
+  cat("\nSegmentation quality comparison:\n")
+  cat("Unlimited - Avg segment size:", round(mean(unl_sizes), 1), 
+      ", Largest segment:", max(unl_sizes), "\n")
+  cat("Moderate - Avg segment size:", round(mean(mod_sizes), 1), 
+      ", Largest segment:", max(mod_sizes), "\n")
+  cat("Strict - Avg segment size:", round(mean(str_sizes), 1), 
+      ", Largest segment:", max(str_sizes), "\n")
+  
+  cat("\nRecommendation: For 30-class systems, clique size limit of 6-8 provides\n")
+  cat("good balance between computational efficiency and segmentation quality.\n")
+}
 ```
 
 ### Sparse Matrix Support
@@ -553,18 +776,51 @@ cat("Limited cliques - segments at level 2:", length(result_limited$segment.list
 For large, sparse matrices:
 
 ```{r sparse-support}
-# Note: This example demonstrates the parameter usage
-# In practice, sparse matrices are beneficial for very large datasets
+# Test sparse matrix support with 30-class system
+# Sparse matrices are particularly beneficial for large, sparse datasets
+
+cat("Testing sparse matrix support with 30-class system:\n")
+
+# Calculate sparsity of our test data
+test_core <- data_test[1:30, 1:30]
+sparsity <- sum(test_core == 0) / (30^2) * 100
+cat("Data sparsity:", round(sparsity, 1), "%\n\n")
 
 # Regular matrix processing
-result_dense <- moneca_fast(data_test, use.sparse = FALSE, progress = FALSE)
+cat("Running with dense matrix representation...\n")
+time_dense <- system.time({
+  result_dense <- moneca_fast(data_test, use.sparse = FALSE, progress = FALSE)
+})
 
 # Sparse matrix processing (if Matrix package available)
 if (requireNamespace("Matrix", quietly = TRUE)) {
-  result_sparse <- moneca_fast(data_test, use.sparse = TRUE, progress = FALSE)
-  cat("Sparse matrix support available and tested\n")
+  cat("Running with sparse matrix representation...\n")
+  time_sparse <- system.time({
+    result_sparse <- moneca_fast(data_test, use.sparse = TRUE, progress = FALSE)
+  })
+  
+  cat("\nMatrix representation comparison:\n")
+  cat("Dense matrices - Time:", round(time_dense["elapsed"], 2), "sec",
+      "- L2 segments:", length(result_dense$segment.list[[2]]), "\n")
+  cat("Sparse matrices - Time:", round(time_sparse["elapsed"], 2), "sec",
+      "- L2 segments:", length(result_sparse$segment.list[[2]]), "\n")
+  
+  # Compare memory usage
+  cat("\nApproximate memory usage:\n")
+  cat("Dense result:", round(object.size(result_dense) / 1024^2, 2), "MB\n")
+  cat("Sparse result:", round(object.size(result_sparse) / 1024^2, 2), "MB\n")
+  
+  # Check if results are identical
+  identical_sparse <- identical(result_dense$segment.list, result_sparse$segment.list)
+  cat("Results identical:", identical_sparse, "\n")
+  
+  cat("\nNote: Sparse matrices are most beneficial when data sparsity > 70%\n")
+  cat("Current data sparsity:", round(sparsity, 1), "% - ", 
+      if(sparsity > 70) "Good candidate for sparse representation" else "Dense representation may be sufficient", "\n")
+  
 } else {
   cat("Matrix package not available - sparse support skipped\n")
+  cat("Install Matrix package with: install.packages('Matrix')\n")
 }
 ```
 
@@ -595,13 +851,60 @@ Choose the optimized `moneca_fast()` function when:
 For comprehensive analysis, consider using both:
 
 ```{r hybrid-approach}
+# Demonstrate hybrid approach with 30-class system
+hybrid_data <- generate_mobility_data(
+  n_classes = 30,
+  n_total = 40000,
+  class_names = paste("Class", sprintf("%02d", 1:30)),
+  seed = 999
+)
+
+cat("Hybrid approach with 30-class system:\n")
+cat("Step 1: Fast exploration...\n")
+
 # Start with fast version for exploration
-initial_result <- moneca_fast(small_data, segment.levels = 3, progress = FALSE)
+time_initial <- system.time({
+  initial_result <- moneca_fast(
+    hybrid_data, 
+    segment.levels = 3, 
+    max.clique.size = 6,
+    progress = FALSE
+  )
+})
+
+cat("Fast exploration completed in", round(time_initial["elapsed"], 2), "seconds\n")
+cat("Levels found:", length(initial_result$segment.list), "\n")
+cat("Level 2 segments:", length(initial_result$segment.list[[2]]), "\n")
 
 # If results look promising and accuracy is needed, validate with original
 if (length(initial_result$segment.list) > 2) {
-  final_result <- moneca(small_data, segment.levels = 3)
-  cat("Hybrid approach: Fast exploration followed by accurate validation\n")
+  cat("\nStep 2: Detailed validation with original algorithm...\n")
+  time_validation <- system.time({
+    final_result <- moneca(hybrid_data, segment.levels = 3)
+  })
+  
+  cat("Validation completed in", round(time_validation["elapsed"], 2), "seconds\n")
+  cat("\nComparison of hybrid approach results:\n")
+  cat("Fast (exploration) - L2 segments:", length(initial_result$segment.list[[2]]), "\n")
+  cat("Original (validation) - L2 segments:", length(final_result$segment.list[[2]]), "\n")
+  
+  # Check agreement
+  results_match <- identical(initial_result$segment.list, final_result$segment.list)
+  cat("Results match:", results_match, "\n")
+  
+  if(!results_match) {
+    cat("\nDifferences found - Original algorithm provides more conservative segmentation\n")
+    cat("Total time for hybrid approach:", 
+        round(time_initial["elapsed"] + time_validation["elapsed"], 2), "seconds\n")
+  } else {
+    cat("\nResults identical - Fast algorithm was sufficient\n")
+    cat("Time saved by using fast algorithm:", 
+        round(time_validation["elapsed"] - time_initial["elapsed"], 2), "seconds\n")
+  }
+  
+  cat("\nHybrid approach: Fast exploration followed by selective validation\n")
+  cat("Recommended for: Large datasets where accuracy is critical but\n")
+  cat("computational efficiency is also important.\n")
 }
 ```
 
@@ -612,8 +915,8 @@ Both algorithms should produce similar high-level segmentation patterns, but may
 ### Comparing Algorithm Outputs
 
 ```{r quality-assessment}
-# Function to compare segmentation quality
-compare_segmentations <- function(seg1, seg2, level = 2) {
+# Enhanced function to compare segmentation quality for 30-class systems
+compare_segmentations <- function(seg1, seg2, level = 2, data_matrix = NULL) {
   if (length(seg1$segment.list) < level || length(seg2$segment.list) < level) {
     return("Insufficient levels for comparison")
   }
@@ -626,16 +929,90 @@ compare_segmentations <- function(seg1, seg2, level = 2) {
   sizes_1 <- sapply(seg1$segment.list[[level]], length)
   sizes_2 <- sapply(seg2$segment.list[[level]], length)
   
-  list(
+  # Calculate additional quality metrics
+  results <- list(
     n_segments = c(algorithm1 = n_segments_1, algorithm2 = n_segments_2),
-    avg_segment_size = c(algorithm1 = mean(sizes_1), algorithm2 = mean(sizes_2)),
-    size_variance = c(algorithm1 = var(sizes_1), algorithm2 = var(sizes_2))
+    avg_segment_size = c(algorithm1 = round(mean(sizes_1), 1), algorithm2 = round(mean(sizes_2), 1)),
+    size_variance = c(algorithm1 = round(var(sizes_1), 1), algorithm2 = round(var(sizes_2), 1)),
+    max_segment_size = c(algorithm1 = max(sizes_1), algorithm2 = max(sizes_2)),
+    min_segment_size = c(algorithm1 = min(sizes_1), algorithm2 = min(sizes_2)),
+    size_distribution_1 = sizes_1,
+    size_distribution_2 = sizes_2
   )
+  
+  # If data matrix provided, calculate internal mobility
+  if(!is.null(data_matrix)) {
+    # Calculate internal mobility for each algorithm at specified level
+    mx1 <- seg1$mat.list[[level]]
+    mx2 <- seg2$mat.list[[level]]
+    
+    l1 <- ncol(mx1)
+    l2 <- ncol(mx2)
+    
+    internal1 <- sum(diag(mx1[1:(l1-1), 1:(l1-1)])) / sum(mx1[1:(l1-1), 1:(l1-1)]) * 100
+    internal2 <- sum(diag(mx2[1:(l2-1), 1:(l2-1)])) / sum(mx2[1:(l2-1), 1:(l2-1)]) * 100
+    
+    results$internal_mobility <- c(algorithm1 = round(internal1, 1), algorithm2 = round(internal2, 1))
+  }
+  
+  return(results)
 }
 
-# Compare our previous results
-comparison <- compare_segmentations(result_original, result_fast, level = 2)
-print(comparison)
+# Compare algorithms using our 30-class example data
+if(exists("result_orig") && exists("result_fast")) {
+  cat("Comprehensive quality assessment for 30-class system:\n\n")
+  comparison <- compare_segmentations(result_orig, result_fast, level = 2, large_data)
+  
+  cat("Number of segments:\n")
+  cat("  Original algorithm:", comparison$n_segments["algorithm1"], "\n")
+  cat("  Fast algorithm:", comparison$n_segments["algorithm2"], "\n")
+  
+  cat("\nAverage segment size:\n")
+  cat("  Original algorithm:", comparison$avg_segment_size["algorithm1"], "classes\n")
+  cat("  Fast algorithm:", comparison$avg_segment_size["algorithm2"], "classes\n")
+  
+  cat("\nSegment size range:\n")
+  cat("  Original algorithm:", comparison$min_segment_size["algorithm1"], "-", 
+      comparison$max_segment_size["algorithm1"], "classes\n")
+  cat("  Fast algorithm:", comparison$min_segment_size["algorithm2"], "-", 
+      comparison$max_segment_size["algorithm2"], "classes\n")
+  
+  if(!is.null(comparison$internal_mobility)) {
+    cat("\nInternal mobility (Level 2):\n")
+    cat("  Original algorithm:", comparison$internal_mobility["algorithm1"], "%\n")
+    cat("  Fast algorithm:", comparison$internal_mobility["algorithm2"], "%\n")
+  }
+  
+  cat("\nSegment size distributions:\n")
+  cat("  Original:", paste(sort(comparison$size_distribution_1, decreasing = TRUE), collapse = ", "), "\n")
+  cat("  Fast:", paste(sort(comparison$size_distribution_2, decreasing = TRUE), collapse = ", "), "\n")
+  
+  # Statistical comparison
+  cat("\nStatistical comparison:\n")
+  cat("  Size variance (lower = more balanced segmentation):\n")
+  cat("    Original:", comparison$size_variance["algorithm1"], "\n")
+  cat("    Fast:", comparison$size_variance["algorithm2"], "\n")
+  
+  # Overall assessment
+  cat("\nOverall assessment:\n")
+  if(abs(comparison$n_segments["algorithm1"] - comparison$n_segments["algorithm2"]) <= 1) {
+    cat("  Segment counts very similar - both algorithms effective\n")
+  } else {
+    cat("  Notable difference in segment counts - investigate further\n")
+  }
+  
+  if(!is.null(comparison$internal_mobility)) {
+    mobility_diff <- abs(comparison$internal_mobility["algorithm1"] - comparison$internal_mobility["algorithm2"])
+    if(mobility_diff < 5) {
+      cat("  Internal mobility rates very similar - consistent quality\n")
+    } else {
+      cat("  Notable difference in internal mobility - algorithms may emphasize different patterns\n")
+    }
+  }
+} else {
+  cat("Previous algorithm results not available for comparison\n")
+  cat("Run the performance comparison section first\n")
+}
 ```
 
 ### Validation Strategies
