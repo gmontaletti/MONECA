@@ -87,9 +87,24 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
   
   pb <- txtProgressBar(min = 1, max = max(loop.length, 2), style=3)
   
+  # Track milestones for percentage messages
+  milestones <- c(25, 50, 75, 100)
+  milestone_reached <- rep(FALSE, length(milestones))
+  
   for (i in 1:loop.length){
     
-    setTxtProgressBar(pb, i, label=paste(round(i/loop.length*100, 0), "% ready!"))
+    # Update progress bar
+    percent_complete <- round(i/loop.length*100, 0)
+    setTxtProgressBar(pb, i)
+    
+    # Print percentage message at key milestones
+    for (j in seq_along(milestones)) {
+      if (percent_complete >= milestones[j] && !milestone_reached[j]) {
+        cat(paste("\n", percent_complete, "% ready!\n", sep=""))
+        milestone_reached[j] <- TRUE
+        break  # Only print one message per iteration
+      }
+    }
     
     # Find maximum value and set to NA
     max.ind             <- which(max.mat==max(max.mat, na.rm=TRUE), arr.ind=TRUE)[1,]
