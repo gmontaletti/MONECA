@@ -26,6 +26,22 @@
       if (igraph::is_directed(graph)) {
         graph <- igraph::as.undirected(graph, mode = "collapse")
       }
+      
+      # MEMORY OPTIMIZATION: Limit clique enumeration for large dense graphs
+      n_vertices <- igraph::vcount(graph)
+      n_edges <- igraph::ecount(graph)
+      
+      if (n_vertices > 0) {
+        edge_density <- (2 * n_edges) / (n_vertices * (n_vertices - 1))
+        
+        # For very dense graphs, limit clique size to prevent memory explosion
+        if (edge_density > 0.6 && n_vertices > 15) {
+          warning("Dense graph detected. Limiting clique enumeration to prevent memory issues.")
+          # Use max cliques instead of all cliques for memory efficiency
+          return(suppressWarnings(igraph::max_cliques(graph, ...)))
+        }
+      }
+      
       suppressWarnings(igraph::cliques(graph, ...))
     }
     .moneca_env$moneca_max_cliques <- function(graph, ...) {
@@ -48,6 +64,22 @@
       if (igraph::is.directed(graph)) {
         graph <- igraph::as.undirected(graph, mode = "collapse")
       }
+      
+      # MEMORY OPTIMIZATION: Limit clique enumeration for large dense graphs
+      n_vertices <- igraph::vcount(graph)
+      n_edges <- igraph::ecount(graph)
+      
+      if (n_vertices > 0) {
+        edge_density <- (2 * n_edges) / (n_vertices * (n_vertices - 1))
+        
+        # For very dense graphs, limit clique size to prevent memory explosion
+        if (edge_density > 0.6 && n_vertices > 15) {
+          warning("Dense graph detected. Limiting clique enumeration to prevent memory issues.")
+          # Use max cliques instead of all cliques for memory efficiency
+          return(suppressWarnings(igraph::max_cliques(graph, ...)))
+        }
+      }
+      
       suppressWarnings(igraph::cliques(graph, ...))
     }
     .moneca_env$moneca_max_cliques <- function(graph, ...) {

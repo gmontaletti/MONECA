@@ -139,11 +139,14 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
   return(out)
 }
 
-#' MONECA - Mobility Network Clustering Analysis
+#' MONECA Fast - Memory-Optimized Mobility Network Clustering Analysis
 #'
-#' Main function for performing hierarchical clustering analysis on mobility tables.
-#' MONECA creates weighted networks from mobility data and uses cliques to identify
-#' discrete and nested clusters of positions with high internal mobility.
+#' Memory-optimized version of the main function for performing hierarchical clustering 
+#' analysis on mobility tables. MONECA creates weighted networks from mobility data and 
+#' uses cliques to identify discrete and nested clusters of positions with high internal mobility.
+#' 
+#' This version includes intelligent memory management for dense graphs and optimized
+#' clique enumeration to prevent memory issues with large datasets.
 #'
 #' @param mx A mobility table (square matrix) with row and column totals in the last
 #'   row/column. Row names should identify the categories/classes.
@@ -193,8 +196,8 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
 #' # Generate synthetic mobility data
 #' mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
 #' 
-#' # Run moneca analysis
-#' seg <- moneca(mobility_data, segment.levels = 3)
+#' # Run moneca analysis (fast version)
+#' seg <- moneca_fast(mobility_data, segment.levels = 3)
 #' print(seg)
 #' 
 #' # Examine segment membership
@@ -212,6 +215,7 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
 #' Sociology, 51(6), 1257-1276.
 #' 
 #' @seealso 
+#' \code{\link{moneca}} for the standard version with progress bar,
 #' \code{\link{find.segments}} for the core segmentation algorithm,
 #' \code{\link{weight.matrix}} for relative risk calculation,
 #' \code{\link{plot_moneca_ggraph}} for modern visualization,
@@ -219,7 +223,7 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
 #' 
 #' @export
 
-moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.upper.tri=TRUE, small.cell.reduction=0){
+moneca_fast <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.upper.tri=TRUE, small.cell.reduction=0){
   
   # Input validation
   if (is.null(mx)) {

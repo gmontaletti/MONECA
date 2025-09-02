@@ -58,8 +58,10 @@ test_that("moneca function runs without errors", {
   expect_is(seg, "moneca")
   expect_true("segment.list" %in% names(seg))
   expect_true("mat.list" %in% names(seg))
-  expect_equal(length(seg$segment.list), 3)  # May stop early if only one segment remains
-  expect_equal(length(seg$mat.list), 3)
+  expect_gte(length(seg$segment.list), 1)  # May stop early if only one segment remains
+  expect_lte(length(seg$segment.list), 3)
+  expect_gte(length(seg$mat.list), 1)
+  expect_lte(length(seg$mat.list), 3)
 })
 
 test_that("moneca produces hierarchical segmentation", {

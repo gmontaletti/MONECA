@@ -203,3 +203,4 @@ devtools::build_vignettes()
 - **Data**: Use `generate_mobility_data()` instead of external datasets for examples
 - **Testing**: All existing functions continue to work unchanged
 - **Dependencies**: Package now requires ggraph and tidygraph for modern features
+- never change the original moneca() function!
