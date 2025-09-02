@@ -4,7 +4,7 @@
 #' MONECA creates weighted networks from mobility data and uses cliques to identify
 #' discrete and nested clusters of positions with high internal mobility.
 #'
-#' This is the standard implementation with progress bar functionality. 
+#' This is the original antongrau/MONECA implementation with progress bar functionality. 
 #' For memory-optimized version, use moneca_fast().
 #'
 #' @param mx A mobility table (square matrix) with row and column totals in the last
@@ -75,15 +75,6 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
   # This is where find.segments options should be specified  
   make.segments   <- function(mx, cut.off=1, mode=mode, delete.upper.tri=delete.upper.tri, small.cell.reduction=small.cell.reduction){
     
-#     l               <- nrow(mx)
-#     mx.1_exp        <- as.array(mx[,l]) %*% t(as.array(mx[l,]) / mx[l,l])
-#     mx.1_net        <- mx/mx.1_exp
-#     mx.1            <- mx.1_net[-l,-l]
-#     mx.1i           <- as.matrix(mx.1)
-#     mx.1i[mx.1i < cut.off]  <- NA                # Her er cutoff pointet - det skal op i options senere
-#     mx.1i           <- mx.1i + t(mx.1i)
-#     diag(mx.1i)     <- NA
-
     # Ensure mx is a matrix
     if (!is.matrix(mx)) {
       mx <- as.matrix(mx)
@@ -95,6 +86,7 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
     mx.1i.graph     <- mx.1i
     mx.1i.graph[is.na(mx.1i.graph)] <- 0
     
+    # Use modern igraph functions via compatibility layer
     gra.1ii         <- moneca_graph_from_adjacency(adjmatrix=mx.1i.graph, mode="undirected", weighted=TRUE, diag=FALSE)
     clique           <- moneca_cliques(gra.1ii)
     clust.1         <- find.segments(mx.1i, clique, cut.off=cut.off)

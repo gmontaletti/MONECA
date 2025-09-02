@@ -2,7 +2,7 @@ Package: moneca
 Title: Mobility Network Clustering Analysis
 Description: moneca creates a weighted network from a mobility table and uses cliques (or similar) to create discrete and nested clusters. This is a maintained fork of the original MONECA package with modernized visualizations, comprehensive testing, and enhanced documentation.
 URL: https://github.com/gmontaletti/moneca
-Version: 0.4.2
+Version: 0.4.3
 Maintainer: Giampaolo Montaletti <giampaolo.montaletti@gmail.com>
 Authors@R: c(
     person("Giampaolo", "Montaletti", 
