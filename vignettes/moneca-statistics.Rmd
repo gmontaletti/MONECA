@@ -4,7 +4,7 @@ author: "Giampaolo Montaletti"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Understanding moneca Statistics}
+  %\VignetteIndexEntry{Understanding moneca Statistics: A Comprehensive Guide}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

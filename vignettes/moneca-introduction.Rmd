@@ -616,15 +616,21 @@ print("Level 2 mobility matrix (aggregated):")
 print(level2_matrix)
 
 # Calculate internal mobility rates for each segment
+# Use actual number of segments from segment.list instead of matrix dimensions
+actual_n_segments <- length(seg$segment.list[[2]])
 n_segments <- nrow(level2_matrix) - 1
-internal_mobility <- diag(level2_matrix[1:n_segments, 1:n_segments])
-total_mobility <- level2_matrix[1:n_segments, ncol(level2_matrix)]
+
+# Ensure we use the correct number of segments (the smaller of the two)
+active_segments <- min(actual_n_segments, n_segments)
+
+internal_mobility <- diag(level2_matrix[1:active_segments, 1:active_segments])
+total_mobility <- level2_matrix[1:active_segments, ncol(level2_matrix)]
 immobility_rates <- internal_mobility / total_mobility
 
 cat("\nImmobility rates by segment at Level 2:\n")
 segment_summary <- data.frame(
-  Segment = paste("Segment", 1:n_segments),
-  Size = sapply(seg$segment.list[[2]], length),
+  Segment = paste("Segment", 1:active_segments),
+  Size = sapply(seg$segment.list[[2]], length)[1:active_segments],
   Total_Population = total_mobility,
   Internal_Mobility = internal_mobility,
   Immobility_Rate = round(immobility_rates * 100, 1)
@@ -633,11 +639,11 @@ print(segment_summary)
 
 # Calculate overall segmentation quality metrics
 overall_internal <- sum(internal_mobility)
-overall_total <- sum(level2_matrix[1:n_segments, 1:n_segments])
+overall_total <- sum(level2_matrix[1:active_segments, 1:active_segments])
 overall_immobility_rate <- overall_internal / overall_total
 
 cat("\nOverall Level 2 segmentation quality:\n")
-cat("Total segments:", n_segments, "\n")
+cat("Total segments:", active_segments, "\n")
 cat("Average segment size:", round(mean(segment_summary$Size), 1), "classes\n")
 cat("Overall internal mobility rate:", round(overall_immobility_rate * 100, 1), "%\n")
 
