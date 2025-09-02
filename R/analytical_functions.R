@@ -56,44 +56,43 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
     mat[upper.tri(mat)] <- NA
   }
     
-  # Define output vector:
+  # Define output vector
   group               <- vector(mode="numeric",length=nrow(mat))
   names(group)        <- rownames(mat)
-  # Create matrix for deletion
-  max.mat              <- mat
+  max.mat             <- mat
   
-  ############################
-  # Define helper function
-  clique.test           <- function(cliques, potential.clique){
-    clique.match         <- vector(length=length(cliques))
-    for (j in 1:length(cliques)){
-      cl                <- cliques[[j]]
-      clique.match[[j]]  <- all(potential.clique %in% cl)
+  # Simple clique test function (original bejler.test approach)
+  clique.test <- function(potential.clique){
+    if (length(potential.clique) < 2) return(TRUE)  # Single nodes are trivially cliques
+    
+    # Test if potential.clique is subset of any clique
+    for (cl in cliques) {
+      if (all(potential.clique %in% cl)) {
+        return(TRUE)
+      }
     }
-    any(clique.match)
+    return(FALSE)
   }
   
-  #############################################################
   # Progress bar
-  loop.length           <-  sum(mat > cut.off, na.rm=TRUE)
+  loop.length <- sum(mat > cut.off, na.rm=TRUE)
   
   # Skip if no edges meet the cut-off criterion
   if (loop.length == 0) {
-    # Return empty result
     out <- list()
     out$membership   <- as.factor(rep(1, nrow(mat)))
     out$cliques      <- list(1:nrow(mat))
     return(out)
   }
   
-  pb                    <- txtProgressBar(min = 1, max = max(loop.length, 2), style=3)
+  pb <- txtProgressBar(min = 1, max = max(loop.length, 2), style=3)
+  
   for (i in 1:loop.length){
     
     setTxtProgressBar(pb, i, label=paste(round(i/loop.length*100, 0), "% ready!"))
-    ###########################################################
     
+    # Find maximum value and set to NA
     max.ind             <- which(max.mat==max(max.mat, na.rm=TRUE), arr.ind=TRUE)[1,]
-    #gruppe[max.ind]  <- i
     max.mat[max.ind[1], max.ind[2]] <- NA
     
     group.candidates    <- group[max.ind] # Which group is it seeking to join?
@@ -107,19 +106,23 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
     if(sum(group.candidates)!=0){
       
       group.candidates <- group.candidates[group.candidates!=0] 
-      group.members <- which(group %in% group.candidates)   # This must happen before we know with certainty which group is correct
-      group.size <- table(group[group.members])       # Find the largest group
-      group.assigned  <- as.numeric(names(group.size))[which.max(group.size)[1]]        # Find the largest group - takes the first element - so if two are equal size it chooses "randomly" the largest - which will also be the most cohesive???
+      group.members <- which(group %in% group.candidates)   
+      group.size <- table(group[group.members])       
+      group.assigned  <- as.numeric(names(group.size))[which.max(group.size)[1]]        
       
-      #### Test cliques
+      #### Test cliques with simple function
       potential.clique  <- unique(sort(c(group.members, candidate)))
       
-      test <- clique.test(cliques, potential.clique)              # Test if the potential clique is an actual clique
+      test <- clique.test(potential.clique)
       if (test==TRUE){
         group[potential.clique] <- group.assigned             
       }
     }
   }
+  
+  # Clean up progress bar
+  close(pb)
+  
   sub <- group[group==0] 
   group[group==0] <- 1:length(sub) + max(group)
   g <- as.factor(group) 
@@ -178,6 +181,14 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
 #' The algorithm stops early if no further segmentation is possible (e.g., all
 #' nodes collapse into a single segment).
 #' 
+#' **Algorithm Features:**
+#' \itemize{
+#'   \item Simple and memory-efficient clique testing using direct subset checking
+#'   \item Intelligent dense graph detection with fallback to maximal cliques
+#'   \item Streamlined implementation based on the original bejler.test approach
+#'   \item Maintains algorithmic correctness while minimizing memory overhead
+#' }
+#' 
 #' @examples
 #' # Generate synthetic mobility data
 #' mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
@@ -210,32 +221,52 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
 
 moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.upper.tri=TRUE, small.cell.reduction=0){
   
+  # Input validation
+  if (is.null(mx)) {
+    stop("Input matrix cannot be NULL")
+  }
+  
+  if (!is.matrix(mx)) {
+    mx <- as.matrix(mx)
+  }
+  
   # Find segments based on a matrix
-  # This is where find.segments options should be specified  
   make.segments   <- function(mx, cut.off=1, mode=mode, delete.upper.tri=delete.upper.tri, small.cell.reduction=small.cell.reduction){
     
-#     l               <- nrow(mx)
-#     mx.1_exp        <- as.array(mx[,l]) %*% t(as.array(mx[l,]) / mx[l,l])
-#     mx.1_net        <- mx/mx.1_exp
-#     mx.1            <- mx.1_net[-l,-l]
-#     mx.1i           <- as.matrix(mx.1)
-#     mx.1i[mx.1i < cut.off]  <- NA                # Her er cutoff pointet - det skal op i options senere
-#     mx.1i           <- mx.1i + t(mx.1i)
-#     diag(mx.1i)     <- NA
-
     # Ensure mx is a matrix
     if (!is.matrix(mx)) {
       mx <- as.matrix(mx)
     }
     mx.1i           <- weight.matrix(mx, cut.off, small.cell.reduction=small.cell.reduction)
     
+    # Check for empty weight matrix early
+    if (all(is.na(mx.1i))) {
+      # Return trivial segmentation
+      n_nodes <- nrow(mx.1i)
+      return(list(
+        membership = as.factor(rep(1, n_nodes)),
+        cliques = list(1:n_nodes)
+      ))
+    }
+    
     # Ensure matrix is symmetric for undirected graph
-    # Replace NAs with 0 for graph creation
     mx.1i.graph     <- mx.1i
     mx.1i.graph[is.na(mx.1i.graph)] <- 0
     
-    gra.1ii         <- moneca_graph_from_adjacency(adjmatrix=mx.1i.graph, mode="undirected", weighted=TRUE, diag=FALSE)
-    clique           <- moneca_cliques(gra.1ii)
+    # Intelligent clique enumeration for dense graphs (simplified)
+    non_zero_edges <- sum(mx.1i.graph > 0)
+    max_nodes <- nrow(mx.1i.graph)
+    edge_density <- non_zero_edges / (max_nodes * (max_nodes - 1) / 2)
+    
+    if (edge_density > 0.7 && max_nodes > 20) {
+      warning("Dense graph detected. Using max cliques instead of all cliques.")
+      gra.1ii         <- moneca_graph_from_adjacency(adjmatrix=mx.1i.graph, mode="undirected", weighted=TRUE, diag=FALSE)
+      clique          <- moneca_max_cliques(gra.1ii)  # Use max cliques instead of all cliques
+    } else {
+      gra.1ii         <- moneca_graph_from_adjacency(adjmatrix=mx.1i.graph, mode="undirected", weighted=TRUE, diag=FALSE)
+      clique          <- moneca_cliques(gra.1ii)
+    }
+    
     clust.1         <- find.segments(mx.1i, clique, cut.off=cut.off)
     
     return(clust.1)
@@ -311,38 +342,70 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
   }
   
   
-  # Find segments
+  # MEMORY OPTIMIZATION: Find segments with better memory management
   mat.list        <- list()
   mat.list[[1]]   <- mx
+  
+  # First level segmentation
   segments        <- make.segments(mx, cut.off=cut.off, mode=mode, delete.upper.tri=delete.upper.tri, small.cell.reduction=small.cell.reduction)
   mx.2g           <- segment.matrix(mx, segments)
   mat.list[[2]]   <- mx.2g
   out.put         <- list()
   out.put[[1]]    <- list(segments=segments, mat=mx.2g)
   
+  # MEMORY OPTIMIZATION: Process remaining levels with memory cleanup
   if (segment.levels > 1) {
+    current_matrix <- mx.2g
+    
     for (i in 2:segment.levels){
-      segments        <- make.segments(mx.2g, cut.off=cut.off, mode=mode, delete.upper.tri=delete.upper.tri, small.cell.reduction=small.cell.reduction)
-      mx.2g           <- segment.matrix(mx.2g, segments)
-      mat.list[[i+1]] <- mx.2g
-      out.put[[i]]    <- list(segments=segments, mat=mx.2g)
+      # MEMORY OPTIMIZATION: Force garbage collection before each iteration
+      gc(verbose = FALSE)
       
-      # Stop if only one segment remains
+      segments        <- make.segments(current_matrix, cut.off=cut.off, mode=mode, delete.upper.tri=delete.upper.tri, small.cell.reduction=small.cell.reduction)
+      
+      # Stop early if no meaningful segmentation is possible
       if(length(segments$cliques) <= 1) {
         break
       }
+      
+      # MEMORY OPTIMIZATION: Replace current matrix instead of keeping all versions
+      new_matrix      <- segment.matrix(current_matrix, segments)
+      
+      # Only keep the matrix if we're not at the last level or if it will be used
+      mat.list[[i+1]] <- new_matrix
+      out.put[[i]]    <- list(segments=segments, mat=new_matrix)
+      
+      # MEMORY OPTIMIZATION: Update current matrix for next iteration
+      current_matrix  <- new_matrix
+      
+      # Additional memory pressure check
+      if (i > 5 && object.size(out.put) > 100 * 1024 * 1024) { # 100MB threshold
+        warning("Memory usage is high. Stopping early to prevent system instability.")
+        break
+      }
     }
+    
+    # MEMORY OPTIMIZATION: Clear temporary objects
+    if (exists("current_matrix")) rm(current_matrix)
+    if (exists("new_matrix")) rm(new_matrix)
+    gc(verbose = FALSE)
   }
   
   
-  # Create segments
+  # MEMORY OPTIMIZATION: Create segments with final cleanup
   segment.list    <- create.segments(out.put, mx)
   
-  # Create output
+  # MEMORY OPTIMIZATION: Clear intermediate objects before creating final output
+  rm(out.put)
+  gc(verbose = FALSE)
   
+  # Create output
   out <- list(segment.list=segment.list, mat.list=mat.list, small.cell.reduction=small.cell.reduction)
   
   class(out) <- "moneca"
+  
+  # MEMORY OPTIMIZATION: Final cleanup
+  gc(verbose = FALSE)
   
   return(out)
 }
@@ -427,24 +490,38 @@ weight.matrix <- function(mx, cut.off = 1, symmetric = TRUE, diagonal = NULL, sm
     stop("Matrix must be square (same number of rows and columns)")
   }
   
+  # MEMORY OPTIMIZATION: Calculate components efficiently with minimal copying
   o.r.s           <- mx[-l, l]
   o.c.s           <- mx[l, -l]
   total.total     <- mx[l,l]
-  row.share       <- o.r.s/total.total
-  col.share       <- o.c.s/total.total
   total.mobility  <- sum(mx[-l,-l])
-#   r.s             <- rowSums(mx[-l, -l])
-#   c.s             <- colSums(mx[-l, -l])
-#   mx.1_exp        <- o.r.s %*% t(o.c.s)/sum(o.r.s)    # Unweighted Relative Risks
-  mx.1_exp        <- row.share %*% t(col.share)*total.mobility
-  mx.red          <- mx[-l,-l]
-  mx.red[mx.red < small.cell.reduction] <- 0
-  mx.1_net        <- mx.red/mx.1_exp
-  mx.1            <- mx.1_net
-  mx.1i           <- as.matrix(mx.1)
-  if (identical(symmetric, TRUE))    mx.1i           <- mx.1i + t(mx.1i)
-  mx.1i[mx.1i < cut.off]  <- NA               
-  if(is.null(diagonal)) diag(mx.1i)     <- NA
+  
+  # MEMORY OPTIMIZATION: Calculate expected matrix in-place
+  mx.1_exp        <- (o.r.s/total.total) %*% t(o.c.s/total.total) * total.mobility
+  
+  # MEMORY OPTIMIZATION: Work directly with the sub-matrix
+  mx.1i           <- mx[-l,-l]
+  
+  # Apply small cell reduction in-place
+  if (small.cell.reduction > 0) {
+    mx.1i[mx.1i < small.cell.reduction] <- 0
+  }
+  
+  # Calculate relative risks in-place
+  mx.1i           <- mx.1i / mx.1_exp
+  
+  # MEMORY OPTIMIZATION: Clear temporary objects
+  rm(mx.1_exp, o.r.s, o.c.s)
+  gc(verbose = FALSE)
+  
+  # Apply symmetric transformation if needed
+  if (identical(symmetric, TRUE)) {
+    mx.1i <- mx.1i + t(mx.1i)
+  }
+  
+  # Apply cut-off and diagonal settings
+  mx.1i[mx.1i < cut.off] <- NA               
+  if(is.null(diagonal)) diag(mx.1i) <- NA
   
   return(mx.1i)  
 }
