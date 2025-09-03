@@ -1029,31 +1029,38 @@ plot_stair_ggraph <- function(segments,
   
   # Add first level plot (individual nodes) if requested
   if (include_first_level) {
-    # Extract title from ... if provided, otherwise use default
+    # Extract arguments from ... and handle show_segments specially
     dots <- list(...)
+    # Remove show_segments from dots since we want to control it for level 1
+    dots$show_segments <- NULL
+    
     if ("title" %in% names(dots)) {
       # User provided a title - don't override it
-      p_first <- plot_moneca_ggraph(
-        segments,
-        level = 1,
-        layout = layout,
-        segment_naming = segment_naming,
-        show_segments = FALSE,  # No hulls for individual level
-        show_labels = TRUE,
-        ...
-      )
+      p_first <- do.call(plot_moneca_ggraph, c(
+        list(
+          segments = segments,
+          level = 1,
+          layout = layout,
+          segment_naming = segment_naming,
+          show_segments = FALSE,  # No hulls for individual level
+          show_labels = TRUE
+        ),
+        dots
+      ))
     } else {
       # Use default title
-      p_first <- plot_moneca_ggraph(
-        segments,
-        level = 1,
-        layout = layout,
-        segment_naming = segment_naming,
-        show_segments = FALSE,  # No hulls for individual level
-        show_labels = TRUE,
-        title = "Level 1: Individual Classes",
-        ...
-      )
+      p_first <- do.call(plot_moneca_ggraph, c(
+        list(
+          segments = segments,
+          level = 1,
+          layout = layout,
+          segment_naming = segment_naming,
+          show_segments = FALSE,  # No hulls for individual level
+          show_labels = TRUE,
+          title = "Level 1: Individual Classes"
+        ),
+        dots
+      ))
     }
     
     # Remove all legends
@@ -1075,27 +1082,32 @@ plot_stair_ggraph <- function(segments,
   for (i in seq_along(plot_levels)) {
     level_idx <- plot_levels[i]
     
-    # Extract title from ... if provided, otherwise use default
+    # Extract arguments from ... (for subsequent levels, we preserve user's show_segments preference)
     dots <- list(...)
+    
     if ("title" %in% names(dots)) {
       # User provided a title - don't override it
-      p <- plot_moneca_ggraph(
-        segments,
-        level = 1:level_idx,
-        layout = layout,
-        segment_naming = segment_naming,
-        ...
-      )
+      p <- do.call(plot_moneca_ggraph, c(
+        list(
+          segments = segments,
+          level = 1:level_idx,
+          layout = layout,
+          segment_naming = segment_naming
+        ),
+        dots
+      ))
     } else {
       # Use default title
-      p <- plot_moneca_ggraph(
-        segments,
-        level = 1:level_idx,
-        layout = layout,
-        segment_naming = segment_naming,
-        title = paste("Level", level_idx, "Segmentation"),
-        ...
-      )
+      p <- do.call(plot_moneca_ggraph, c(
+        list(
+          segments = segments,
+          level = 1:level_idx,
+          layout = layout,
+          segment_naming = segment_naming,
+          title = paste("Level", level_idx, "Segmentation")
+        ),
+        dots
+      ))
     }
     
     # Remove all legends - hulls are now handled by plot_moneca_ggraph() in proper layer order

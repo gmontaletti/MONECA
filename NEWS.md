@@ -1,3 +1,12 @@
+# moneca 0.5.1
+
+## Bug Fixes
+
+* **Fixed vignette build error in plot_stair_ggraph()**:
+  - Resolved parameter conflict where 'show_segments' was being passed multiple times to plot_moneca_ggraph()
+  - Fixed duplicate parameter passing that caused vignette build failures
+  - Improved parameter handling in stair plot visualization function
+
 # moneca 0.5.0
 
 ## New Features
