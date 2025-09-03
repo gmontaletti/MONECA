@@ -1,3 +1,33 @@
+# moneca 0.5.0
+
+## New Features
+
+* **Enhanced segment naming in plotting functions**:
+  - `plot_moneca_ggraph()`, `plot_ego_ggraph()`, and `plot_stair_ggraph()` now support advanced segment naming options
+  - Added support for custom dataframe-based segment labeling via `segment_naming` parameter
+  - Can now provide a dataframe with `segment` and `label` columns for custom segment names
+  - Maintains full backward compatibility with existing boolean and string options
+  - Enhanced documentation with comprehensive examples of all naming options
+
+## Improvements
+
+* **Flexible segment labeling system**:
+  - Support for dataframe input: `data.frame(segment = c(1, 2), label = c("Group A", "Group B"))`
+  - Automatic matching of segment numbers to custom labels
+  - Robust error handling for invalid dataframe formats
+  - Clear validation messages for proper dataframe structure
+  
+* **Updated vignettes and documentation**:
+  - All plotting function examples now demonstrate the new segment naming capabilities
+  - Enhanced vignette with practical examples of custom segment labeling
+  - Improved function documentation with detailed parameter descriptions
+
+## Technical Changes
+
+* Enhanced parameter validation for segment naming options
+* Improved error messages for invalid segment naming inputs
+* Better integration of custom labels with existing plotting workflows
+
 # moneca 0.4.0
 
 ## Major Changes

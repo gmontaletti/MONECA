@@ -76,6 +76,7 @@ devtools::install_deps()
 - **plot_moneca_ggraph()**: Main network visualization with ggraph (RECOMMENDED)
 - **plot_ego_ggraph()**: Ego network analysis plots with modern styling
 - **plot_stair_ggraph()**: Multi-level segmentation visualization
+- **Enhanced Segment Naming**: All modern plotting functions support flexible segment naming
 - **Legacy functions**: `gg.moneca()`, `moneca.plot()`, `ego.plot()` still available
 
 ### Synthetic Data Generation (R/synthetic_data.R)
@@ -115,6 +116,34 @@ The package now includes modern plotting functions using ggraph:
 - `plot_stair_ggraph()`: Multi-level segmentation visualization
 - Legacy functions (`gg.moneca()`, `moneca.plot()`) still available for backward compatibility
 
+### Enhanced Segment Naming System
+All modern plotting functions support flexible segment naming through the `segment_naming` parameter:
+
+#### Input Types:
+- **Character strings**: "auto", "concat", "pattern", "custom" (existing functionality)
+- **Data frame**: Must have columns "name" and "segment_label" (NEW FEATURE)
+- **NULL**: Defaults to "auto" strategy
+
+#### Implementation Details:
+- **Data frame validation**: Ensures required columns exist
+- **Partial naming support**: Missing names fall back to default strategies  
+- **Cross-function consistency**: Works across all plotting functions
+- **Error handling**: Clear error messages for invalid inputs
+
+#### Usage Examples:
+```r
+# String-based naming (existing)
+plot_moneca_ggraph(seg, segment_naming = "auto")
+
+# Custom data frame (new)
+custom_labels <- data.frame(
+  name = c("Class1", "Class2", "Class3"),
+  segment_label = c("Executive", "Professional", "Technical"),
+  stringsAsFactors = FALSE
+)
+plot_moneca_ggraph(seg, segment_naming = custom_labels)
+```
+
 ### Synthetic Data Generation
 - `generate_mobility_data()`: Creates realistic synthetic mobility matrices
 - `generate_example_datasets()`: Pre-configured datasets for different mobility scenarios
@@ -148,6 +177,7 @@ The package now includes modern plotting functions using ggraph:
 - **Extensive parameter validation** with informative error messages
 - **Reproducible analysis** with seed parameters in synthetic data
 - **Modular architecture** with clear separation of concerns
+- **Enhanced visualization features** like flexible segment naming improve usability
 
 ## Quick Start for Development
 
@@ -164,6 +194,14 @@ seg <- moneca(test_data, segment.levels = 3)
 
 # Test modern plotting
 plot_moneca_ggraph(seg, node_color = "segment")
+
+# Test enhanced segment naming
+custom_names <- data.frame(
+  name = rownames(test_data)[1:3],
+  segment_label = c("Executive", "Professional", "Technical"),
+  stringsAsFactors = FALSE
+)
+plot_moneca_ggraph(seg, segment_naming = custom_names)
 
 # Run specific tests
 testthat::test_file("tests/testthat/test-moneca-core.R")
@@ -204,3 +242,4 @@ devtools::build_vignettes()
 - **Testing**: All existing functions continue to work unchanged
 - **Dependencies**: Package now requires ggraph and tidygraph for modern features
 - never change the original moneca() function!
+- the reference directory for the cleanup / mive files operations is in ../reference/moneca/ tell it to the agents

@@ -30,8 +30,18 @@ Default includes all levels.}
 \item{ncol}{Integer specifying the number of columns in the plot grid.
 Default is 2. Set to 1 for vertical arrangement.}
 
-\item{segment_naming}{Character string specifying the naming strategy for 
-segment labels. Default is "auto".}
+\item{segment_naming}{Specifies how to name segments across all visualization levels. Can be:
+\itemize{
+  \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+    these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
+  \item data.frame: Custom segment labels with columns "name" (node names from the 
+    mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+    control over segment naming across all hierarchical levels
+  \item NULL: Uses default "auto" strategy
+}
+When a data.frame is provided, custom labels override automatically generated names
+consistently across all levels. The data.frame approach is particularly useful for 
+stair plots as it maintains consistent naming across the hierarchical progression.}
 
 \item{include_first_level}{Logical indicating whether to include the first level
 (individual classes without segmentation). Default is TRUE.}
@@ -76,14 +86,27 @@ custom_stair <- plot_stair_ggraph(seg,
                                  ncol = 1,
                                  node_color = "mobility")
 
+# Stair plot with custom organizational labels
+org_labels <- data.frame(
+  name = rownames(mobility_data)[-nrow(mobility_data)],
+  segment_label = c("C-Suite", "VP Level", "Director Level", 
+                    "Manager Level", "Staff Level", "Entry Level")[1:length(rownames(mobility_data)[-nrow(mobility_data)])],
+  stringsAsFactors = FALSE
+)
+
+org_stair <- plot_stair_ggraph(seg, 
+                              segment_naming = org_labels,
+                              ncol = 1,
+                              title = "Organizational Hierarchy Evolution")
+
 # Return individual plots for further customization
 plot_list <- plot_stair_ggraph(seg, combine_plots = FALSE)
 # Modify individual plots
 plot_list[[1]] <- plot_list[[1]] + ggplot2::labs(subtitle = "Level 2")
 
 \dontrun{
-# Display the combined plot
-print(stair_plots)
+# Display plots with custom labels
+print(org_stair)
 
 # Save individual plots
 for (i in seq_along(plot_list)) {

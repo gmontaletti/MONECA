@@ -95,9 +95,18 @@ Can be any RColorBrewer palette name. Default is "Set3".}
 
 \item{title}{Character string for plot title. Default is NULL (no title).}
 
-\item{segment_naming}{Character string specifying the naming strategy for 
-segment labels. Options are "auto", "concat", "pattern", or "custom". 
-Default is "auto". See \code{\link{segment.membership.enhanced}} for details.}
+\item{segment_naming}{Specifies how to name segments in the visualization. Can be:
+\itemize{
+  \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+    these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
+  \item data.frame: Custom segment labels with columns "name" (node names from the 
+    mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+    control over segment naming
+  \item NULL: Uses default "auto" strategy
+}
+When a data.frame is provided, custom labels override automatically generated names.
+The data.frame approach is useful for meaningful business names (e.g., "Upper Management"
+instead of "Segment 1") or multilingual applications.}
 
 \item{...}{Additional arguments passed to ggraph layout functions.}
 }
@@ -118,6 +127,15 @@ standard ggplot2 syntax.
 For interactive exploration, different layout algorithms may work better with
 different network structures. Force-directed layouts ("fr") work well for most
 cases, while "stress" layouts often produce cleaner results for dense networks.
+
+\strong{Segment Naming}: The new data.frame approach for segment_naming provides
+complete control over how segments are labeled. This is particularly useful for:
+\itemize{
+  \item Business applications where meaningful names are essential (e.g., "Senior Management" vs "Segment 1")
+  \item Multilingual visualizations where labels need translation
+  \item Presentations where consistent, professional terminology is required
+  \item Partial customization where only specific segments need custom names
+}
 }
 \examples{
 # Generate synthetic data and run MONECA
@@ -149,6 +167,40 @@ custom_plot <- plot_moneca_ggraph(seg,
 custom_plot + 
   ggplot2::labs(subtitle = "Custom subtitle") +
   ggplot2::theme(plot.title = ggplot2::element_text(size = 16))
+
+# Using custom segment labels with data.frame (NEW FUNCTIONALITY)
+node_names <- rownames(mobility_data)[-nrow(mobility_data)]  # Remove "Total" row
+
+# Example 1: Professional category labels
+professional_labels <- data.frame(
+  name = node_names,
+  segment_label = c("Senior Management", "Middle Management", "Professional Staff", 
+                    "Technical Staff", "Administrative", "Support Staff")[1:length(node_names)],
+  stringsAsFactors = FALSE
+)
+
+professional_plot <- plot_moneca_ggraph(seg,
+  segment_naming = professional_labels,
+  title = "Professional Hierarchy Analysis"
+)
+
+# Example 2: Partial custom labeling (mix of custom and auto-generated)
+partial_labels <- data.frame(
+  name = node_names[1:2],  # Only label first two categories
+  segment_label = c("Executive Level", "Management Level"),
+  stringsAsFactors = FALSE
+)
+
+partial_plot <- plot_moneca_ggraph(seg,
+  segment_naming = partial_labels,
+  title = "Mixed Labeling Approach"
+)
+
+# Example 3: Comparing naming strategies
+auto_plot <- plot_moneca_ggraph(seg, segment_naming = "auto", 
+                               title = "Automatic Naming")
+concat_plot <- plot_moneca_ggraph(seg, segment_naming = "concat", 
+                                 title = "Concatenated Names")
 
 }
 \seealso{

@@ -1040,6 +1040,11 @@ segment.membership.enhanced <- function(segments,
                                       max_concat_length = 2,
                                       pattern_rules = NULL) {
   
+  # Handle NULL naming_strategy
+  if (is.null(naming_strategy) || is.na(naming_strategy)) {
+    naming_strategy <- "auto"
+  }
+  
   # Validate inputs
   if (is.null(segments)) {
     stop("segments object is NULL")
@@ -1132,6 +1137,28 @@ segment.membership.enhanced <- function(segments,
 generate_level_name <- function(node_names, membership_id, naming_strategy, 
                                custom_names, separator, max_concat_length, 
                                pattern_rules) {
+  
+  # Robust handling of naming_strategy parameter
+  # Convert to character and handle all edge cases
+  if (is.null(naming_strategy) || length(naming_strategy) == 0) {
+    naming_strategy <- "auto"
+  } else {
+    # Try to convert to character
+    naming_strategy <- as.character(naming_strategy)
+    
+    # Check if conversion resulted in NA or empty
+    if (length(naming_strategy) == 0 || is.na(naming_strategy[1])) {
+      naming_strategy <- "auto"
+    } else {
+      # Take first element if vector
+      naming_strategy <- naming_strategy[1]
+      
+      # Final check for NA after subsetting
+      if (is.na(naming_strategy)) {
+        naming_strategy <- "auto"
+      }
+    }
+  }
   
   # Strategy 1: Custom names override everything
   if (naming_strategy == "custom" && !is.null(custom_names) && 

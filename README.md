@@ -105,6 +105,30 @@ plot_segment_quality(seg, title = "Segment Quality Assessment")
 plot_stair_ggraph(seg, title = "Hierarchical Segmentation")
 ```
 
+### Enhanced Segment Naming
+
+MONECA now supports flexible segment naming to improve visualization interpretability:
+
+```r
+# Create custom meaningful labels
+custom_labels <- data.frame(
+  name = c("Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6"),
+  segment_label = c("Executive", "Professional", "Manager", 
+                    "Technical", "Service", "Manual"),
+  stringsAsFactors = FALSE
+)
+
+# Use in any plotting function
+plot_moneca_ggraph(seg, 
+                  segment_naming = custom_labels,
+                  title = "Occupational Mobility Network")
+
+# Also works with string strategies
+plot_moneca_ggraph(seg, segment_naming = "auto")    # Intelligent pattern recognition
+plot_moneca_ggraph(seg, segment_naming = "concat")  # Name concatenation
+plot_moneca_ggraph(seg, segment_naming = "pattern") # Advanced pattern matching
+```
+
 ## Key Functions
 
 ### Core Analysis
@@ -118,9 +142,9 @@ plot_stair_ggraph(seg, title = "Hierarchical Segmentation")
 - `generate_example_datasets()` - Pre-configured example datasets
 
 ### Modern Visualization
-- `plot_moneca_ggraph()` - Network plots with ggraph
-- `plot_ego_ggraph()` - Ego network visualization  
-- `plot_stair_ggraph()` - Multi-level segmentation plots
+- `plot_moneca_ggraph()` - Network plots with ggraph (supports enhanced segment naming)
+- `plot_ego_ggraph()` - Ego network visualization (supports enhanced segment naming)
+- `plot_stair_ggraph()` - Multi-level segmentation plots (supports enhanced segment naming)
 
 ### Analysis Tools
 - `segment.membership.enhanced()` - Enhanced segment membership with naming

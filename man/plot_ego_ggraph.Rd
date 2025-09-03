@@ -52,6 +52,18 @@ Default is c(0.5, 3).}
 
 \item{title}{Character string for plot title. Default is NULL.}
 
+\item{segment_naming}{Specifies how to name segments in the visualization. Can be:
+\itemize{
+  \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+    these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
+  \item data.frame: Custom segment labels with columns "name" (node names from the 
+    mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+    control over segment naming
+  \item NULL: Uses default "auto" strategy
+}
+When a data.frame is provided, custom labels override automatically generated names.
+The data.frame approach is useful for meaningful business names or multilingual applications.}
+
 \item{...}{Additional arguments passed to the ggraph layout function.}
 }
 \value{
@@ -103,6 +115,19 @@ plot_ego_ggraph(seg, mobility_data,
                 flow_color = "plasma",
                 edge_width_range = c(1, 5),
                 title = "Professional Class Mobility")
+
+# Ego plot with custom segment labels
+job_labels <- data.frame(
+  name = rownames(mobility_data)[-nrow(mobility_data)],
+  segment_label = c("CEO", "Director", "Manager", 
+                    "Analyst", "Coordinator", "Assistant")[1:length(rownames(mobility_data)[-nrow(mobility_data)])],
+  stringsAsFactors = FALSE
+)
+
+plot_ego_ggraph(seg, mobility_data, 
+                ego_id = 1,
+                segment_naming = job_labels,
+                title = "CEO Mobility Network with Job Titles")
 
 }
 \seealso{

@@ -80,9 +80,18 @@ if(getRversion() >= "2.15.1") {
 #'     \item "classic": Traditional ggplot2 theme
 #'   }
 #' @param title Character string for plot title. Default is NULL (no title).
-#' @param segment_naming Character string specifying the naming strategy for 
-#'   segment labels. Options are "auto", "concat", "pattern", or "custom". 
-#'   Default is "auto". See \code{\link{segment.membership.enhanced}} for details.
+#' @param segment_naming Specifies how to name segments in the visualization. Can be:
+#'   \itemize{
+#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+#'       these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
+#'     \item data.frame: Custom segment labels with columns "name" (node names from the 
+#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+#'       control over segment naming
+#'     \item NULL: Uses default "auto" strategy
+#'   }
+#'   When a data.frame is provided, custom labels override automatically generated names.
+#'   The data.frame approach is useful for meaningful business names (e.g., "Upper Management"
+#'   instead of "Segment 1") or multilingual applications.
 #' @param ... Additional arguments passed to ggraph layout functions.
 #'
 #' @return A ggplot2 object that can be further customized or displayed.
@@ -96,6 +105,15 @@ if(getRversion() >= "2.15.1") {
 #' For interactive exploration, different layout algorithms may work better with
 #' different network structures. Force-directed layouts ("fr") work well for most
 #' cases, while "stress" layouts often produce cleaner results for dense networks.
+#' 
+#' \strong{Segment Naming}: The new data.frame approach for segment_naming provides
+#' complete control over how segments are labeled. This is particularly useful for:
+#' \itemize{
+#'   \item Business applications where meaningful names are essential (e.g., "Senior Management" vs "Segment 1")
+#'   \item Multilingual visualizations where labels need translation
+#'   \item Presentations where consistent, professional terminology is required
+#'   \item Partial customization where only specific segments need custom names
+#' }
 #'
 #' @examples
 #' # Generate synthetic data and run MONECA
@@ -127,6 +145,40 @@ if(getRversion() >= "2.15.1") {
 #' custom_plot + 
 #'   ggplot2::labs(subtitle = "Custom subtitle") +
 #'   ggplot2::theme(plot.title = ggplot2::element_text(size = 16))
+#' 
+#' # Using custom segment labels with data.frame (NEW FUNCTIONALITY)
+#' node_names <- rownames(mobility_data)[-nrow(mobility_data)]  # Remove "Total" row
+#' 
+#' # Example 1: Professional category labels
+#' professional_labels <- data.frame(
+#'   name = node_names,
+#'   segment_label = c("Senior Management", "Middle Management", "Professional Staff", 
+#'                     "Technical Staff", "Administrative", "Support Staff")[1:length(node_names)],
+#'   stringsAsFactors = FALSE
+#' )
+#' 
+#' professional_plot <- plot_moneca_ggraph(seg,
+#'   segment_naming = professional_labels,
+#'   title = "Professional Hierarchy Analysis"
+#' )
+#' 
+#' # Example 2: Partial custom labeling (mix of custom and auto-generated)
+#' partial_labels <- data.frame(
+#'   name = node_names[1:2],  # Only label first two categories
+#'   segment_label = c("Executive Level", "Management Level"),
+#'   stringsAsFactors = FALSE
+#' )
+#' 
+#' partial_plot <- plot_moneca_ggraph(seg,
+#'   segment_naming = partial_labels,
+#'   title = "Mixed Labeling Approach"
+#' )
+#' 
+#' # Example 3: Comparing naming strategies
+#' auto_plot <- plot_moneca_ggraph(seg, segment_naming = "auto", 
+#'                                title = "Automatic Naming")
+#' concat_plot <- plot_moneca_ggraph(seg, segment_naming = "concat", 
+#'                                  title = "Concatenated Names")
 #' 
 #' @seealso 
 #' \code{\link{moneca}} for the main analysis function,
@@ -240,7 +292,37 @@ plot_moneca_ggraph <- function(segments,
   
   # Add segment membership with enhanced names
   if (identical(node_color, "segment")) {
-    membership <- segment.membership.enhanced(segments, level = level, naming_strategy = segment_naming)
+    # Handle different types of segment_naming input
+    if (is.data.frame(segment_naming)) {
+      # Custom dataframe provided - validate structure
+      if (!all(c("name", "segment_label") %in% colnames(segment_naming))) {
+        stop("segment_naming dataframe must have columns 'name' and 'segment_label'")
+      }
+      
+      # Get basic membership first - IMPORTANT: Pass "auto" as character string
+      membership <- segment.membership.enhanced(segments, level = level, naming_strategy = "auto")
+      
+      # Override level_name with custom labels where available
+      custom_match <- match(membership$name, segment_naming$name)
+      custom_labels <- segment_naming$segment_label[custom_match]
+      
+      # Use custom labels where available, fallback to generated names
+      membership$level_name <- ifelse(is.na(custom_labels), 
+                                     membership$level_name, 
+                                     custom_labels)
+    } else {
+      # Handle character string or NULL input
+      naming_strategy <- if (is.null(segment_naming)) "auto" else segment_naming
+      
+      # Validate character string input
+      if (!is.character(naming_strategy) || 
+          !naming_strategy %in% c("auto", "concat", "pattern", "custom")) {
+        stop("segment_naming must be 'auto', 'concat', 'pattern', 'custom', a dataframe, or NULL")
+      }
+      
+      membership <- segment.membership.enhanced(segments, level = level, naming_strategy = naming_strategy)
+    }
+    
     # Match node names to membership
     node_segments <- membership$membership[match(node_names, membership$name)]
     node_segments[is.na(node_segments)] <- "Unassigned"
@@ -548,6 +630,17 @@ plot_moneca_ggraph <- function(segments,
 #' @param edge_width_range Numeric vector of length 2 specifying the range for edge widths.
 #'   Default is c(0.5, 3).
 #' @param title Character string for plot title. Default is NULL.
+#' @param segment_naming Specifies how to name segments in the visualization. Can be:
+#'   \itemize{
+#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+#'       these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
+#'     \item data.frame: Custom segment labels with columns "name" (node names from the 
+#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+#'       control over segment naming
+#'     \item NULL: Uses default "auto" strategy
+#'   }
+#'   When a data.frame is provided, custom labels override automatically generated names.
+#'   The data.frame approach is useful for meaningful business names or multilingual applications.
 #' @param ... Additional arguments passed to the ggraph layout function.
 #'
 #' @return A ggplot2 object showing the ego network visualization.
@@ -593,6 +686,19 @@ plot_moneca_ggraph <- function(segments,
 #'                 flow_color = "plasma",
 #'                 edge_width_range = c(1, 5),
 #'                 title = "Professional Class Mobility")
+#' 
+#' # Ego plot with custom segment labels
+#' job_labels <- data.frame(
+#'   name = rownames(mobility_data)[-nrow(mobility_data)],
+#'   segment_label = c("CEO", "Director", "Manager", 
+#'                     "Analyst", "Coordinator", "Assistant")[1:length(rownames(mobility_data)[-nrow(mobility_data)])],
+#'   stringsAsFactors = FALSE
+#' )
+#' 
+#' plot_ego_ggraph(seg, mobility_data, 
+#'                 ego_id = 1,
+#'                 segment_naming = job_labels,
+#'                 title = "CEO Mobility Network with Job Titles")
 #' 
 #' @seealso 
 #' \code{\link{plot_moneca_ggraph}} for full network visualization,
@@ -679,7 +785,36 @@ plot_ego_ggraph <- function(segments,
   ego_position_in_filtered <- which(connected_nodes == ego_id)
   
   # Get enhanced segment membership for all nodes
-  membership <- segment.membership.enhanced(segments, level = 1:length(segments$segment.list), naming_strategy = segment_naming)
+  # Handle different types of segment_naming input
+  if (is.data.frame(segment_naming)) {
+    # Custom dataframe provided - validate structure
+    if (!all(c("name", "segment_label") %in% colnames(segment_naming))) {
+      stop("segment_naming dataframe must have columns 'name' and 'segment_label'")
+    }
+    
+    # Get basic membership first
+    membership <- segment.membership.enhanced(segments, level = 1:length(segments$segment.list), naming_strategy = "auto")
+    
+    # Override level_name with custom labels where available
+    custom_match <- match(membership$name, segment_naming$name)
+    custom_labels <- segment_naming$segment_label[custom_match]
+    
+    # Use custom labels where available, fallback to generated names
+    membership$level_name <- ifelse(is.na(custom_labels), 
+                                   membership$level_name, 
+                                   custom_labels)
+  } else {
+    # Handle character string or NULL input
+    naming_strategy <- if (is.null(segment_naming)) "auto" else segment_naming
+    
+    # Validate character string input
+    if (!is.character(naming_strategy) || 
+        !naming_strategy %in% c("auto", "concat", "pattern", "custom")) {
+      stop("segment_naming must be 'auto', 'concat', 'pattern', 'custom', a dataframe, or NULL")
+    }
+    
+    membership <- segment.membership.enhanced(segments, level = 1:length(segments$segment.list), naming_strategy = naming_strategy)
+  }
   
   # Find ego's segment
   ego_segment <- membership$membership[ego_id]
@@ -778,8 +913,18 @@ plot_ego_ggraph <- function(segments,
 #'   }
 #' @param ncol Integer specifying the number of columns in the plot grid.
 #'   Default is 2. Set to 1 for vertical arrangement.
-#' @param segment_naming Character string specifying the naming strategy for 
-#'   segment labels. Default is "auto".
+#' @param segment_naming Specifies how to name segments across all visualization levels. Can be:
+#'   \itemize{
+#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+#'       these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
+#'     \item data.frame: Custom segment labels with columns "name" (node names from the 
+#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+#'       control over segment naming across all hierarchical levels
+#'     \item NULL: Uses default "auto" strategy
+#'   }
+#'   When a data.frame is provided, custom labels override automatically generated names
+#'   consistently across all levels. The data.frame approach is particularly useful for 
+#'   stair plots as it maintains consistent naming across the hierarchical progression.
 #' @param include_first_level Logical indicating whether to include the first level
 #'   (individual classes without segmentation). Default is TRUE.
 #' @param ... Additional arguments passed to \code{\link{plot_moneca_ggraph}}.
@@ -817,14 +962,27 @@ plot_ego_ggraph <- function(segments,
 #'                                  ncol = 1,
 #'                                  node_color = "mobility")
 #' 
+#' # Stair plot with custom organizational labels
+#' org_labels <- data.frame(
+#'   name = rownames(mobility_data)[-nrow(mobility_data)],
+#'   segment_label = c("C-Suite", "VP Level", "Director Level", 
+#'                     "Manager Level", "Staff Level", "Entry Level")[1:length(rownames(mobility_data)[-nrow(mobility_data)])],
+#'   stringsAsFactors = FALSE
+#' )
+#' 
+#' org_stair <- plot_stair_ggraph(seg, 
+#'                               segment_naming = org_labels,
+#'                               ncol = 1,
+#'                               title = "Organizational Hierarchy Evolution")
+#' 
 #' # Return individual plots for further customization
 #' plot_list <- plot_stair_ggraph(seg, combine_plots = FALSE)
 #' # Modify individual plots
 #' plot_list[[1]] <- plot_list[[1]] + ggplot2::labs(subtitle = "Level 2")
 #' 
 #' \dontrun{
-#' # Display the combined plot
-#' print(stair_plots)
+#' # Display plots with custom labels
+#' print(org_stair)
 #' 
 #' # Save individual plots
 #' for (i in seq_along(plot_list)) {

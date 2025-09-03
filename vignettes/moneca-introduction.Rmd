@@ -558,6 +558,207 @@ cohesion_plot <- plot_segment_quality(
 print(cohesion_plot)
 ```
 
+### Custom Segment Naming for Enhanced Interpretation
+
+MONECA includes enhanced segment naming functionality that allows you to provide meaningful, domain-specific labels for your mobility categories. This feature dramatically improves the interpretability of visualizations by replacing generic class names with substantive descriptions.
+
+#### Basic Naming Strategies
+
+The `segment_naming` parameter accepts several types of input:
+
+```{r segment_naming_basic, eval=TRUE, fig.width=10, fig.height=8}
+# Generate example data with meaningful class names
+occupational_data <- generate_mobility_data(
+  n_classes = 8,
+  class_names = c("Executive", "Professional", "Manager", "Technical", 
+                  "Skilled Worker", "Service Worker", "Clerical", "Manual Worker"),
+  n_total = 8000,
+  seed = 100
+)
+
+# Run MONECA analysis
+occ_seg <- moneca(occupational_data, segment.levels = 3)
+
+# Example 1: Auto strategy (default) - uses intelligent pattern recognition
+auto_plot <- plot_moneca_ggraph(
+  occ_seg,
+  segment_naming = "auto",
+  title = "Auto Naming Strategy: Pattern Recognition",
+  node_color = "segment",
+  show_segments = TRUE,
+  color_palette = "Set2"
+)
+
+print(auto_plot)
+
+# Example 2: Concatenation strategy - joins names with separator
+concat_plot <- plot_moneca_ggraph(
+  occ_seg,
+  segment_naming = "concat",
+  title = "Concatenation Strategy: Joined Names",
+  node_color = "segment",
+  show_segments = TRUE,
+  color_palette = "Dark2"
+)
+
+print(concat_plot)
+```
+
+#### Advanced Custom Naming with Data Frames
+
+The most powerful feature is the ability to provide custom labels using a data.frame:
+
+```{r segment_naming_custom, eval=TRUE, fig.width=12, fig.height=10}
+# Create custom segment labels that provide analytical insight
+custom_labels <- data.frame(
+  name = c("Executive", "Professional", "Manager", "Technical", 
+           "Skilled Worker", "Service Worker", "Clerical", "Manual Worker"),
+  segment_label = c(
+    "Senior Leadership",      # Executive
+    "Knowledge Workers",      # Professional  
+    "Middle Management",      # Manager
+    "Technical Specialists",  # Technical
+    "Craft Workers",         # Skilled Worker
+    "Service Industry",      # Service Worker
+    "Administrative Staff",  # Clerical
+    "Production Workers"     # Manual Worker
+  ),
+  stringsAsFactors = FALSE
+)
+
+print("Custom segment labels mapping:")
+print(custom_labels)
+
+# Use custom labels in main network plot
+custom_plot <- plot_moneca_ggraph(
+  occ_seg,
+  segment_naming = custom_labels,
+  title = "Custom Segment Naming: Occupational Class Structure",
+  node_color = "segment",
+  node_size = "total",
+  show_segments = TRUE,
+  segment_alpha = 0.2,
+  color_palette = "Set3",
+  show_labels = TRUE,
+  label_size = 3.5
+)
+
+print(custom_plot)
+
+# Show how this works across different plot types
+# Ego network with custom naming
+ego_custom <- plot_ego_ggraph(
+  occ_seg,
+  occupational_data,
+  ego_id = 4,  # Technical worker
+  segment_naming = custom_labels,
+  title = "Technical Specialists: Mobility Patterns",
+  highlight_color = "#E31A1C",
+  flow_color = "viridis",
+  min_weight = 20
+)
+
+print(ego_custom)
+```
+
+#### Partial Custom Naming
+
+You can provide custom names for only some categories, with others using default strategies:
+
+```{r segment_naming_partial, eval=TRUE, fig.width=10, fig.height=8}
+# Partial custom naming - focus on key categories
+key_positions <- data.frame(
+  name = c("Executive", "Professional", "Manual Worker"),
+  segment_label = c("Corporate Elite", "Professional Class", "Working Class"),
+  stringsAsFactors = FALSE
+)
+
+partial_plot <- plot_moneca_ggraph(
+  occ_seg,
+  segment_naming = key_positions,
+  title = "Partial Custom Naming: Highlighting Key Social Classes",
+  node_color = "segment",
+  node_size = "mobility",
+  color_palette = "Spectral",
+  show_segments = TRUE,
+  segment_alpha = 0.15
+)
+
+print(partial_plot)
+
+cat("\\nPartial custom naming allows focus on analytically important categories\\n")
+cat("while maintaining readability for other positions.\\n")
+```
+
+#### Multi-Level Analysis with Custom Naming
+
+Custom naming works seamlessly across hierarchical levels:
+
+```{r segment_naming_multilevel, eval=TRUE, fig.width=12, fig.height=10}
+# Multi-level visualization with consistent custom naming
+multilevel_plots <- plot_stair_ggraph(
+  occ_seg,
+  levels = c(2, 3),
+  segment_naming = custom_labels,
+  color_palette = "Set2",
+  node_size = "total",
+  show_segments = TRUE,
+  segment_alpha = 0.2,
+  label_size = 3
+)
+
+print(multilevel_plots$`Level 2`)
+print(multilevel_plots$`Level 3`)
+
+# Show progression of segmentation with meaningful names
+cat("\\nMulti-level segmentation progression with custom names:\\n")
+for(level in 2:3) {
+  n_segments <- length(occ_seg$segment.list[[level]])
+  avg_size <- mean(sapply(occ_seg$segment.list[[level]], length))
+  cat("Level", level, ":", n_segments, "occupational segments,", 
+      "average", round(avg_size, 1), "classes per segment\\n")
+}
+```
+
+#### Practical Applications
+
+Custom segment naming is particularly valuable for:
+
+1. **Occupational Mobility**: Use job titles or occupational categories
+2. **Educational Analysis**: Replace generic levels with degree types
+3. **Geographic Studies**: Use meaningful place names instead of codes
+4. **Industry Analysis**: Employ sector names or industry classifications
+5. **International Comparisons**: Apply country-specific terminology
+
+```{r naming_applications, eval=FALSE}
+# Example applications for different research contexts
+
+# Educational mobility
+education_labels <- data.frame(
+  name = c("Level1", "Level2", "Level3", "Level4"),
+  segment_label = c("No Degree", "High School", "Bachelor's", "Graduate"),
+  stringsAsFactors = FALSE
+)
+
+# Geographic mobility  
+geographic_labels <- data.frame(
+  name = c("Region_A", "Region_B", "Region_C"),
+  segment_label = c("Metropolitan", "Suburban", "Rural"),
+  stringsAsFactors = FALSE
+)
+
+# Industry sectors
+industry_labels <- data.frame(
+  name = c("Sector1", "Sector2", "Sector3", "Sector4"),
+  segment_label = c("Manufacturing", "Services", "Technology", "Healthcare"),
+  stringsAsFactors = FALSE
+)
+
+# Use in analysis
+plot_moneca_ggraph(seg, segment_naming = education_labels, 
+                  title = "Educational Mobility Networks")
+```
+
 ### Interpretation Guidelines for Visualizations
 
 When interpreting MONECA network visualizations, consider these key elements:
@@ -573,6 +774,12 @@ When interpreting MONECA network visualizations, consider these key elements:
 - **Node Sizes**: Can represent total mobility volume, mobility rates, or custom metrics
 - **Edge Colors**: Often represent flow direction or connection strength
 - **Transparency**: Used to manage visual complexity while preserving information
+
+#### Custom Naming Benefits
+- **Enhanced Readability**: Meaningful labels improve immediate comprehension
+- **Domain Relevance**: Context-specific terminology aids interpretation
+- **Professional Presentation**: Polished visualizations for publications and reports
+- **Analytical Focus**: Highlight theoretically important distinctions
 
 #### Accessibility Features
 All plots include several accessibility enhancements:
