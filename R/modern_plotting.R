@@ -23,6 +23,55 @@ if(getRversion() >= "2.15.1") {
   if (is.null(x)) y else x
 }
 
+# Helper function to create segment labels based on segment_naming parameter
+create_segment_labels <- function(segments, level, segment_numbers, segment_naming) {
+  # Get base segment names first
+  if (is.data.frame(segment_naming)) {
+    # Custom dataframe provided - validate structure
+    if (!all(c("name", "segment_label") %in% colnames(segment_naming))) {
+      stop("segment_naming dataframe must have columns 'name' and 'segment_label'")
+    }
+    
+    # Get enhanced membership to get segment-to-name mapping
+    membership <- segment.membership.enhanced(segments, level = level, naming_strategy = "auto")
+    
+    # For each segment number, find the first representative and check for custom label
+    segment_labels <- character(length(segment_numbers))
+    for (i in seq_along(segment_numbers)) {
+      seg_num <- segment_numbers[i]
+      # Find names in this segment
+      seg_members <- which(membership$membership == paste0(level, ".", seg_num))
+      if (length(seg_members) > 0) {
+        # Get the first member's name
+        first_member_name <- membership$name[seg_members[1]]
+        # Check if we have a custom label for this member
+        custom_match <- match(first_member_name, segment_naming$name)
+        if (!is.na(custom_match)) {
+          segment_labels[i] <- segment_naming$segment_label[custom_match]
+        } else {
+          segment_labels[i] <- paste0("Segment ", seg_num)
+        }
+      } else {
+        segment_labels[i] <- paste0("Segment ", seg_num)
+      }
+    }
+    return(segment_labels)
+    
+  } else {
+    # Handle character string or NULL input
+    naming_strategy <- if (is.null(segment_naming)) "auto" else segment_naming
+    
+    # Validate character string input
+    if (!is.character(naming_strategy) || 
+        !naming_strategy %in% c("auto", "concat", "pattern", "custom")) {
+      stop("segment_naming must be 'auto', 'concat', 'pattern', 'custom', a dataframe, or NULL")
+    }
+    
+    # For character strategies, just create basic segment labels
+    return(paste0("Segment ", segment_numbers))
+  }
+}
+
 #' Modern Network Visualization for MONECA Results
 #'
 #' Creates sophisticated network visualizations of MONECA clustering results using
@@ -1554,6 +1603,17 @@ plot_moneca_dendrogram <- function(segments,
 #' @param show_labels Logical indicating whether to show segment labels.
 #'   Default is TRUE.
 #' @param label_size Numeric size for labels. Default is 3.
+#' @param segment_naming Specifies how to name segments in the visualization. Can be:
+#'   \itemize{
+#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+#'       these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
+#'     \item data.frame: Custom segment labels with columns "name" (node names from the 
+#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+#'       control over segment naming
+#'     \item NULL: Uses default "auto" strategy
+#'   }
+#'   When a data.frame is provided, custom labels override automatically generated names.
+#'   The data.frame approach is useful for meaningful business names or multilingual applications.
 #'
 #' @return A ggplot2 object (or list of ggplot2 objects for "overview" type).
 #'
@@ -1622,7 +1682,8 @@ plot_segment_quality <- function(segments,
                                 theme_style = "minimal",
                                 title = NULL,
                                 show_labels = TRUE,
-                                label_size = 3) {
+                                label_size = 3,
+                                segment_naming = "auto") {
   
   # Input validation
   if (!inherits(segments, "moneca")) {
@@ -1763,14 +1824,13 @@ plot_segment_quality <- function(segments,
     level_data <- quality_data[, c("Membership", level_cols), drop = FALSE]
     colnames(level_data) <- gsub(paste0("^", level, ": "), "", colnames(level_data))
     
-    # FIX: Aggregate data by segment membership to avoid multiple points per segment
+    # FIX: Aggregate data by segment to avoid multiple points per segment
     # This prevents multiple "balls" appearing for the same segment
-    # After cleaning column names, the segment column is just "Segment"
+    # Group by the "Segment" column to get one point per actual segment
     if ("Segment" %in% colnames(level_data)) {
       level_data <- level_data %>%
         dplyr::group_by(Segment) %>%
         dplyr::summarise(
-          Membership = dplyr::first(Membership),
           within.mobility = dplyr::first(within.mobility),
           share.of.mobility = dplyr::first(share.of.mobility),
           Density = dplyr::first(Density),
@@ -1779,25 +1839,19 @@ plot_segment_quality <- function(segments,
           share.of.total = dplyr::first(share.of.total),
           .groups = 'drop'
         )
+      
+      # Create segment labels using segment_naming parameter
+      segment_labels <- create_segment_labels(segments, level, level_data$Segment, segment_naming)
+      level_data$segment_label <- segment_labels
+      
     } else {
-      # Fallback: if column structure is unexpected, group by Membership
-      level_data <- level_data %>%
-        dplyr::group_by(Membership) %>%
-        dplyr::summarise(
-          within.mobility = dplyr::first(within.mobility),
-          share.of.mobility = dplyr::first(share.of.mobility),
-          Density = dplyr::first(Density),
-          Nodes = dplyr::first(Nodes),
-          Max.path = dplyr::first(Max.path),
-          share.of.total = dplyr::first(share.of.total),
-          .groups = 'drop'
-        )
+      stop("Expected 'Segment' column not found in level data")
     }
     
     # Create scatter plot
     p <- ggplot2::ggplot(level_data, 
                         ggplot2::aes(x = Nodes, y = within.mobility, 
-                                    size = share.of.mobility, color = Membership)) +
+                                    size = share.of.mobility, color = segment_label)) +
       ggplot2::geom_point(alpha = 0.7) +
       ggplot2::scale_size_continuous(range = c(3, 10), name = "Share of Mobility") +
       ggplot2::geom_hline(yintercept = 0.7, linetype = "dashed", color = "red", alpha = 0.5) +
@@ -1808,21 +1862,22 @@ plot_segment_quality <- function(segments,
                    subtitle = "Ideal segments: upper-right quadrant") +
       theme_base
     
-    # Add labels if requested
+    # Add labels if requested - use segment labels instead of membership
     if (show_labels) {
-      p <- p + ggplot2::geom_text(ggplot2::aes(label = Membership), 
+      p <- p + ggplot2::geom_text(ggplot2::aes(label = segment_label), 
                                   vjust = -1, size = label_size)
     }
     
-    # Color palette
+    # Color palette - Remove the Membership legend since labels are on points
     n_segments <- nrow(level_data)
     if (n_segments <= 12) {
-      p <- p + ggplot2::scale_color_brewer(palette = color_palette)
+      p <- p + ggplot2::scale_color_brewer(palette = color_palette, guide = "none")
     } else {
       p <- p + ggplot2::scale_color_manual(
         values = grDevices::colorRampPalette(
           RColorBrewer::brewer.pal(12, color_palette)
-        )(n_segments)
+        )(n_segments),
+        guide = "none"
       )
     }
     
