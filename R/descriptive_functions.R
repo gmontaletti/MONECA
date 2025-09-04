@@ -713,21 +713,31 @@ segment.quality <- function(segments, final.solution = FALSE, segment_naming = "
       tsm$Segment <- tsm$Membership
       
       # Add proper segment naming for final solution
-      # Get the highest level (final segmentation level)
-      final_level <- length(segments$segment.list)
+      # Extract both level and segment numbers from Membership (format is "level.segment")
+      membership_parts <- strsplit(as.character(tsm$Membership), "\\.")
       
-      # Create segment labels using the segment_naming parameter
-      # Extract segment numbers from Membership (format is "level.segment")
-      segment_numbers <- as.numeric(gsub(".*\\.", "", tsm$Membership))
+      segment_labels <- character(nrow(tsm))
+      for (i in seq_along(membership_parts)) {
+        parts <- membership_parts[[i]]
+        if (length(parts) >= 2) {
+          level_num <- as.numeric(parts[1])
+          segment_num <- as.numeric(parts[2])
+          
+          # Use the create_segment_labels function with the correct level for each segment
+          tryCatch({
+            segment_label <- create_segment_labels(segments, level_num, segment_num, segment_naming)
+            segment_labels[i] <- segment_label
+          }, error = function(e) {
+            # Fallback to simple segment labeling if helper function fails
+            segment_labels[i] <- paste("Segment", segment_num)
+          })
+        } else {
+          # Malformed membership string, use fallback
+          segment_labels[i] <- paste("Segment", i)
+        }
+      }
       
-      # Use the create_segment_labels function from modern_plotting.R
-      tryCatch({
-        segment_labels <- create_segment_labels(segments, final_level, segment_numbers, segment_naming)
-        tsm$segment_label <- segment_labels
-      }, error = function(e) {
-        # Fallback to simple segment labeling if helper function fails
-        tsm$segment_label <- paste("Segment", segment_numbers)
-      })
+      tsm$segment_label <- segment_labels
       
       out.mat         <- tsm
     }
