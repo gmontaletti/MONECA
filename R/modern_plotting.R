@@ -302,13 +302,13 @@ plot_moneca_ggraph <- function(segments,
       # Get basic membership first - IMPORTANT: Pass "auto" as character string
       membership <- segment.membership.enhanced(segments, level = level, naming_strategy = "auto")
       
-      # Override level_name with custom labels where available
+      # Override segment_label with custom labels where available
       custom_match <- match(membership$name, segment_naming$name)
       custom_labels <- segment_naming$segment_label[custom_match]
       
       # Use custom labels where available, fallback to generated names
-      membership$level_name <- ifelse(is.na(custom_labels), 
-                                     membership$level_name, 
+      membership$segment_label <- ifelse(is.na(custom_labels), 
+                                     membership$segment_label, 
                                      custom_labels)
     } else {
       # Handle character string or NULL input
@@ -327,14 +327,14 @@ plot_moneca_ggraph <- function(segments,
     node_segments <- membership$membership[match(node_names, membership$name)]
     node_segments[is.na(node_segments)] <- "Unassigned"
     
-    # Get enhanced level names for better legends
-    node_level_names <- membership$level_name[match(node_names, membership$name)]
-    node_level_names[is.na(node_level_names)] <- "Unassigned"
+    # Get enhanced segment labels for better legends
+    node_segment_labels <- membership$segment_label[match(node_names, membership$name)]
+    node_segment_labels[is.na(node_segment_labels)] <- "Unassigned"
     
     tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
           dplyr::mutate(
             segment = as.factor(node_segments),
-            level_name = as.factor(node_level_names)
+            segment_label = as.factor(node_segment_labels)
           )
   } else if (identical(node_color, "mobility")) {
     mobility_rates <- 1 - diag(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)]) / 
@@ -410,10 +410,10 @@ plot_moneca_ggraph <- function(segments,
         as.character()
     }
     
-    if (!"level_name" %in% colnames(actual_layout)) {
-      actual_layout$level_name <- tidy_graph %>%
+    if (!"segment_label" %in% colnames(actual_layout)) {
+      actual_layout$segment_label <- tidy_graph %>%
         tidygraph::activate(nodes) %>%
-        tidygraph::pull(level_name) %>%
+        tidygraph::pull(segment_label) %>%
         as.character()
     }
     
@@ -424,9 +424,9 @@ plot_moneca_ggraph <- function(segments,
       dplyr::do({
         if (nrow(.) >= 3) {
           hull_indices <- grDevices::chull(.$x, .$y)
-          .[hull_indices, c("x", "y", "segment", "level_name")]
+          .[hull_indices, c("x", "y", "segment", "segment_label")]
         } else {
-          data.frame(x = numeric(0), y = numeric(0), segment = character(0), level_name = character(0))
+          data.frame(x = numeric(0), y = numeric(0), segment = character(0), segment_label = character(0))
         }
       }) %>%
       dplyr::ungroup()
@@ -438,7 +438,7 @@ plot_moneca_ggraph <- function(segments,
         dplyr::summarise(
           x = mean(x, na.rm = TRUE),
           y = max(y, na.rm = TRUE) + 0.15,  # Slightly higher label position
-          label = dplyr::first(level_name),
+          label = dplyr::first(segment_label),
           .groups = 'drop'
         )
       
@@ -511,7 +511,7 @@ plot_moneca_ggraph <- function(segments,
   # Add nodes (third layer - on top)
   if (identical(node_color, "segment")) {
     p <- p + ggraph::geom_node_point(
-      ggplot2::aes(size = node_size, color = level_name),
+      ggplot2::aes(size = node_size, color = segment_label),
       alpha = node_alpha,
       show.legend = FALSE
     )
@@ -542,7 +542,7 @@ plot_moneca_ggraph <- function(segments,
   if (show_labels && (!show_segments || !identical(node_color, "segment"))) {
     if (identical(node_color, "segment")) {
       p <- p + ggraph::geom_node_text(
-        ggplot2::aes(label = level_name),
+        ggplot2::aes(label = segment_label),
         size = label_size,
         repel = TRUE
       )
@@ -800,8 +800,8 @@ plot_ego_ggraph <- function(segments,
     custom_labels <- segment_naming$segment_label[custom_match]
     
     # Use custom labels where available, fallback to generated names
-    membership$level_name <- ifelse(is.na(custom_labels), 
-                                   membership$level_name, 
+    membership$segment_label <- ifelse(is.na(custom_labels), 
+                                   membership$segment_label, 
                                    custom_labels)
   } else {
     # Handle character string or NULL input
@@ -818,13 +818,13 @@ plot_ego_ggraph <- function(segments,
   
   # Find ego's segment
   ego_segment <- membership$membership[ego_id]
-  ego_level_name <- membership$level_name[ego_id]
+  ego_segment_label <- membership$segment_label[ego_id]
   
   # Determine which nodes belong to the same segment as ego
   same_segment_as_ego <- membership$membership[connected_nodes] == ego_segment
   
-  # Get level names for connected nodes
-  connected_level_names <- membership$level_name[connected_nodes]
+  # Get segment labels for connected nodes
+  connected_segment_labels <- membership$segment_label[connected_nodes]
   
   ego_network <- ego_network %>% tidygraph::activate(nodes) %>%
         dplyr::mutate(
@@ -832,7 +832,7 @@ plot_ego_ggraph <- function(segments,
           is_ego = 1:tidygraph::graph_order() == ego_position_in_filtered,
           same_segment = same_segment_as_ego,
           node_name = node_names,
-          level_name = connected_level_names
+          segment_label = connected_segment_labels
         )
   
   # Create plot with validation
@@ -1763,6 +1763,37 @@ plot_segment_quality <- function(segments,
     level_data <- quality_data[, c("Membership", level_cols), drop = FALSE]
     colnames(level_data) <- gsub(paste0("^", level, ": "), "", colnames(level_data))
     
+    # FIX: Aggregate data by segment membership to avoid multiple points per segment
+    # This prevents multiple "balls" appearing for the same segment
+    # After cleaning column names, the segment column is just "Segment"
+    if ("Segment" %in% colnames(level_data)) {
+      level_data <- level_data %>%
+        dplyr::group_by(Segment) %>%
+        dplyr::summarise(
+          Membership = dplyr::first(Membership),
+          within.mobility = dplyr::first(within.mobility),
+          share.of.mobility = dplyr::first(share.of.mobility),
+          Density = dplyr::first(Density),
+          Nodes = dplyr::first(Nodes),
+          Max.path = dplyr::first(Max.path),
+          share.of.total = dplyr::first(share.of.total),
+          .groups = 'drop'
+        )
+    } else {
+      # Fallback: if column structure is unexpected, group by Membership
+      level_data <- level_data %>%
+        dplyr::group_by(Membership) %>%
+        dplyr::summarise(
+          within.mobility = dplyr::first(within.mobility),
+          share.of.mobility = dplyr::first(share.of.mobility),
+          Density = dplyr::first(Density),
+          Nodes = dplyr::first(Nodes),
+          Max.path = dplyr::first(Max.path),
+          share.of.total = dplyr::first(share.of.total),
+          .groups = 'drop'
+        )
+    }
+    
     # Create scatter plot
     p <- ggplot2::ggplot(level_data, 
                         ggplot2::aes(x = Nodes, y = within.mobility, 
@@ -1885,9 +1916,13 @@ plot_segment_quality <- function(segments,
     heatmap_long$Level <- gsub(": .*", "", heatmap_long$Level_Metric)
     heatmap_long$Metric <- gsub("^[0-9]+: ", "", heatmap_long$Level_Metric)
     
+    # FIX: Create more informative x-axis labels instead of just "1", "2", "3"
+    # Convert numeric levels to descriptive labels
+    heatmap_long$Level_Label <- paste("Level", heatmap_long$Level)
+    
     # Create heatmap
     p <- ggplot2::ggplot(heatmap_long, 
-                        ggplot2::aes(x = Level, y = Membership, fill = Value)) +
+                        ggplot2::aes(x = Level_Label, y = Membership, fill = Value)) +
       ggplot2::geom_tile() +
       ggplot2::facet_wrap(~ Metric, scales = "free", ncol = 3) +
       ggplot2::scale_fill_distiller(palette = color_palette, direction = 1) +

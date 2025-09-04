@@ -47,7 +47,7 @@ A data frame with three columns:
     \item{name}{Character vector of original category names}
     \item{membership}{Character vector indicating segment membership, formatted
       as "level.segment" (e.g., "2.1" for level 2, segment 1)}
-    \item{level_name}{Character vector with meaningful segment names derived
+    \item{segment_label}{Character vector with meaningful segment names derived
       from constituent nodes or user-provided names}
   }
 }
