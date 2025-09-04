@@ -13,7 +13,8 @@ plot_segment_quality(
   theme_style = "minimal",
   title = NULL,
   show_labels = TRUE,
-  label_size = 3
+  label_size = 3,
+  segment_naming = "auto"
 )
 }
 \arguments{
@@ -48,6 +49,25 @@ based on plot type.}
 Default is TRUE.}
 
 \item{label_size}{Numeric size for labels. Default is 3.}
+
+\item{segment_naming}{Specifies how to name segments in the visualization. Can be:
+\itemize{
+  \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+    these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
+  \item data.frame: Custom segment labels with required columns "name" and "segment_label".
+    \strong{This parameter accepts the direct output from \code{\link{segment.membership.enhanced}},}
+    making it easy to maintain consistent segment naming across all visualizations.
+    The data.frame must have:
+    \itemize{
+      \item "name": Node names from the original mobility matrix
+      \item "segment_label": Meaningful segment names (e.g., "Executive_Leadership")
+    }
+  \item NULL: Uses default "auto" strategy
+}
+\strong{Recommended workflow:} Generate enhanced membership with 
+\code{enhanced <- segment.membership.enhanced(segments, naming_strategy = "pattern")} 
+and pass directly: \code{plot_segment_quality(segments, segment_naming = enhanced)}.
+This ensures consistent, meaningful segment names across all plot types and visualizations.}
 }
 \value{
 A ggplot2 object (or list of ggplot2 objects for "overview" type).
@@ -107,6 +127,32 @@ plot_segment_quality(seg, plot_type = "cohesion",
                     color_palette = "Dark2",
                     theme_style = "classic",
                     title = "Segment Quality Analysis")
+
+# Using segment.membership.enhanced for consistent naming (RECOMMENDED)
+enhanced_membership <- segment.membership.enhanced(seg, level = 2, 
+                                                  naming_strategy = "pattern")
+plot_segment_quality(seg, plot_type = "overview",
+                    segment_naming = enhanced_membership,
+                    title = "Quality Analysis with Pattern-Based Names")
+
+# Works with all plot types
+plot_segment_quality(seg, plot_type = "radar", 
+                    segment_naming = enhanced_membership)
+plot_segment_quality(seg, plot_type = "heatmap", 
+                    segment_naming = enhanced_membership)
+plot_segment_quality(seg, plot_type = "evolution", 
+                    segment_naming = enhanced_membership)
+
+# Combining with custom segment names for professional visualization
+custom_names <- data.frame(
+  name = c("Executive", "Manager", "Professional", "Technical"),
+  segment_label = c("Leadership Level", "Management Tier", 
+                  "Professional Services", "Technical Specialists"),
+  stringsAsFactors = FALSE
+)
+plot_segment_quality(seg, plot_type = "radar", 
+                    segment_naming = custom_names,
+                    title = "Professional Hierarchy Quality Metrics")
 
 }
 \seealso{

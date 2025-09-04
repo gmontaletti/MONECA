@@ -1607,13 +1607,20 @@ plot_moneca_dendrogram <- function(segments,
 #'   \itemize{
 #'     \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
 #'       these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
-#'     \item data.frame: Custom segment labels with columns "name" (node names from the 
-#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete 
-#'       control over segment naming
+#'     \item data.frame: Custom segment labels with required columns "name" and "segment_label".
+#'       \strong{This parameter accepts the direct output from \code{\link{segment.membership.enhanced}},}
+#'       making it easy to maintain consistent segment naming across all visualizations.
+#'       The data.frame must have:
+#'       \itemize{
+#'         \item "name": Node names from the original mobility matrix
+#'         \item "segment_label": Meaningful segment names (e.g., "Executive_Leadership")
+#'       }
 #'     \item NULL: Uses default "auto" strategy
 #'   }
-#'   When a data.frame is provided, custom labels override automatically generated names.
-#'   The data.frame approach is useful for meaningful business names or multilingual applications.
+#'   \strong{Recommended workflow:} Generate enhanced membership with 
+#'   \code{enhanced <- segment.membership.enhanced(segments, naming_strategy = "pattern")} 
+#'   and pass directly: \code{plot_segment_quality(segments, segment_naming = enhanced)}.
+#'   This ensures consistent, meaningful segment names across all plot types and visualizations.
 #'
 #' @return A ggplot2 object (or list of ggplot2 objects for "overview" type).
 #'
@@ -1667,6 +1674,32 @@ plot_moneca_dendrogram <- function(segments,
 #'                     color_palette = "Dark2",
 #'                     theme_style = "classic",
 #'                     title = "Segment Quality Analysis")
+#'
+#' # Using segment.membership.enhanced for consistent naming (RECOMMENDED)
+#' enhanced_membership <- segment.membership.enhanced(seg, level = 2, 
+#'                                                   naming_strategy = "pattern")
+#' plot_segment_quality(seg, plot_type = "overview",
+#'                     segment_naming = enhanced_membership,
+#'                     title = "Quality Analysis with Pattern-Based Names")
+#'
+#' # Works with all plot types
+#' plot_segment_quality(seg, plot_type = "radar", 
+#'                     segment_naming = enhanced_membership)
+#' plot_segment_quality(seg, plot_type = "heatmap", 
+#'                     segment_naming = enhanced_membership)
+#' plot_segment_quality(seg, plot_type = "evolution", 
+#'                     segment_naming = enhanced_membership)
+#'
+#' # Combining with custom segment names for professional visualization
+#' custom_names <- data.frame(
+#'   name = c("Executive", "Manager", "Professional", "Technical"),
+#'   segment_label = c("Leadership Level", "Management Tier", 
+#'                   "Professional Services", "Technical Specialists"),
+#'   stringsAsFactors = FALSE
+#' )
+#' plot_segment_quality(seg, plot_type = "radar", 
+#'                     segment_naming = custom_names,
+#'                     title = "Professional Hierarchy Quality Metrics")
 #'
 #' @seealso 
 #' \code{\link{segment.quality}} for the underlying metrics,
@@ -1735,11 +1768,22 @@ plot_segment_quality <- function(segments,
     # Clean column names
     colnames(level_data) <- gsub(paste0("^", level, ": "), "", colnames(level_data))
     
+    # Apply segment naming for better labels
+    if ("Segment" %in% colnames(level_data)) {
+      segment_labels <- create_segment_labels(segments, level, level_data$Segment, segment_naming)
+      level_data$segment_label <- segment_labels
+      # Use segment labels instead of membership for x-axis
+      level_data$plot_label <- level_data$segment_label
+    } else {
+      # Fallback to membership if Segment column not available
+      level_data$plot_label <- level_data$Membership
+    }
+    
     # Create individual plots
     plots <- list()
     
     # 1. Within-mobility bar chart
-    p1 <- ggplot2::ggplot(level_data, ggplot2::aes(x = Membership, y = within.mobility)) +
+    p1 <- ggplot2::ggplot(level_data, ggplot2::aes(x = plot_label, y = within.mobility)) +
       ggplot2::geom_bar(stat = "identity", fill = "steelblue") +
       ggplot2::geom_hline(yintercept = 0.7, linetype = "dashed", color = "red", alpha = 0.5) +
       ggplot2::labs(x = "Segment", y = "Within-mobility", 
@@ -1754,7 +1798,7 @@ plot_segment_quality <- function(segments,
     plots[[1]] <- p1
     
     # 2. Segment size (nodes)
-    p2 <- ggplot2::ggplot(level_data, ggplot2::aes(x = Membership, y = Nodes)) +
+    p2 <- ggplot2::ggplot(level_data, ggplot2::aes(x = plot_label, y = Nodes)) +
       ggplot2::geom_bar(stat = "identity", fill = "darkgreen") +
       ggplot2::labs(x = "Segment", y = "Number of Nodes", 
                    title = "Segment Size") +
@@ -1768,7 +1812,7 @@ plot_segment_quality <- function(segments,
     plots[[2]] <- p2
     
     # 3. Network density
-    p3 <- ggplot2::ggplot(level_data, ggplot2::aes(x = Membership, y = Density)) +
+    p3 <- ggplot2::ggplot(level_data, ggplot2::aes(x = plot_label, y = Density)) +
       ggplot2::geom_bar(stat = "identity", fill = "orange") +
       ggplot2::geom_hline(yintercept = 0.5, linetype = "dashed", color = "red", alpha = 0.5) +
       ggplot2::labs(x = "Segment", y = "Network Density", 
@@ -1783,7 +1827,7 @@ plot_segment_quality <- function(segments,
     plots[[3]] <- p3
     
     # 4. Share of mobility
-    p4 <- ggplot2::ggplot(level_data, ggplot2::aes(x = Membership, y = share.of.mobility)) +
+    p4 <- ggplot2::ggplot(level_data, ggplot2::aes(x = plot_label, y = share.of.mobility)) +
       ggplot2::geom_bar(stat = "identity", fill = "purple") +
       ggplot2::labs(x = "Segment", y = "Share of Total Mobility", 
                    title = "Relative Importance") +
@@ -1906,6 +1950,15 @@ plot_segment_quality <- function(segments,
     metric_cols <- intersect(metrics, colnames(level_data))
     radar_data <- level_data[, c("Membership", metric_cols), drop = FALSE]
     
+    # Apply segment naming for better labels
+    if ("Segment" %in% colnames(level_data)) {
+      segment_labels <- create_segment_labels(segments, level, level_data$Segment, segment_naming)
+      radar_data$segment_label <- segment_labels
+    } else {
+      # Create numeric-based labels if Segment column not available
+      radar_data$segment_label <- paste("Segment", 1:nrow(radar_data))
+    }
+    
     # Normalize metrics to 0-1 scale
     for (col in metric_cols) {
       if (col != "Membership") {
@@ -1917,14 +1970,14 @@ plot_segment_quality <- function(segments,
     
     # Reshape data for plotting
     radar_long <- tidyr::pivot_longer(radar_data, 
-                                     cols = -Membership, 
+                                     cols = -c(Membership, segment_label), 
                                      names_to = "Metric", 
                                      values_to = "Value")
     
     # Create radar plot using coord_polar
     p <- ggplot2::ggplot(radar_long, 
-                        ggplot2::aes(x = Metric, y = Value, group = Membership, 
-                                    color = Membership)) +
+                        ggplot2::aes(x = Metric, y = Value, group = segment_label, 
+                                    color = segment_label)) +
       ggplot2::geom_line(size = 1) +
       ggplot2::geom_point(size = 3) +
       ggplot2::coord_polar() +
@@ -1935,7 +1988,7 @@ plot_segment_quality <- function(segments,
       ggplot2::theme(axis.text.x = ggplot2::element_text(size = 10))
     
     # Color palette
-    n_segments <- length(unique(radar_long$Membership))
+    n_segments <- length(unique(radar_long$segment_label))
     if (n_segments <= 12) {
       p <- p + ggplot2::scale_color_brewer(palette = color_palette)
     } else {
@@ -1961,9 +2014,31 @@ plot_segment_quality <- function(segments,
     # Prepare data
     heatmap_data <- quality_data[, c("Membership", all_metric_cols), drop = FALSE]
     
-    # Reshape to long format
+    # Apply segment naming for better labels
+    # Get segment numbers from the first available level
+    if (length(segments$segment.list) > 0) {
+      # Use level 1 as reference for segment numbering
+      first_level_membership <- segment.membership(segments, level = 1)
+      segment_labels <- create_segment_labels(segments, 1, 1:length(unique(first_level_membership$membership)), segment_naming)
+      
+      # Create a mapping from membership to segment labels
+      membership_mapping <- data.frame(
+        Membership = unique(heatmap_data$Membership),
+        segment_label = segment_labels[match(unique(heatmap_data$Membership), paste0("1.", 1:length(segment_labels)))]
+      )
+      
+      # Handle potential NA values by falling back to membership
+      membership_mapping$segment_label[is.na(membership_mapping$segment_label)] <- 
+        membership_mapping$Membership[is.na(membership_mapping$segment_label)]
+      
+      heatmap_data$segment_label <- membership_mapping$segment_label[match(heatmap_data$Membership, membership_mapping$Membership)]
+    } else {
+      heatmap_data$segment_label <- heatmap_data$Membership
+    }
+    
+    # Reshape to long format, excluding both Membership and segment_label
     heatmap_long <- tidyr::pivot_longer(heatmap_data,
-                                       cols = -Membership,
+                                       cols = -c(Membership, segment_label),
                                        names_to = "Level_Metric",
                                        values_to = "Value")
     
@@ -1975,9 +2050,12 @@ plot_segment_quality <- function(segments,
     # Convert numeric levels to descriptive labels
     heatmap_long$Level_Label <- paste("Level", heatmap_long$Level)
     
+    # Add segment labels to long format data
+    heatmap_long$segment_label <- heatmap_data$segment_label[match(heatmap_long$Membership, heatmap_data$Membership)]
+    
     # Create heatmap
     p <- ggplot2::ggplot(heatmap_long, 
-                        ggplot2::aes(x = Level_Label, y = Membership, fill = Value)) +
+                        ggplot2::aes(x = Level_Label, y = segment_label, fill = Value)) +
       ggplot2::geom_tile() +
       ggplot2::facet_wrap(~ Metric, scales = "free", ncol = 3) +
       ggplot2::scale_fill_distiller(palette = color_palette, direction = 1) +
@@ -2014,10 +2092,28 @@ plot_segment_quality <- function(segments,
     # Combine all metrics
     evolution_combined <- do.call(rbind, evolution_data)
     
+    # Apply segment naming for better labels
+    if (nrow(evolution_combined) > 0 && length(segments$segment.list) > 0) {
+      # Create segment labels mapping
+      unique_memberships <- unique(evolution_combined$Membership)
+      segment_labels <- create_segment_labels(segments, 1, 1:length(unique_memberships), segment_naming)
+      
+      # Create mapping
+      membership_mapping <- data.frame(
+        Membership = unique_memberships,
+        segment_label = segment_labels[1:length(unique_memberships)]
+      )
+      
+      # Apply mapping
+      evolution_combined$segment_label <- membership_mapping$segment_label[match(evolution_combined$Membership, membership_mapping$Membership)]
+    } else {
+      evolution_combined$segment_label <- evolution_combined$Membership
+    }
+    
     # Create line plot
     p <- ggplot2::ggplot(evolution_combined, 
-                        ggplot2::aes(x = Level, y = Value, color = Membership, 
-                                    group = Membership)) +
+                        ggplot2::aes(x = Level, y = Value, color = segment_label, 
+                                    group = segment_label)) +
       ggplot2::geom_line(size = 1) +
       ggplot2::geom_point(size = 3) +
       ggplot2::facet_wrap(~ Metric, scales = "free_y", ncol = 2) +
@@ -2026,7 +2122,7 @@ plot_segment_quality <- function(segments,
       theme_base
     
     # Color palette
-    n_segments <- length(unique(evolution_combined$Membership))
+    n_segments <- length(unique(evolution_combined$segment_label))
     if (n_segments <= 12) {
       p <- p + ggplot2::scale_color_brewer(palette = color_palette)
     } else {
