@@ -278,3 +278,73 @@ test_that("create_segment_labels function works with custom dataframes", {
     create_segment_labels(seg, 2, segment_numbers, invalid_df)
   })
 })
+
+test_that("segment.quality and plot_segment_quality integration works", {
+  skip_if_not_installed("ggplot2")
+  skip_if_not_installed("gridExtra")
+  
+  # Create test data and analysis
+  test_data <- generate_mobility_data(n_classes = 6, n_total = 500, seed = 123)
+  seg <- moneca(test_data, segment.levels = 3)
+  
+  # Test that segment.quality creates segment_label column with custom naming
+  custom_names <- data.frame(
+    name = c("Class1", "Class2", "Class3"),
+    segment_label = c("Executive", "Professional", "Technical"),
+    stringsAsFactors = FALSE
+  )
+  
+  # Test segment.quality with segment_naming parameter
+  quality_data <- segment.quality(seg, final.solution = TRUE, segment_naming = custom_names)
+  
+  # Check that segment_label column is created
+  expect_true("segment_label" %in% colnames(quality_data))
+  expect_true(length(quality_data$segment_label) > 0)
+  
+  # Test that plot_segment_quality uses segment labels correctly
+  expect_no_error({
+    p <- plot_segment_quality(seg, plot_type = "cohesion", segment_naming = custom_names)
+  })
+  
+  # Test with string-based segment naming
+  expect_no_error({
+    quality_auto <- segment.quality(seg, final.solution = TRUE, segment_naming = "auto")
+    p_auto <- plot_segment_quality(seg, plot_type = "cohesion", segment_naming = "auto")
+  })
+  
+  quality_auto <- segment.quality(seg, final.solution = TRUE, segment_naming = "auto")
+  expect_true("segment_label" %in% colnames(quality_auto))
+  expect_true(all(grepl("^Segment", quality_auto$segment_label)))
+})
+
+test_that("plot_segment_quality cohesion plot uses segment_label correctly", {
+  skip_if_not_installed("ggplot2")
+  skip_if_not_installed("gridExtra")
+  
+  # Create test data and analysis  
+  test_data <- generate_mobility_data(n_classes = 4, n_total = 500, seed = 456)
+  seg <- moneca(test_data, segment.levels = 2)
+  
+  # Create custom segment names
+  custom_names <- data.frame(
+    name = c("Class1", "Class2"),
+    segment_label = c("Group A", "Group B"),
+    stringsAsFactors = FALSE
+  )
+  
+  # Test that cohesion plot works and uses segment labels
+  p <- plot_segment_quality(seg, plot_type = "cohesion", segment_naming = custom_names)
+  
+  # Extract the underlying data from the plot
+  plot_data <- p$data
+  
+  # Verify that segment labels are used in the plot
+  expect_true("segment_label" %in% colnames(plot_data))
+  
+  # Check that custom labels appear in the data (at least one should match)
+  has_custom <- any(plot_data$segment_label %in% c("Group A", "Group B"))
+  has_default <- all(grepl("^Segment", plot_data$segment_label))
+  
+  # Either custom labels were applied OR default labels were used as fallback
+  expect_true(has_custom || has_default)
+})

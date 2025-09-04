@@ -4,7 +4,7 @@
 \alias{segment.quality}
 \title{Evaluate Segment Quality Metrics}
 \usage{
-segment.quality(segments, final.solution = FALSE)
+segment.quality(segments, final.solution = FALSE, segment_naming = "auto")
 }
 \arguments{
 \item{segments}{A moneca object returned by \code{\link{moneca}}.}
@@ -12,6 +12,19 @@ segment.quality(segments, final.solution = FALSE)
 \item{final.solution}{Logical indicating whether to return only the final 
 (most aggregated) solution for each unique segment. Default is FALSE, which
 returns metrics for all levels.}
+
+\item{segment_naming}{Character string or data frame specifying how to name segments.
+Used to create readable segment labels in the output. Options include:
+\itemize{
+  \item "auto" (default): Use simple "Segment X" format
+  \item "concat": Concatenate member names  
+  \item "pattern": Use pattern-based naming
+  \item "custom": Custom naming strategy
+  \item Data frame: Must have columns "name" and "segment_label" for custom mapping
+}
+When using a data frame, the function will match original category names to 
+custom labels and use them for segment naming. This creates a "segment_label"
+column in the output that can be used by plotting functions.}
 }
 \value{
 A data frame with the following columns for each hierarchical level:
@@ -83,6 +96,15 @@ print(quality_full)
 quality_final <- segment.quality(seg, final.solution = TRUE)
 print(quality_final)
 
+# Use custom segment naming with final solution
+custom_names <- data.frame(
+  name = c("Class1", "Class2", "Class3"),
+  segment_label = c("Executive", "Professional", "Technical"),
+  stringsAsFactors = FALSE
+)
+quality_labeled <- segment.quality(seg, final.solution = TRUE, segment_naming = custom_names)
+print(quality_labeled)
+
 # Identify high-quality segments (high cohesion, reasonable size)
 good_segments <- quality_full[quality_full[,"2 : within.mobility"] > 0.7 & 
                              quality_full[,"2 : Nodes"] > 1, ]
@@ -90,6 +112,8 @@ good_segments <- quality_full[quality_full[,"2 : within.mobility"] > 0.7 &
 # Visualize segment quality
 \dontrun{
 plot_segment_quality(seg)
+# Or with custom segment naming
+plot_segment_quality(seg, segment_naming = custom_names)
 }
 
 }

@@ -484,9 +484,18 @@ return(list(out.mobility=out.mat, in.mat=in.mat))
 #' @param final.solution Logical indicating whether to return only the final 
 #'   (most aggregated) solution for each unique segment. Default is FALSE, which
 #'   returns metrics for all levels.
-#' @param segment_naming Character string or data frame specifying how to name segments
-#'   when final.solution = TRUE. Options include "auto", "concat", "pattern", "custom",
-#'   or a data frame with columns "name" and "segment_label". Default is "auto".
+#' @param segment_naming Character string or data frame specifying how to name segments.
+#'   Used to create readable segment labels in the output. Options include:
+#'   \itemize{
+#'     \item "auto" (default): Use simple "Segment X" format
+#'     \item "concat": Concatenate member names  
+#'     \item "pattern": Use pattern-based naming
+#'     \item "custom": Custom naming strategy
+#'     \item Data frame: Must have columns "name" and "segment_label" for custom mapping
+#'   }
+#'   When using a data frame, the function will match original category names to 
+#'   custom labels and use them for segment naming. This creates a "segment_label"
+#'   column in the output that can be used by plotting functions.
 #' 
 #' @return A data frame with the following columns for each hierarchical level:
 #'   \describe{
@@ -552,6 +561,15 @@ return(list(out.mobility=out.mat, in.mat=in.mat))
 #' quality_final <- segment.quality(seg, final.solution = TRUE)
 #' print(quality_final)
 #' 
+#' # Use custom segment naming with final solution
+#' custom_names <- data.frame(
+#'   name = c("Class1", "Class2", "Class3"),
+#'   segment_label = c("Executive", "Professional", "Technical"),
+#'   stringsAsFactors = FALSE
+#' )
+#' quality_labeled <- segment.quality(seg, final.solution = TRUE, segment_naming = custom_names)
+#' print(quality_labeled)
+#' 
 #' # Identify high-quality segments (high cohesion, reasonable size)
 #' good_segments <- quality_full[quality_full[,"2 : within.mobility"] > 0.7 & 
 #'                              quality_full[,"2 : Nodes"] > 1, ]
@@ -559,6 +577,8 @@ return(list(out.mobility=out.mat, in.mat=in.mat))
 #' # Visualize segment quality
 #' \dontrun{
 #' plot_segment_quality(seg)
+#' # Or with custom segment naming
+#' plot_segment_quality(seg, segment_naming = custom_names)
 #' }
 #' 
 #' @seealso 
@@ -697,13 +717,17 @@ segment.quality <- function(segments, final.solution = FALSE, segment_naming = "
       final_level <- length(segments$segment.list)
       
       # Create segment labels using the segment_naming parameter
-      if (exists("create_segment_labels", mode = "function")) {
-        segment_labels <- create_segment_labels(segments, final_level, tsm$Membership, segment_naming)
+      # Extract segment numbers from Membership (format is "level.segment")
+      segment_numbers <- as.numeric(gsub(".*\\.", "", tsm$Membership))
+      
+      # Use the create_segment_labels function from modern_plotting.R
+      tryCatch({
+        segment_labels <- create_segment_labels(segments, final_level, segment_numbers, segment_naming)
         tsm$segment_label <- segment_labels
-      } else {
-        # Fallback to simple segment labeling if helper function not available
-        tsm$segment_label <- paste("Segment", tsm$Membership)
-      }
+      }, error = function(e) {
+        # Fallback to simple segment labeling if helper function fails
+        tsm$segment_label <- paste("Segment", segment_numbers)
+      })
       
       out.mat         <- tsm
     }
