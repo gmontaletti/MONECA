@@ -484,6 +484,9 @@ return(list(out.mobility=out.mat, in.mat=in.mat))
 #' @param final.solution Logical indicating whether to return only the final 
 #'   (most aggregated) solution for each unique segment. Default is FALSE, which
 #'   returns metrics for all levels.
+#' @param segment_naming Character string or data frame specifying how to name segments
+#'   when final.solution = TRUE. Options include "auto", "concat", "pattern", "custom",
+#'   or a data frame with columns "name" and "segment_label". Default is "auto".
 #' 
 #' @return A data frame with the following columns for each hierarchical level:
 #'   \describe{
@@ -565,7 +568,7 @@ return(list(out.mobility=out.mat, in.mat=in.mat))
 #' 
 #' @export
 
-segment.quality <- function(segments, final.solution = FALSE){
+segment.quality <- function(segments, final.solution = FALSE, segment_naming = "auto"){
   mat <- segments$mat.list[[1]]
   l   <- nrow(mat)
   mat <- mat[-l, -l]
@@ -663,7 +666,7 @@ segment.quality <- function(segments, final.solution = FALSE){
   if (final.solution == TRUE){
     small.mat       <- out.mat[duplicated(out.mat$Membership) == FALSE,]
     small.mat[sapply(small.mat, is.nan)] <- Inf
-    tsm             <- as.matrix(small.mat)[, -1]
+    tsm             <- as.matrix(small.mat)[, -1, drop = FALSE]  # Keep matrix dimensions
     collapse.mat    <- function(row, n) tail(na.omit(row), n)
     
     # Check if we have any rows
@@ -671,12 +674,37 @@ segment.quality <- function(segments, final.solution = FALSE){
       # Apply collapse.mat only if we have data
       if (ncol(tsm) >= 7) {
         tsm             <- as.data.frame(t(apply(tsm, 1, collapse.mat, n = 7)))
-        colnames(tsm)   <- c("Membership", "Within mobility", "Share of mobility", "Density", "Nodes", "Max.path", "Share of total size")
+        colnames(tsm)   <- c("Membership", "within.mobility", "share.of.mobility", "Density", "Nodes", "Max.path", "share.of.total")
+        
+        # Convert numeric columns back to numeric (apply converts everything to character)
+        numeric_cols <- c("within.mobility", "share.of.mobility", "Density", "Nodes", "Max.path", "share.of.total")
+        for (col in numeric_cols) {
+          if (col %in% colnames(tsm)) {
+            tsm[[col]] <- as.numeric(tsm[[col]])
+          }
+        }
       } else {
         # If we have fewer than 7 columns, just use what we have
         tsm <- as.data.frame(tsm)
       }
       tsm$Membership  <- small.mat$Membership
+      
+      # Add Segment column that plotting functions expect (same as Membership for final solution)
+      tsm$Segment <- tsm$Membership
+      
+      # Add proper segment naming for final solution
+      # Get the highest level (final segmentation level)
+      final_level <- length(segments$segment.list)
+      
+      # Create segment labels using the segment_naming parameter
+      if (exists("create_segment_labels", mode = "function")) {
+        segment_labels <- create_segment_labels(segments, final_level, tsm$Membership, segment_naming)
+        tsm$segment_label <- segment_labels
+      } else {
+        # Fallback to simple segment labeling if helper function not available
+        tsm$segment_label <- paste("Segment", tsm$Membership)
+      }
+      
       out.mat         <- tsm
     }
   } 

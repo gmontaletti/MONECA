@@ -35,20 +35,25 @@ create_segment_labels <- function(segments, level, segment_numbers, segment_nami
     # Get enhanced membership to get segment-to-name mapping
     membership <- segment.membership.enhanced(segments, level = level, naming_strategy = "auto")
     
-    # For each segment number, find the first representative and check for custom label
+    # For each segment number, find representatives and check for custom label
     segment_labels <- character(length(segment_numbers))
     for (i in seq_along(segment_numbers)) {
       seg_num <- segment_numbers[i]
       # Find names in this segment
       seg_members <- which(membership$membership == paste0(level, ".", seg_num))
+      
       if (length(seg_members) > 0) {
-        # Get the first member's name
-        first_member_name <- membership$name[seg_members[1]]
-        # Check if we have a custom label for this member
-        custom_match <- match(first_member_name, segment_naming$name)
-        if (!is.na(custom_match)) {
-          segment_labels[i] <- segment_naming$segment_label[custom_match]
+        # Try to match any member of the segment with custom names
+        segment_member_names <- membership$name[seg_members]
+        custom_match <- match(segment_member_names, segment_naming$name)
+        valid_matches <- which(!is.na(custom_match))
+        
+        if (length(valid_matches) > 0) {
+          # Use the first valid custom match
+          first_valid_idx <- custom_match[valid_matches[1]]
+          segment_labels[i] <- segment_naming$segment_label[first_valid_idx]
         } else {
+          # No custom match found, use default
           segment_labels[i] <- paste0("Segment ", seg_num)
         }
       } else {
@@ -1850,46 +1855,39 @@ plot_segment_quality <- function(segments,
     return(combined)
     
   } else if (plot_type == "cohesion") {
-    # Cohesion vs size scatter plot
-    if (is.null(level)) level <- 2
+    # Cohesion vs size scatter plot - use final solution data (already aggregated)
+    # Get quality data with final.solution = TRUE to get one row per final segment
+    final_quality_data <- segment.quality(segments, final.solution = TRUE, segment_naming = segment_naming)
     
-    # Extract data for specified level
-    level_cols <- grep(paste0("^", level, ": "), colnames(quality_data), value = TRUE)
-    
-    # Check if we found any columns for this level
-    if (length(level_cols) == 0) {
-      # Extract available levels from column names
-      all_level_cols <- grep("^[0-9]+:", colnames(quality_data), value = TRUE)
-      available_levels <- unique(gsub(":.*", "", all_level_cols))
-      stop(paste("No data found for level", level, ". Available levels:", 
-                 paste(available_levels, collapse = ", ")))
+    # Validate that we have the expected columns
+    if (!"Segment" %in% colnames(final_quality_data)) {
+      stop("Expected 'Segment' column not found in final quality data")
     }
     
-    level_data <- quality_data[, c("Membership", level_cols), drop = FALSE]
-    colnames(level_data) <- gsub(paste0("^", level, ": "), "", colnames(level_data))
+    # Check for required metrics
+    required_cols <- c("within.mobility", "share.of.mobility", "Density", "Nodes", "Max.path", "share.of.total")
+    missing_cols <- setdiff(required_cols, colnames(final_quality_data))
+    if (length(missing_cols) > 0) {
+      stop(paste("Required columns missing from final quality data:", paste(missing_cols, collapse = ", ")))
+    }
     
-    # FIX: Aggregate data by segment to avoid multiple points per segment
-    # This prevents multiple "balls" appearing for the same segment
-    # Group by the "Segment" column to get one point per actual segment
-    if ("Segment" %in% colnames(level_data)) {
-      level_data <- level_data %>%
-        dplyr::group_by(Segment) %>%
-        dplyr::summarise(
-          within.mobility = dplyr::first(within.mobility),
-          share.of.mobility = dplyr::first(share.of.mobility),
-          Density = dplyr::first(Density),
-          Nodes = dplyr::first(Nodes),
-          Max.path = dplyr::first(Max.path),
-          share.of.total = dplyr::first(share.of.total),
-          .groups = 'drop'
-        )
-      
-      # Create segment labels using segment_naming parameter
-      segment_labels <- create_segment_labels(segments, level, level_data$Segment, segment_naming)
-      level_data$segment_label <- segment_labels
-      
-    } else {
-      stop("Expected 'Segment' column not found in level data")
+    level_data <- final_quality_data
+    
+    # Validation: Ensure we have exactly one row per unique segment (should be guaranteed by final.solution=TRUE)
+    if (length(unique(level_data$Segment)) != nrow(level_data)) {
+      stop("Final solution data has multiple rows for the same segment - this should not happen")
+    }
+    
+    # Use segment_label if available, otherwise create fallback labels
+    if (!"segment_label" %in% colnames(level_data)) {
+      level_data$segment_label <- paste("Segment", level_data$Segment)
+    }
+    
+    # Additional validation: Ensure unique segment labels for plotting
+    if (length(unique(level_data$segment_label)) != nrow(level_data)) {
+      warning("Multiple segments have the same label - this may cause plotting issues")
+      # Add suffix to make labels unique
+      level_data$segment_label <- make.unique(level_data$segment_label, sep = " (")
     }
     
     # Create scatter plot
@@ -1902,7 +1900,7 @@ plot_segment_quality <- function(segments,
       ggplot2::geom_vline(xintercept = 2, linetype = "dashed", color = "blue", alpha = 0.5) +
       ggplot2::labs(x = "Number of Nodes", 
                    y = "Within-mobility (Cohesion)",
-                   title = title %||% paste("Segment Quality Analysis - Level", level),
+                   title = title %||% "Final Segment Quality Analysis",
                    subtitle = "Ideal segments: upper-right quadrant") +
       theme_base
     
@@ -1978,7 +1976,7 @@ plot_segment_quality <- function(segments,
     p <- ggplot2::ggplot(radar_long, 
                         ggplot2::aes(x = Metric, y = Value, group = segment_label, 
                                     color = segment_label)) +
-      ggplot2::geom_line(size = 1) +
+      ggplot2::geom_line(linewidth = 1) +
       ggplot2::geom_point(size = 3) +
       ggplot2::coord_polar() +
       ggplot2::ylim(0, 1) +
@@ -2114,7 +2112,7 @@ plot_segment_quality <- function(segments,
     p <- ggplot2::ggplot(evolution_combined, 
                         ggplot2::aes(x = Level, y = Value, color = segment_label, 
                                     group = segment_label)) +
-      ggplot2::geom_line(size = 1) +
+      ggplot2::geom_line(linewidth = 1) +
       ggplot2::geom_point(size = 3) +
       ggplot2::facet_wrap(~ Metric, scales = "free_y", ncol = 2) +
       ggplot2::labs(title = title %||% "Metric Evolution Across Hierarchical Levels",
