@@ -61,7 +61,7 @@ strategies for aggregated segments.
 The function applies different naming strategies based on segment composition:
 \enumerate{
   \item \strong{Individual nodes}: Keep original name unchanged
-  \item \strong{Small segments} (≤ max_concat_length): Concatenate names
+  \item \strong{Small segments} (<= max_concat_length): Concatenate names
   \item \strong{Large segments}: Apply pattern recognition or use generic names
   \item \strong{Custom names}: Override automatic naming with user-provided names
 }

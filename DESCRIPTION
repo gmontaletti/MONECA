@@ -33,7 +33,8 @@ Imports:
   dplyr (>= 1.0.0),
   tidygraph (>= 1.2.0),
   tidyr (>= 1.0.0),
-  gridExtra (>= 2.3)
+  gridExtra (>= 2.3),
+  parallel
 Suggests:
   knitr,
   rmarkdown,
