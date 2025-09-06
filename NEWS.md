@@ -1,3 +1,46 @@
+# moneca 0.5.9
+
+## New Features
+
+* **Added moneca_fast_fixed() function**:
+  - New optimized implementation with adaptive clustering strategies
+  - Automatic algorithm selection based on graph density
+  - Hybrid approach combining maximal clique enumeration and greedy processing
+  - Maintains full API compatibility with existing moneca functions
+  - All three implementations (original, fast, fast_fixed) remain active and available
+
+* **Enhanced clique detection algorithms**:
+  - Implemented find.segments.greedy() for high-density graphs (density > 0.8)
+  - Optimized clique membership matrix processing for moderate-sized problems
+  - Direct clique testing for large-scale problems to reduce memory usage
+  - Early stopping conditions based on edge density thresholds
+
+## Performance Improvements
+
+* **Critical performance fixes for large-scale networks**:
+  - Resolved exponential clique explosion issue that caused hanging on 270x270+ matrices
+  - Performance improvement: reduces computation time from hours to seconds for large matrices
+  - Memory-efficient processing with sparse matrix support
+  - Enhanced progress reporting and error handling for large-scale analyses
+
+* **Adaptive algorithm selection**:
+  - Density > 0.8: Uses greedy edge processing (similar to original moneca approach)
+  - Moderate density: Uses maximal clique enumeration with size limits
+  - Sparse networks: Early termination with individual node segments
+  - Automatic fallback mechanisms ensure robust performance across all network types
+
+## Technical Improvements
+
+* **Enhanced igraph compatibility**:
+  - Robust version detection for igraph >= 1.3.0
+  - Automatic function mapping between old and new igraph APIs
+  - Custom wrapper functions for consistent behavior across versions
+
+* **Backward compatibility maintained**:
+  - All existing functions continue to work unchanged
+  - Identical output structure and format across all implementations
+  - Parameter compatibility ensures seamless migration between implementations
+
 # moneca 0.5.1
 
 ## Bug Fixes
