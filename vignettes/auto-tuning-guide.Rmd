@@ -100,8 +100,7 @@ for(i in seq_along(manual_params)) {
   
   # Run clustering
   result <- moneca(test_data, segment.levels = 2, 
-                   small.cell.reduction = param, 
-                   verbose = FALSE)
+                   small.cell.reduction = param)
   
   # Store basic metrics
   manual_results[[i]] <- list(

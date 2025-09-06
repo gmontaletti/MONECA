@@ -1105,8 +1105,8 @@ seg_auto_stability <- moneca(
   mobility_data,
   segment.levels = 2,
   auto_tune = TRUE,
-  auto_tune_method = "stability",
-  verbose = TRUE
+  tune_method = "stability",
+  tune_verbose = TRUE
 )
 
 # Method 2: Quality-based tuning  
@@ -1115,8 +1115,8 @@ seg_auto_quality <- moneca(
   mobility_data,
   segment.levels = 2,
   auto_tune = TRUE,
-  auto_tune_method = "quality",
-  verbose = TRUE
+  tune_method = "quality",
+  tune_verbose = TRUE
 )
 
 # Method 3: Performance-balanced tuning
@@ -1125,9 +1125,8 @@ seg_auto_performance <- moneca(
   mobility_data,
   segment.levels = 2,
   auto_tune = TRUE,
-  auto_tune_method = "performance",
-  performance_weight = 0.4,
-  verbose = TRUE
+  tune_method = "performance",
+  tune_verbose = TRUE
 )
 
 # Compare with manual parameter selection
