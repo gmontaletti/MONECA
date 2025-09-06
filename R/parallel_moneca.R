@@ -84,9 +84,10 @@ moneca_parallel <- function(mx = mx,
   # Start timing
   start_time <- Sys.time()
   
-  # Initialize results
+  # Initialize results following original moneca structure
   segment.list <- list()
   mat.list <- list()
+  out.put <- list()
   mat.list[[1]] <- mx
   
   # First segmentation level
@@ -101,21 +102,21 @@ moneca_parallel <- function(mx = mx,
                                      chunk.size = chunk.size,
                                      progress = progress)
   
-  segment.list[[1]] <- 1:nrow(weight_mat)
-  level.current <- segments$cliques
-  segment.list[[2]] <- level.current
+  # Create aggregated matrix for level 2
+  mx.2g <- segment.matrix.parallel(mx, segments$cliques, n.cores = parallel_config$n_cores)
+  mat.list[[2]] <- mx.2g
+  out.put[[1]] <- list(segments = segments, mat = mx.2g)
   
-  # Additional segmentation levels
+  current_matrix <- mx.2g
   actual.levels <- 1
+  
+  # Additional segmentation levels (exactly matching original moneca logic)
   if (segment.levels > 1) {
     for (i in 2:segment.levels) {
-      if (length(level.current) <= 1) break
+      # Check if we can continue segmentation
+      if (nrow(current_matrix) <= 2) break  # Need at least 2 segments to continue
       
-      mat.temp <- segment.matrix.parallel(mx, level.current,
-                                          n.cores = parallel_config$n_cores)
-      mat.list[[i]] <- mat.temp
-      
-      weight_mat <- weight.matrix.parallel(mat.temp, cut.off, TRUE, NULL, small.cell.reduction,
+      weight_mat <- weight.matrix.parallel(current_matrix, cut.off, TRUE, NULL, small.cell.reduction,
                                            n.cores = parallel_config$n_cores,
                                            chunk.size = chunk.size)
       
@@ -126,13 +127,20 @@ moneca_parallel <- function(mx = mx,
                                          chunk.size = chunk.size,
                                          progress = progress)
       
-      level.current <- update_segments(level.current, segments$cliques)
-      segment.list[[i + 1]] <- level.current
+      # Create next level matrix
+      current_matrix <- segment.matrix.parallel(current_matrix, segments$cliques, 
+                                               n.cores = parallel_config$n_cores)
+      mat.list[[i + 1]] <- current_matrix
+      out.put[[i]] <- list(segments = segments, mat = current_matrix)
       actual.levels <- i
       
-      if (length(segments$cliques) == 1) break
+      # Stop if only one segment remains
+      if (length(segments$cliques) <= 1) break
     }
   }
+  
+  # Create segment list using the same logic as original moneca
+  segment.list <- create.segments.parallel(out.put, mx, segment.levels)
   
   # Clean up parallel backend
   cleanup_parallel_backend(parallel_config)
@@ -413,75 +421,40 @@ find.segments.parallel <- function(mat, graph, cut.off = 1, mode = "symmetric",
 #' @export
 segment.matrix.parallel <- function(mx, segments, n.cores = NULL) {
   
-  # For small number of segments, use sequential
+  # For small number of segments, use sequential approach
   if (length(segments) < 10) {
-    return(segment.matrix(mx, segments))
+    # Create a segments object with membership component for compatibility
+    segments_obj <- list(membership = integer(nrow(mx) - 1))
+    for (i in seq_along(segments)) {
+      segments_obj$membership[segments[[i]]] <- i
+    }
+    
+    # Use the same logic as the original segment.matrix function
+    groups.1 <- c(segments_obj$membership, length(segments_obj$membership) + 1)
+    mx.2_r <- rowsum(mx, groups.1)
+    mx.2_r_t <- t(mx.2_r)
+    mx.2_rc_t <- rowsum(mx.2_r_t, groups.1)
+    mx.2g <- t(mx.2_rc_t)
+    return(mx.2g)
   }
   
   if (is.null(n.cores)) n.cores <- min(parallel::detectCores() - 1, 4)
   
-  l <- nrow(mx)
-  n_segments <- length(segments)
-  
-  # Create segment membership vector
-  membership <- integer(l - 1)
+  # Create a segments object with membership component for parallel processing too
+  segments_obj <- list(membership = integer(nrow(mx) - 1))
   for (i in seq_along(segments)) {
-    membership[segments[[i]]] <- i
+    segments_obj$membership[segments[[i]]] <- i
   }
   
-  # Parallel aggregation of rows
-  if (.Platform$OS.type == "unix" && n.cores > 1) {
-    # Fork-based parallel aggregation
-    row_chunks <- split(1:(l-1), ceiling(seq_along(1:(l-1)) / ceiling((l-1) / n.cores)))
-    
-    row_sums <- parallel::mclapply(row_chunks, function(rows) {
-      result <- matrix(0, nrow = length(rows), ncol = n_segments)
-      for (i in seq_along(rows)) {
-        row_idx <- rows[i]
-        seg_idx <- membership[row_idx]
-        if (seg_idx > 0) {
-          for (j in 1:n_segments) {
-            cols <- segments[[j]]
-            result[i, j] <- sum(mx[row_idx, cols])
-          }
-        }
-      }
-      result
-    }, mc.cores = n.cores)
-    
-    agg_rows <- do.call(rbind, row_sums)
-    
-    # Aggregate by segment
-    seg_matrix <- matrix(0, nrow = n_segments, ncol = n_segments)
-    for (i in 1:n_segments) {
-      rows <- segments[[i]]
-      seg_matrix[i, ] <- colSums(agg_rows[rows, , drop = FALSE])
-    }
-  } else {
-    # Socket-based or sequential fallback
-    seg_matrix <- matrix(0, nrow = n_segments, ncol = n_segments)
-    
-    for (i in 1:n_segments) {
-      for (j in 1:n_segments) {
-        seg_matrix[i, j] <- sum(mx[segments[[i]], segments[[j]]])
-      }
-    }
-  }
+  # Use the same efficient logic as the original segment.matrix function
+  # This is much simpler and more efficient than the complex parallel aggregation
+  groups.1 <- c(segments_obj$membership, length(segments_obj$membership) + 1)
+  mx.2_r <- rowsum(mx, groups.1)
+  mx.2_r_t <- t(mx.2_r)
+  mx.2_rc_t <- rowsum(mx.2_r_t, groups.1)
+  mx.2g <- t(mx.2_rc_t)
   
-  # Add marginals
-  row_sums <- rowSums(seg_matrix)
-  col_sums <- colSums(seg_matrix)
-  total <- sum(seg_matrix)
-  
-  seg_matrix <- cbind(seg_matrix, row_sums)
-  seg_matrix <- rbind(seg_matrix, c(col_sums, total))
-  
-  # Set names
-  seg_names <- paste0("Segment", 1:n_segments)
-  rownames(seg_matrix) <- c(seg_names, "Total")
-  colnames(seg_matrix) <- c(seg_names, "Total")
-  
-  return(seg_matrix)
+  return(mx.2g)
 }
 
 #' Setup Parallel Backend
@@ -556,4 +529,88 @@ update_segments <- function(old_segments, new_clusters) {
     new_segments[[i]] <- unlist(old_segments[new_clusters[[i]]])
   }
   return(new_segments)
+}
+
+#' Create Segments List (Parallel Version)
+#'
+#' Helper function to create the segment list structure that matches the original moneca output.
+#' This replicates the create.segments function from the original moneca.
+#'
+#' @param out.put List of segmentation results from each level
+#' @param mx Original mobility matrix
+#' @param actual.levels Number of levels actually computed
+#' 
+#' @return List of segment memberships for each hierarchical level
+#' @keywords internal
+create.segments.parallel <- function(out.put, mx, segment.levels) {
+  
+  seg.list <- list()
+  seg.list[[1]] <- as.list(1:(nrow(mx)-1))
+  
+  if (length(out.put) == 0) {
+    return(seg.list)
+  }
+  
+  level.current <- out.put[[1]]$segments$cliques
+  # Remove isolates
+  a <- unlist(lapply(level.current, length))
+  seg.list[[2]] <- level.current[a > 1]
+  
+  # Adjust for actual number of levels available (exactly like original moneca)
+  actual.levels <- min(segment.levels, length(out.put))
+  
+  if (actual.levels > 1) {
+    for (n in 2:actual.levels) {
+      
+      current <- n
+      below <- n
+      
+      # Check if level exists in output
+      if (current > length(out.put)) break
+      
+      level.current <- out.put[[current]]$segments$cliques
+      level.below <- out.put[[n-1]]$segments$cliques
+      
+      for (i in 1:(n-1)) {
+        below <- below - 1
+        level.below <- out.put[[below]]$segments$cliques
+        level.current <- level.down.parallel(level.current, level.below)  
+      }
+      # Only add non-empty levels
+      if (length(level.current) > 0) {
+        seg.list[[n+1]] <- level.current
+      }
+    }
+  }
+  return(seg.list)
+}
+
+#' Level Down (Parallel Version)
+#'
+#' Helper function that maps segments from one level to the previous level.
+#' This replicates the level.down function from the original moneca.
+#'
+#' @param level.current Current level segments
+#' @param level.below Previous level segments
+#' 
+#' @return Updated segment list
+#' @keywords internal
+level.down.parallel <- function(level.current, level.below) {
+  # Remove isolates
+  a <- unlist(lapply(level.current, length))
+  level.current <- level.current[a > 1]
+  
+  ud <- list()
+  
+  # Return empty list if no valid segments
+  if (length(level.current) == 0) {
+    return(ud)
+  }
+  
+  for (i in 1:length(level.current)) {
+    d <- level.current[[i]]
+    ud[[i]] <- unlist(level.below[d])
+  }
+  
+  return(ud)
 }
