@@ -695,14 +695,26 @@ compute_stability_metrics <- function(signatures) {
         if (!is.null(sig1$original_indices) && !is.null(sig2$original_indices)) {
           common_indices <- intersect(sig1$original_indices, sig2$original_indices)
           if (length(common_indices) >= 2) {
-            # Map to common indices
-            idx1 <- match(common_indices, sig1$original_indices)
-            idx2 <- match(common_indices, sig2$original_indices)
+            # Map common original indices to positions in the sample membership vectors
+            # The membership vector indices correspond to the sampled items (1 to n_sampled)
+            # We need to find which sampled items correspond to the common original indices
             
-            if (all(!is.na(idx1)) && all(!is.na(idx2)) && 
-                length(idx1) <= length(mem1) && length(idx2) <= length(mem2)) {
-              mem1_common <- mem1[idx1]
-              mem2_common <- mem2[idx2]
+            # For sig1: find positions of common_indices in sig1$original_indices
+            sig1_positions <- match(common_indices, sig1$original_indices)
+            # For sig2: find positions of common_indices in sig2$original_indices  
+            sig2_positions <- match(common_indices, sig2$original_indices)
+            
+            # Filter out NA matches and ensure positions are within bounds
+            valid_matches <- !is.na(sig1_positions) & !is.na(sig2_positions) & 
+                           sig1_positions <= length(mem1) & sig2_positions <= length(mem2) &
+                           sig1_positions > 0 & sig2_positions > 0
+            
+            if (sum(valid_matches) >= 2) {
+              sig1_valid_pos <- sig1_positions[valid_matches]
+              sig2_valid_pos <- sig2_positions[valid_matches]
+              
+              mem1_common <- mem1[sig1_valid_pos]
+              mem2_common <- mem2[sig2_valid_pos]
               
               # Compute adjusted rand index for clustering similarity
               similarity <- compute_adjusted_rand_index(mem1_common, mem2_common)
@@ -974,7 +986,16 @@ evaluate_performance_trade_offs <- function(quality_metrics,
   
   # Extract performance scores (inverse of time, with penalty for invalid runs)
   performance_scores <- sapply(performance_metrics, function(x) {
-    if (is.null(x) || !x$valid || is.na(x$time)) {
+    # Check for NULL first
+    if (is.null(x)) {
+      return(0)
+    }
+    # Check for valid field existence and type
+    if (is.null(x$valid) || !is.logical(x$valid) || !x$valid) {
+      return(0)
+    }
+    # Check for time field existence and validity
+    if (is.null(x$time) || is.na(x$time)) {
       return(0)
     }
     # Performance score is inverse of time (faster = better)
@@ -1057,6 +1078,8 @@ estimate_components <- function(adj_matrix) {
           visited[current] <- TRUE
           # Add neighbors to stack
           neighbors <- which(adj_matrix[current, ] == 1 | adj_matrix[, current] == 1)
+          # Filter out invalid indices and unvisited neighbors
+          neighbors <- neighbors[neighbors > 0 & neighbors <= n]
           neighbors <- neighbors[!visited[neighbors]]
           stack <- c(stack, neighbors)
         }

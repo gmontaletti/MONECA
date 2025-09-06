@@ -1196,8 +1196,8 @@ seg_pareto <- moneca(
   mobility_data,
   segment.levels = 2,
   auto_tune = TRUE,
-  auto_tune_method = "pareto",
-  verbose = TRUE
+  tune_method = "pareto",
+  tune_verbose = TRUE
 )
 
 print("Pareto optimization results:")
@@ -1212,9 +1212,8 @@ seg_cv <- moneca(
   mobility_data,
   segment.levels = 2,
   auto_tune = TRUE,
-  auto_tune_method = "cross_validation",
-  n_trials = 5,  # 5-fold CV
-  verbose = TRUE
+  tune_method = "cross_validation",
+  tune_verbose = TRUE
 )
 ```
 
@@ -1223,11 +1222,8 @@ seg_cv <- moneca(
 | Parameter | Description | Default | Notes |
 |-----------|-------------|---------|-------|
 | `auto_tune` | Enable auto-tuning | `FALSE` | Set to `TRUE` to activate |
-| `auto_tune_method` | Tuning method | `"stability"` | See methods below |
-| `n_trials` | Number of trials/folds | `10` | Higher = more robust |
-| `performance_weight` | Speed vs quality balance | `0.3` | 0 = quality only, 1 = speed only |
-| `candidate_values` | Custom parameter range | `NULL` | Auto-generated if `NULL` |
-| `seed` | Reproducibility seed | `NULL` | Set for consistent results |
+| `tune_method` | Tuning method | `"stability"` | See methods below |
+| `tune_verbose` | Show detailed output | `FALSE` | Set to `TRUE` for progress info |
 
 ### Auto-Tuning Methods Explained
 
@@ -1323,7 +1319,7 @@ Auto-tuning is not always necessary or appropriate:
 2. **Progress bars** show optimization progress for large datasets  
 3. **Memory usage** grows with number of levels and matrix size
 4. **Auto-tuning adds overhead**: Plan for 2-10x longer computation time
-5. **Parallel processing available**: Use `parallel_cores` parameter for speedup
+5. **Performance tuning**: Use `tune_method = "performance"` for faster results on large datasets
 
 ## Conclusion
 

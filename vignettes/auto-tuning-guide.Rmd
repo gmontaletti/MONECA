@@ -145,10 +145,8 @@ stability_result <- moneca(
   test_data,
   segment.levels = 2,
   auto_tune = TRUE,
-  auto_tune_method = "stability",
-  n_trials = 15,  # More trials for better stability assessment
-  seed = 456,     # For reproducibility
-  verbose = TRUE
+  tune_method = "stability",
+  tune_verbose = TRUE
 )
 
 # Extract auto-tuning diagnostics
@@ -197,9 +195,8 @@ quality_result <- moneca(
   test_data,
   segment.levels = 2,
   auto_tune = TRUE,
-  auto_tune_method = "quality",
-  seed = 456,
-  verbose = TRUE
+  tune_method = "quality",
+  tune_verbose = TRUE
 )
 
 quality_info <- attr(quality_result, "auto_tune_result")
@@ -252,10 +249,8 @@ for(w in performance_weights) {
     test_data,
     segment.levels = 2,
     auto_tune = TRUE,
-    auto_tune_method = "performance",
-    performance_weight = w,
-    seed = 456,
-    verbose = TRUE
+    tune_method = "performance",
+    tune_verbose = TRUE
   )
   
   info <- attr(result, "auto_tune_result")
@@ -282,8 +277,7 @@ print(perf_df)
 
 # Use medium weight for visualization
 medium_result <- moneca(test_data, segment.levels = 2,
-                       auto_tune = TRUE, auto_tune_method = "performance",
-                       performance_weight = 0.3, seed = 456, verbose = FALSE)
+                       auto_tune = TRUE, tune_method = "performance")
 
 performance_plot <- plot_moneca_ggraph(
   medium_result,
@@ -318,9 +312,8 @@ pareto_result <- moneca(
   test_data,
   segment.levels = 2,
   auto_tune = TRUE,
-  auto_tune_method = "pareto",
-  seed = 456,
-  verbose = TRUE
+  tune_method = "pareto",
+  tune_verbose = TRUE
 )
 
 pareto_info <- attr(pareto_result, "auto_tune_result")
@@ -385,10 +378,8 @@ cv_result <- moneca(
   test_data,
   segment.levels = 2,
   auto_tune = TRUE,
-  auto_tune_method = "cross_validation",
-  n_trials = 5,  # 5-fold CV
-  seed = 456,
-  verbose = TRUE
+  tune_method = "cross_validation",
+  tune_verbose = TRUE
 )
 
 cv_info <- attr(cv_result, "auto_tune_result")
@@ -438,9 +429,8 @@ if(requireNamespace("GPfit", quietly = TRUE)) {
     test_data,
     segment.levels = 2,
     auto_tune = TRUE,
-    auto_tune_method = "bayesian",
-    seed = 456,
-    verbose = TRUE
+    tune_method = "bayesian",
+    tune_verbose = TRUE
   )
   
   bayesian_info <- attr(bayesian_result, "auto_tune_result")
@@ -462,10 +452,8 @@ custom_result <- moneca(
   test_data,
   segment.levels = 2,
   auto_tune = TRUE,
-  auto_tune_method = "stability",
-  candidate_values = custom_candidates,
-  seed = 456,
-  verbose = TRUE
+  tune_method = "stability",
+  tune_verbose = TRUE
 )
 
 custom_info <- attr(custom_result, "auto_tune_result")
@@ -493,9 +481,7 @@ for(method in comparison_methods) {
     test_data,
     segment.levels = 2,
     auto_tune = TRUE,
-    auto_tune_method = method,
-    seed = 456,
-    verbose = FALSE
+    tune_method = method
   )
   end_time <- Sys.time()
   
@@ -575,9 +561,7 @@ for(size in sizes) {
       bench_data,
       segment.levels = 2,
       auto_tune = TRUE,
-      auto_tune_method = method,
-      seed = 789,
-      verbose = FALSE
+      tune_method = method
     )
     
     end_time <- Sys.time()
@@ -623,34 +607,33 @@ if(nrow(benchmark_df) > 0) {
 # Method selection flowchart (conceptual)
 
 # For general use:
-result_general <- moneca(data, auto_tune = TRUE, auto_tune_method = "stability")
+result_general <- moneca(data, auto_tune = TRUE, tune_method = "stability")
 
 # For maximum quality:
-result_quality <- moneca(data, auto_tune = TRUE, auto_tune_method = "quality")
+result_quality <- moneca(data, auto_tune = TRUE, tune_method = "quality")
 
 # For large datasets:
-result_large <- moneca(data, auto_tune = TRUE, auto_tune_method = "performance", 
-                       performance_weight = 0.4)
+result_large <- moneca(data, auto_tune = TRUE, tune_method = "performance")
 
 # For research/exploration:
-result_research <- moneca(data, auto_tune = TRUE, auto_tune_method = "pareto")
+result_research <- moneca(data, auto_tune = TRUE, tune_method = "pareto")
 
 # For conservative results:
 result_conservative <- moneca(data, auto_tune = TRUE, 
-                             auto_tune_method = "cross_validation")
+                             tune_method = "cross_validation")
 ```
 
 ### Decision Matrix
 
 | Scenario | Recommended Method | Key Parameters |
 |----------|-------------------|----------------|
-| **General analysis** | `stability` | `n_trials = 10-20` |
+| **General analysis** | `stability` | Default settings |
 | **Publication quality** | `quality` | Default settings |
-| **Large datasets (>20×20)** | `performance` | `performance_weight = 0.3-0.5` |
-| **Computational constraints** | `performance` | `performance_weight = 0.6-0.8` |
+| **Large datasets (>20×20)** | `performance` | Default settings |
+| **Computational constraints** | `performance` | Default settings |
 | **Research/exploration** | `pareto` | Default settings |
-| **Small datasets** | `cross_validation` | `n_trials = 5-10` |
-| **Reproducible results** | Any method | Always set `seed` |
+| **Small datasets** | `cross_validation` | Default settings |
+| **Verbose output** | Any method | `tune_verbose = TRUE` |
 
 ### Performance Optimization Tips
 
@@ -658,21 +641,14 @@ result_conservative <- moneca(data, auto_tune = TRUE,
 # 1. Parallel processing for large datasets
 cat("=== Performance Optimization Tips ===\n\n")
 
-cat("1. Use parallel processing:\n")
-cat('   moneca(data, auto_tune = TRUE, parallel_cores = 4)\n\n')
+cat("1. Use performance method for large datasets:\n")
+cat('   moneca(data, auto_tune = TRUE, tune_method = "performance")\n\n')
 
-cat("2. Limit candidate values for faster search:\n")
-cat('   moneca(data, auto_tune = TRUE, max_candidates = 10)\n\n')
+cat("2. Use verbose output to monitor progress:\n")
+cat('   moneca(data, auto_tune = TRUE, tune_verbose = TRUE)\n\n')
 
-cat("3. Use performance method for speed:\n")
-cat('   moneca(data, auto_tune = TRUE, auto_tune_method = "performance",\n')
-cat('          performance_weight = 0.5)\n\n')
-
-cat("4. Reduce trials for faster results:\n")
-cat('   moneca(data, auto_tune = TRUE, n_trials = 5)\n\n')
-
-cat("5. Enable caching for repeated analyses:\n")
-cat('   moneca(data, auto_tune = TRUE, use_cache = TRUE)\n\n')
+cat("3. Reduce segment levels for faster analysis:\n")
+cat('   moneca(data, segment.levels = 2, auto_tune = TRUE)\n\n')
 ```
 
 ### Reproducibility Guidelines
@@ -685,9 +661,7 @@ reproducible_example <- moneca(
   test_data,
   segment.levels = 2,
   auto_tune = TRUE,
-  auto_tune_method = "stability",
-  seed = 12345,  # Always set seed
-  verbose = FALSE
+  tune_method = "stability"
 )
 
 cat("1. Always set a seed value\n")
@@ -710,17 +684,10 @@ str(auto_tune_info)
 **Solutions**:
 ```{r troubleshoot_speed, eval=FALSE}
 # Solution 1: Use performance method
-fast_result <- moneca(data, auto_tune = TRUE, auto_tune_method = "performance",
-                      performance_weight = 0.6)
+fast_result <- moneca(data, auto_tune = TRUE, tune_method = "performance")
 
-# Solution 2: Reduce candidates
-fast_result <- moneca(data, auto_tune = TRUE, max_candidates = 8)
-
-# Solution 3: Fewer trials
-fast_result <- moneca(data, auto_tune = TRUE, n_trials = 5)
-
-# Solution 4: Parallel processing
-fast_result <- moneca(data, auto_tune = TRUE, parallel_cores = 4)
+# Solution 2: Reduce segment levels
+fast_result <- moneca(data, segment.levels = 2, auto_tune = TRUE)
 ```
 
 ### Issue 2: Unstable Results
@@ -729,15 +696,12 @@ fast_result <- moneca(data, auto_tune = TRUE, parallel_cores = 4)
 
 **Solutions**:
 ```{r troubleshoot_stability, eval=FALSE}
-# Solution 1: Set seed for reproducibility
-stable_result <- moneca(data, auto_tune = TRUE, seed = 123)
-
-# Solution 2: Increase trials for better stability
-stable_result <- moneca(data, auto_tune = TRUE, n_trials = 20)
+# Solution: Use stability method with verbose output
+stable_result <- moneca(data, auto_tune = TRUE, tune_method = "stability", tune_verbose = TRUE)
 
 # Solution 3: Use cross-validation method
 stable_result <- moneca(data, auto_tune = TRUE, 
-                       auto_tune_method = "cross_validation")
+                       tune_method = "cross_validation")
 ```
 
 ### Issue 3: Poor Auto-Tuning Performance
@@ -747,16 +711,12 @@ stable_result <- moneca(data, auto_tune = TRUE,
 **Solutions**:
 ```{r troubleshoot_quality, eval=FALSE}
 # Solution 1: Use quality method
-better_result <- moneca(data, auto_tune = TRUE, auto_tune_method = "quality")
+better_result <- moneca(data, auto_tune = TRUE, tune_method = "quality")
 
-# Solution 2: Expand search space
-better_result <- moneca(data, auto_tune = TRUE, 
-                       candidate_values = c(1, 2, 3, 5, 8, 12, 20, 30, 50))
-
-# Solution 3: Try multiple methods and compare
+# Solution 2: Try multiple methods and compare
 methods <- c("stability", "quality", "performance")
 results <- lapply(methods, function(m) {
-  moneca(data, auto_tune = TRUE, auto_tune_method = m, seed = 123)
+  moneca(data, auto_tune = TRUE, tune_method = m)
 })
 ```
 
@@ -766,13 +726,10 @@ results <- lapply(methods, function(m) {
 
 **Solutions**:
 ```{r troubleshoot_memory, eval=FALSE}
-# Solution 1: Disable caching
-memory_result <- moneca(data, auto_tune = TRUE, use_cache = FALSE)
+# Solution 1: Use performance method (more memory efficient)
+memory_result <- moneca(data, auto_tune = TRUE, tune_method = "performance")
 
-# Solution 2: Use performance method (more memory efficient)
-memory_result <- moneca(data, auto_tune = TRUE, auto_tune_method = "performance")
-
-# Solution 3: Reduce matrix size or segment levels
+# Solution 2: Reduce matrix size or segment levels
 memory_result <- moneca(data, segment.levels = 1, auto_tune = TRUE)
 ```
 
@@ -813,7 +770,7 @@ For processing multiple datasets:
 datasets <- list(data1, data2, data3)
 
 batch_results <- lapply(datasets, function(data) {
-  moneca(data, auto_tune = TRUE, auto_tune_method = "stability", seed = 123)
+  moneca(data, auto_tune = TRUE, tune_method = "stability")
 })
 
 # Extract optimal parameters
