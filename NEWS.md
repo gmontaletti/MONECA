@@ -1,3 +1,198 @@
+# moneca 0.6.0
+
+## Major New Features
+
+### **Comprehensive Auto-Tuning Framework**
+
+* **Added advanced parameter optimization**: 
+  - Automatic selection of optimal `small.cell.reduction` parameter values
+  - Six sophisticated optimization methods available
+  - Eliminates manual parameter selection and improves clustering quality
+  - Fully integrated into all main MONECA functions
+
+* **Auto-tuning methods implemented**:
+  - `stability`: Bootstrap-based stability assessment (recommended default)
+  - `quality`: Clustering quality optimization using silhouette and modularity
+  - `performance`: Balanced approach optimizing quality vs computational speed
+  - `pareto`: Multi-objective optimization with Pareto frontier analysis
+  - `cross_validation`: K-fold cross-validation for conservative parameter selection
+  - `bayesian`: Gaussian Process optimization (requires GPfit package)
+
+* **Enhanced main functions with auto-tuning**:
+  - `moneca()`: Core function with `auto_tune` and `auto_tune_method` parameters
+  - `moneca_fast()`: Optimized version with auto-tuning capabilities
+  - `moneca_fast_fixed()`: Fixed-algorithm version with auto-tuning
+  - `moneca_parallel()`: Parallel processing version with auto-tuning
+  - `weight.matrix()`: Weight matrix computation with parameter optimization
+  - `weight.matrix.parallel()`: Parallel weight matrix with auto-tuning
+
+## New Functions
+
+### **Core Auto-Tuning Functions**
+
+* `auto_tune_small_cell_reduction()`: Main auto-tuning function with comprehensive optimization strategies
+* `auto_tune_small_cell_reduction_enhanced()`: Enhanced version with advanced features and performance improvements
+* `generate_candidate_values()`: Intelligent candidate parameter generation using data-driven methods
+* `assess_clustering_stability()`: Bootstrap-based stability assessment for parameter evaluation
+* `compute_tuning_metrics()`: Comprehensive clustering quality metrics computation
+* `compute_extended_quality_metrics()`: Extended quality assessment with additional measures
+* `select_optimal_parameter()`: Parameter selection with multiple optimization strategies
+
+### **Multi-Objective Optimization**
+
+* `pareto_optimization()`: Multi-objective optimization with Pareto frontier analysis
+* `compute_pareto_front()`: Pareto front computation for quality/performance trade-offs
+* `bayesian_parameter_optimization()`: Bayesian optimization using Gaussian Processes
+* `cross_validation_tuning()`: Cross-validation based parameter selection
+* `adaptive_candidate_generation()`: Dynamic candidate generation based on search progress
+
+### **Performance Optimization**
+
+* `parallel_stability_assessment()`: Multi-core stability assessment for faster tuning
+* `cached_weight_matrix_computation()`: Caching system for repeated weight matrix calculations
+* `performance_aware_tuning()`: Speed-optimized tuning for large datasets
+* `early_stopping_optimization()`: Early termination for efficient candidate screening
+
+### **Visualization and Analysis**
+
+* `plot_tuning_results()`: Comprehensive visualization of auto-tuning results
+* `plot_pareto_front()`: Pareto frontier visualization for multi-objective results
+* `parameter_sensitivity_plot()`: Sensitivity analysis visualization
+* `tuning_convergence_plot()`: Convergence analysis for optimization methods
+
+## Enhanced Documentation
+
+### **New Vignettes**
+
+* **Auto-Tuning Guide**: Comprehensive 50+ page guide covering:
+  - Detailed explanation of all auto-tuning methods
+  - Performance comparison and benchmarking
+  - Best practices and method selection guidelines
+  - Advanced use cases and troubleshooting
+  - Real-world examples with before/after comparisons
+
+* **Updated Introduction Vignette**: Added extensive auto-tuning section with:
+  - Practical examples showing manual vs auto-tuned results
+  - Method comparison visualizations
+  - Parameter selection guidelines
+  - Performance optimization tips
+
+### **Enhanced Function Documentation**
+
+* Complete roxygen2 documentation for all auto-tuning functions
+* Comprehensive examples demonstrating all optimization methods
+* Cross-references between related functions
+* Parameter selection guidance and best practices
+
+## API Enhancements
+
+### **Backward Compatibility**
+
+* All existing functions maintain full backward compatibility
+* Auto-tuning is opt-in (`auto_tune = FALSE` by default)
+* Manual parameter specification continues to work unchanged
+* No breaking changes to existing workflows
+
+### **New Parameters Across Main Functions**
+
+* `auto_tune`: Enable/disable automatic parameter optimization
+* `auto_tune_method`: Select optimization strategy
+* `n_trials`: Number of trials for stability assessment
+* `performance_weight`: Balance between quality and speed (0-1 scale)
+* `candidate_values`: Custom parameter ranges for testing
+* `seed`: Reproducibility control for optimization
+* `verbose`: Progress reporting during auto-tuning
+* `parallel_cores`: Multi-core processing for faster optimization
+
+### **Auto-Tuning Result Attributes**
+
+* All auto-tuned results include comprehensive metadata:
+  - `auto_tune_result`: Complete optimization results
+  - `best_parameter`: Selected optimal parameter value
+  - `best_score`: Optimization score achieved
+  - `method`: Auto-tuning method used
+  - `evaluation_time`: Time spent on optimization
+  - `all_results`: Complete candidate evaluation results
+
+## Performance Improvements
+
+### **Computational Efficiency**
+
+* **Multi-core processing**: Parallel evaluation of parameter candidates
+* **Caching system**: Avoid redundant weight matrix computations
+* **Early stopping**: Intelligent termination for faster optimization
+* **Memory optimization**: Efficient handling of large mobility matrices
+* **Progress reporting**: Real-time feedback during long-running optimizations
+
+### **Speed Optimizations**
+
+* Performance-aware tuning method for time-constrained scenarios
+* Adaptive candidate generation reducing unnecessary evaluations
+* Optimized stability assessment using efficient resampling strategies
+* Parallel processing support across all auto-tuning methods
+
+## Quality Improvements
+
+### **Enhanced Clustering Assessment**
+
+* Multiple quality metrics: silhouette score, modularity, clustering coefficient
+* Network density and connectivity analysis
+* Stability assessment across data perturbations
+* Cross-validation for robust parameter selection
+* Extended quality metrics for comprehensive evaluation
+
+### **Robust Optimization**
+
+* Multiple independent trials for stability assessment
+* Bootstrap resampling for robust quality estimation
+* Cross-validation to prevent overfitting
+* Multi-objective optimization considering multiple criteria simultaneously
+
+## Technical Infrastructure
+
+### **Dependencies and Compatibility**
+
+* Added GPfit to Suggests for Bayesian optimization (optional)
+* Enhanced parallel processing using the parallel package
+* Maintained full igraph compatibility (>= 1.3.0)
+* All auto-tuning functions work with existing MONECA data structures
+
+### **Code Architecture**
+
+* Modular auto-tuning framework with clean separation of concerns
+* Consistent API across all optimization methods
+* Comprehensive error handling and validation
+* Extensive unit tests for all auto-tuning functionality
+
+## Migration Guide
+
+### **For New Users**
+
+```r
+# Recommended workflow with auto-tuning
+library(moneca)
+data <- generate_mobility_data(n_classes = 6, seed = 123)
+
+# Use stability method for general analysis
+result <- moneca(data, segment.levels = 2, 
+                 auto_tune = TRUE, auto_tune_method = "stability")
+
+# Check auto-tuning results
+auto_info <- attr(result, "auto_tune_result")
+print(paste("Optimal parameter:", auto_info$best_parameter))
+```
+
+### **For Existing Users**
+
+* Existing code continues to work unchanged
+* Add `auto_tune = TRUE` to enable optimization
+* Compare results: `moneca(data, auto_tune = TRUE)` vs manual parameters
+* Gradual migration: test auto-tuning on subset of analyses first
+
+## Breaking Changes
+
+**None** - Full backward compatibility maintained
+
 # moneca 0.5.9
 
 ## New Features

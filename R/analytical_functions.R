@@ -176,6 +176,14 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
 #'   for efficiency. Default is TRUE.
 #' @param small.cell.reduction Numeric value to handle small cell counts. Cells with
 #'   counts below this threshold are set to 0. Default is 0 (no reduction).
+#' @param auto_tune Logical indicating whether to automatically tune the 
+#'   small.cell.reduction parameter. When TRUE, uses optimization methods to
+#'   select the best value. Default is FALSE.
+#' @param tune_method Character string specifying the auto-tuning method when
+#'   auto_tune is TRUE. Options are "stability" (default), "quality", or 
+#'   "performance". See \code{\link{auto_tune_small_cell_reduction}} for details.
+#' @param tune_verbose Logical indicating whether to print verbose messages
+#'   during auto-tuning. Default is FALSE.
 #' 
 #' @return An object of class "moneca" containing:
 #'   \describe{
@@ -215,6 +223,11 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
 #' seg <- moneca_fast(mobility_data, segment.levels = 3)
 #' print(seg)
 #' 
+#' # Run with auto-tuning for optimal parameters
+#' seg_tuned <- moneca_fast(mobility_data, segment.levels = 3, 
+#'                          auto_tune = TRUE, tune_method = "stability")
+#' print(seg_tuned)
+#' 
 #' # Examine segment membership
 #' membership <- segment.membership(seg)
 #' print(membership)
@@ -238,7 +251,7 @@ find.segments <- function(mat, cliques, cut.off = 1, mode = "symmetric", delete.
 #' 
 #' @export
 
-moneca_fast <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.upper.tri=TRUE, small.cell.reduction=0){
+moneca_fast <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.upper.tri=TRUE, small.cell.reduction=0, auto_tune = FALSE, tune_method = "stability", tune_verbose = FALSE){
   
   # Input validation
   if (is.null(mx)) {
@@ -256,7 +269,8 @@ moneca_fast <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", de
     if (!is.matrix(mx)) {
       mx <- as.matrix(mx)
     }
-    mx.1i           <- weight.matrix(mx, cut.off, small.cell.reduction=small.cell.reduction)
+    mx.1i           <- weight.matrix(mx, cut.off, small.cell.reduction=small.cell.reduction, 
+                                     auto_tune=auto_tune, tune_method=tune_method, tune_verbose=tune_verbose)
     
     # Check for empty weight matrix early
     if (all(is.na(mx.1i))) {
@@ -446,12 +460,26 @@ moneca_fast <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", de
 #' @param small.cell.reduction Numeric value for handling small cells. Cells with
 #'   counts below this threshold are set to 0 before calculating relative risks.
 #'   Default is 0.
+#' @param auto_tune Logical indicating whether to automatically tune the 
+#'   small.cell.reduction parameter. When TRUE, uses optimization methods to
+#'   select the best value. Default is FALSE.
+#' @param tune_method Character string specifying the auto-tuning method when
+#'   auto_tune is TRUE. Options are "stability" (default), "quality", or 
+#'   "performance". See \code{\link{auto_tune_small_cell_reduction}} for details.
+#' @param tune_verbose Logical indicating whether to print verbose messages
+#'   during auto-tuning. Default is FALSE.
 #' 
 #' @return A matrix of relative risks where:
 #'   \itemize{
 #'     \item Values > 1 indicate mobility above expected levels
 #'     \item Values < 1 indicate mobility below expected levels  
 #'     \item Values below cut.off are set to NA
+#'   }
+#'   When auto_tune is TRUE, the matrix includes additional attributes:
+#'   \itemize{
+#'     \item \code{auto_tuning}: Complete results from auto-tuning process
+#'     \item \code{auto_tuned}: Logical flag indicating auto-tuning was used
+#'     \item \code{tuned_small_cell_reduction}: The selected optimal value
 #'   }
 #' 
 #' @details
@@ -472,10 +500,23 @@ moneca_fast <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", de
 #' # Calculate relative risk matrix
 #' rr_matrix <- weight.matrix(mob_table, cut.off = 1.5)
 #' 
-#' @seealso \code{\link{moneca}} for the main analysis function
+#' # Use automatic tuning for small.cell.reduction parameter
+#' rr_matrix_tuned <- weight.matrix(mob_table, auto_tune = TRUE, 
+#'                                  tune_method = "stability", tune_verbose = TRUE)
+#' 
+#' # Check tuning results
+#' if (attr(rr_matrix_tuned, "auto_tuned", exact = TRUE)) {
+#'   optimal_value <- attr(rr_matrix_tuned, "tuned_small_cell_reduction", exact = TRUE)
+#'   message("Optimal small.cell.reduction: ", optimal_value)
+#' }
+#' 
+#' @seealso \code{\link{moneca}} for the main analysis function, 
+#'   \code{\link{auto_tune_small_cell_reduction}} for auto-tuning details
 #' @export
 
-weight.matrix <- function(mx, cut.off = 1, symmetric = TRUE, diagonal = NULL, small.cell.reduction = 0){
+weight.matrix <- function(mx, cut.off = 1, symmetric = TRUE, diagonal = NULL, 
+                          small.cell.reduction = 0, auto_tune = FALSE, 
+                          tune_method = "stability", tune_verbose = FALSE){
 
   # Input validation and conversion
   if (is.null(mx)) {
@@ -507,6 +548,30 @@ weight.matrix <- function(mx, cut.off = 1, symmetric = TRUE, diagonal = NULL, sm
   # Check if matrix is square
   if (nrow(mx) != ncol(mx)) {
     stop("Matrix must be square (same number of rows and columns)")
+  }
+  
+  # Auto-tune small.cell.reduction parameter if requested
+  tuning_info <- NULL
+  if (auto_tune) {
+    if (tune_verbose) {
+      message("Auto-tuning small.cell.reduction parameter using method: ", tune_method)
+    }
+    
+    # Call auto-tuning function
+    tune_result <- auto_tune_small_cell_reduction(
+      mx = mx,
+      cut.off = cut.off,
+      method = tune_method,
+      verbose = tune_verbose
+    )
+    
+    # Use the optimal parameter
+    small.cell.reduction <- tune_result$optimal_value
+    tuning_info <- tune_result
+    
+    if (tune_verbose) {
+      message("Selected optimal small.cell.reduction: ", small.cell.reduction)
+    }
   }
   
   # MEMORY OPTIMIZATION: Calculate components efficiently with minimal copying
@@ -541,6 +606,13 @@ weight.matrix <- function(mx, cut.off = 1, symmetric = TRUE, diagonal = NULL, sm
   # Apply cut-off and diagonal settings
   mx.1i[mx.1i < cut.off] <- NA               
   if(is.null(diagonal)) diag(mx.1i) <- NA
+  
+  # Add tuning information as attributes if available
+  if (!is.null(tuning_info)) {
+    attr(mx.1i, "auto_tuning") <- tuning_info
+    attr(mx.1i, "auto_tuned") <- TRUE
+    attr(mx.1i, "tuned_small_cell_reduction") <- small.cell.reduction
+  }
   
   return(mx.1i)  
 }
@@ -995,7 +1067,7 @@ out.mat
 #' The function applies different naming strategies based on segment composition:
 #' \enumerate{
 #'   \item \strong{Individual nodes}: Keep original name unchanged
-#'   \item \strong{Small segments} (≤ max_concat_length): Concatenate names
+#'   \item \strong{Small segments} (<= max_concat_length): Concatenate names
 #'   \item \strong{Large segments}: Apply pattern recognition or use generic names
 #'   \item \strong{Custom names}: Override automatic naming with user-provided names
 #' }

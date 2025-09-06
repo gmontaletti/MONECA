@@ -1070,11 +1070,261 @@ plot_moneca_ggraph(seg,
 3. **Edge weights** indicate relative risk compared to independence
 4. **Layout algorithms** can emphasize different network properties
 
+## Auto-Tuning Functionality
+
+The moneca package includes comprehensive auto-tuning capabilities that automatically optimize the `small.cell.reduction` parameter for improved clustering results. This feature eliminates manual parameter selection and can significantly improve clustering quality.
+
+### Why Auto-Tuning?
+
+The `small.cell.reduction` parameter controls how small mobility cells are handled during clustering. Finding the optimal value manually can be:
+
+- **Time-consuming**: Requires testing multiple values
+- **Subjective**: Different users might choose different values
+- **Data-dependent**: Optimal values vary by dataset characteristics
+- **Quality-affecting**: Poor parameter choice reduces clustering performance
+
+### Auto-Tuning Methods
+
+```{r auto_tuning_demo, eval=TRUE, fig.width=12, fig.height=8}
+# Generate test data for auto-tuning demonstration
+set.seed(456)
+mobility_data <- generate_mobility_data(
+  n_classes = 6,
+  immobility_strength = 0.7,
+  class_clustering = 0.8,
+  noise_level = 0.1,
+  class_names = paste0("Class_", LETTERS[1:6])
+)
+
+print("Original mobility matrix:")
+print(round(mobility_data, 2))
+
+# Method 1: Stability-based tuning (default)
+cat("\n=== Stability-Based Auto-Tuning ===\n")
+seg_auto_stability <- moneca(
+  mobility_data,
+  segment.levels = 2,
+  auto_tune = TRUE,
+  auto_tune_method = "stability",
+  verbose = TRUE
+)
+
+# Method 2: Quality-based tuning  
+cat("\n=== Quality-Based Auto-Tuning ===\n")
+seg_auto_quality <- moneca(
+  mobility_data,
+  segment.levels = 2,
+  auto_tune = TRUE,
+  auto_tune_method = "quality",
+  verbose = TRUE
+)
+
+# Method 3: Performance-balanced tuning
+cat("\n=== Performance-Balanced Auto-Tuning ===\n")
+seg_auto_performance <- moneca(
+  mobility_data,
+  segment.levels = 2,
+  auto_tune = TRUE,
+  auto_tune_method = "performance",
+  performance_weight = 0.4,
+  verbose = TRUE
+)
+
+# Compare with manual parameter selection
+seg_manual <- moneca(mobility_data, segment.levels = 2, small.cell.reduction = 5)
+```
+
+### Comparison: Manual vs Auto-Tuned Results
+
+```{r auto_tuning_comparison, eval=TRUE, fig.width=15, fig.height=12}
+# Create comparison plots
+library(gridExtra)
+
+# Manual parameter plot
+manual_plot <- plot_moneca_ggraph(
+  seg_manual,
+  title = "Manual Parameter (small.cell.reduction = 5)",
+  node_color = "segment",
+  node_size = "total",
+  show_segments = TRUE,
+  color_palette = "Set1"
+)
+
+# Auto-tuned stability plot  
+stability_plot <- plot_moneca_ggraph(
+  seg_auto_stability,
+  title = paste0("Auto-Tuned (Stability Method)\nOptimal parameter: ", 
+                attr(seg_auto_stability, "auto_tune_result")$best_parameter),
+  node_color = "segment", 
+  node_size = "total",
+  show_segments = TRUE,
+  color_palette = "Set2"
+)
+
+# Auto-tuned quality plot
+quality_plot <- plot_moneca_ggraph(
+  seg_auto_quality,
+  title = paste0("Auto-Tuned (Quality Method)\nOptimal parameter: ",
+                attr(seg_auto_quality, "auto_tune_result")$best_parameter),
+  node_color = "segment",
+  node_size = "total", 
+  show_segments = TRUE,
+  color_palette = "Set3"
+)
+
+# Performance-balanced plot
+performance_plot <- plot_moneca_ggraph(
+  seg_auto_performance,
+  title = paste0("Auto-Tuned (Performance Method)\nOptimal parameter: ",
+                attr(seg_auto_performance, "auto_tune_result")$best_parameter),
+  node_color = "segment",
+  node_size = "total",
+  show_segments = TRUE, 
+  color_palette = "Dark2"
+)
+
+# Arrange plots
+grid.arrange(manual_plot, stability_plot, quality_plot, performance_plot, 
+             ncol = 2, nrow = 2)
+```
+
+### Advanced Auto-Tuning Methods
+
+```{r advanced_auto_tuning, eval=TRUE}
+# Pareto optimization - balances multiple objectives
+cat("\n=== Pareto Multi-Objective Optimization ===\n")
+seg_pareto <- moneca(
+  mobility_data,
+  segment.levels = 2,
+  auto_tune = TRUE,
+  auto_tune_method = "pareto",
+  verbose = TRUE
+)
+
+print("Pareto optimization results:")
+pareto_result <- attr(seg_pareto, "auto_tune_result")
+if (!is.null(pareto_result$pareto_front)) {
+  print(head(pareto_result$pareto_front))
+}
+
+# Cross-validation based tuning
+cat("\n=== Cross-Validation Based Tuning ===\n") 
+seg_cv <- moneca(
+  mobility_data,
+  segment.levels = 2,
+  auto_tune = TRUE,
+  auto_tune_method = "cross_validation",
+  n_trials = 5,  # 5-fold CV
+  verbose = TRUE
+)
+```
+
+### Auto-Tuning Parameters Reference
+
+| Parameter | Description | Default | Notes |
+|-----------|-------------|---------|-------|
+| `auto_tune` | Enable auto-tuning | `FALSE` | Set to `TRUE` to activate |
+| `auto_tune_method` | Tuning method | `"stability"` | See methods below |
+| `n_trials` | Number of trials/folds | `10` | Higher = more robust |
+| `performance_weight` | Speed vs quality balance | `0.3` | 0 = quality only, 1 = speed only |
+| `candidate_values` | Custom parameter range | `NULL` | Auto-generated if `NULL` |
+| `seed` | Reproducibility seed | `NULL` | Set for consistent results |
+
+### Auto-Tuning Methods Explained
+
+#### 1. Stability Method (`"stability"`)
+- **Best for**: General purpose, robust clustering
+- **How it works**: Bootstrap sampling to assess consistency
+- **Advantages**: Reliable, works well with most datasets
+- **Use when**: You want robust, generalizable results
+
+#### 2. Quality Method (`"quality"`)  
+- **Best for**: Maximizing clustering performance
+- **How it works**: Optimizes silhouette score and modularity
+- **Advantages**: Highest clustering quality
+- **Use when**: Quality is more important than speed
+
+#### 3. Performance Method (`"performance"`)
+- **Best for**: Balancing quality and computational efficiency
+- **How it works**: Weighted combination of quality and speed metrics
+- **Advantages**: Good compromise for large datasets
+- **Use when**: You need reasonable results quickly
+
+#### 4. Pareto Method (`"pareto"`)
+- **Best for**: Understanding trade-offs between objectives
+- **How it works**: Multi-objective optimization with Pareto frontier
+- **Advantages**: Shows all optimal trade-offs
+- **Use when**: You want to explore different quality/speed combinations
+
+#### 5. Cross-Validation Method (`"cross_validation"`)
+- **Best for**: Conservative parameter selection
+- **How it works**: K-fold cross-validation with stability assessment
+- **Advantages**: Reduces overfitting risk
+- **Use when**: Dataset is small or you're concerned about overfitting
+
+### Auto-Tuning Visualization
+
+```{r auto_tuning_visualization, eval=TRUE, fig.width=12, fig.height=10}
+# The auto-tuning process generates diagnostic information
+tuning_result <- attr(seg_auto_stability, "auto_tune_result")
+
+if (!is.null(tuning_result)) {
+  cat("Auto-tuning summary:\n")
+  cat("Method:", tuning_result$method, "\n")
+  cat("Best parameter:", tuning_result$best_parameter, "\n")
+  cat("Best score:", round(tuning_result$best_score, 4), "\n")
+  cat("Evaluation time:", round(tuning_result$evaluation_time, 2), "seconds\n")
+  
+  # Plot tuning results if available
+  if (!is.null(tuning_result$all_results)) {
+    results_df <- as.data.frame(tuning_result$all_results)
+    
+    tuning_plot <- ggplot(results_df, aes(x = parameter, y = score)) +
+      geom_line(color = "steelblue", size = 1.2) +
+      geom_point(color = "steelblue", size = 3) +
+      geom_point(data = results_df[which.max(results_df$score), ],
+                 color = "red", size = 5, shape = 16) +
+      geom_vline(xintercept = tuning_result$best_parameter, 
+                 linetype = "dashed", color = "red", alpha = 0.7) +
+      labs(title = "Auto-Tuning Parameter Search Results",
+           subtitle = paste("Best parameter:", tuning_result$best_parameter, 
+                           "| Score:", round(tuning_result$best_score, 4)),
+           x = "Small Cell Reduction Parameter",
+           y = "Stability Score") +
+      theme_minimal() +
+      theme(plot.title = element_text(size = 14, hjust = 0.5),
+            plot.subtitle = element_text(size = 12, hjust = 0.5))
+    
+    print(tuning_plot)
+  }
+}
+```
+
+### Best Practices for Auto-Tuning
+
+1. **Start with stability method**: It provides reliable results for most datasets
+2. **Use quality method for publication**: When clustering quality is paramount
+3. **Consider performance method for large datasets**: Balances quality and speed
+4. **Set seed for reproducibility**: Ensures consistent results across runs
+5. **Check auto-tuning results**: Examine the selected parameter and scores
+6. **Validate with multiple methods**: Compare results across different tuning approaches
+
+### When to Use Manual Parameters
+
+Auto-tuning is not always necessary or appropriate:
+
+- **Known optimal parameters**: If you already know good parameters for your domain
+- **Computational constraints**: When auto-tuning would be too slow
+- **Specific requirements**: When you need exact control over the clustering process
+- **Legacy compatibility**: When reproducing previous analyses exactly
+
 ### Performance Considerations
 
 1. **Large matrices** (>50x50) may require increased computation time
-2. **Progress bars** show optimization progress for large datasets
+2. **Progress bars** show optimization progress for large datasets  
 3. **Memory usage** grows with number of levels and matrix size
+4. **Auto-tuning adds overhead**: Plan for 2-10x longer computation time
+5. **Parallel processing available**: Use `parallel_cores` parameter for speedup
 
 ## Conclusion
 

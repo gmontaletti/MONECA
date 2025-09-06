@@ -26,6 +26,14 @@
 #' @param fallback.sequential Logical indicating whether to fall back to sequential
 #'   processing if parallel fails. Default is TRUE.
 #' @param progress Logical indicating whether to show progress bars. Default is TRUE.
+#' @param auto_tune Logical indicating whether to automatically tune the 
+#'   small.cell.reduction parameter. When TRUE, uses optimization methods to
+#'   select the best value. Default is FALSE.
+#' @param tune_method Character string specifying the auto-tuning method when
+#'   auto_tune is TRUE. Options are "stability" (default), "quality", or 
+#'   "performance". See \code{\link{auto_tune_small_cell_reduction}} for details.
+#' @param tune_verbose Logical indicating whether to print verbose messages
+#'   during auto-tuning. Default is FALSE.
 #' 
 #' @return An object of class "moneca" containing:
 #'   \describe{
@@ -71,14 +79,18 @@ moneca_parallel <- function(mx = mx,
                            parallel.backend = "auto",
                            chunk.size = NULL,
                            fallback.sequential = TRUE,
-                           progress = TRUE) {
+                           progress = TRUE,
+                           auto_tune = FALSE, 
+                           tune_method = "stability", 
+                           tune_verbose = FALSE) {
   
   # Detect and configure parallel backend
   parallel_config <- setup_parallel_backend(n.cores, parallel.backend, nrow(mx))
   
   if (!parallel_config$use_parallel) {
     if (progress) message("Using sequential processing (data too small for parallel benefit)")
-    return(moneca(mx, segment.levels, cut.off, mode, delete.upper.tri, small.cell.reduction))
+    return(moneca(mx, segment.levels, cut.off, mode, delete.upper.tri, small.cell.reduction,
+                  auto_tune, tune_method, tune_verbose))
   }
   
   # Start timing
@@ -93,7 +105,9 @@ moneca_parallel <- function(mx = mx,
   # First segmentation level
   weight_mat <- weight.matrix.parallel(mx, cut.off, TRUE, NULL, small.cell.reduction,
                                        n.cores = parallel_config$n_cores,
-                                       chunk.size = chunk.size)
+                                       chunk.size = chunk.size,
+                                       auto_tune = auto_tune, tune_method = tune_method,
+                                       tune_verbose = tune_verbose)
   
   graph <- moneca_graph_from_adjacency(weight_mat, mode = "undirected", weighted = TRUE, diag = FALSE)
   
@@ -118,7 +132,9 @@ moneca_parallel <- function(mx = mx,
       
       weight_mat <- weight.matrix.parallel(current_matrix, cut.off, TRUE, NULL, small.cell.reduction,
                                            n.cores = parallel_config$n_cores,
-                                           chunk.size = chunk.size)
+                                           chunk.size = chunk.size,
+                                           auto_tune = auto_tune, tune_method = tune_method,
+                                           tune_verbose = tune_verbose)
       
       graph <- moneca_graph_from_adjacency(weight_mat, mode = "undirected", weighted = TRUE, diag = FALSE)
       
@@ -172,12 +188,23 @@ moneca_parallel <- function(mx = mx,
 #' @inheritParams weight.matrix
 #' @param n.cores Number of cores to use
 #' @param chunk.size Size of chunks for parallel processing
+#' @param auto_tune Logical indicating whether to automatically tune the 
+#'   small.cell.reduction parameter. When TRUE, uses optimization methods to
+#'   select the best value. Default is FALSE.
+#' @param tune_method Character string specifying the auto-tuning method when
+#'   auto_tune is TRUE. Options are "stability" (default), "quality", or 
+#'   "performance". See \code{\link{auto_tune_small_cell_reduction}} for details.
+#' @param tune_verbose Logical indicating whether to print verbose messages
+#'   during auto-tuning. Default is FALSE.
 #' 
-#' @return Weight matrix with relative risks
+#' @return Weight matrix with relative risks. When auto_tune is TRUE, includes
+#'   additional attributes with tuning information.
 #' @export
 weight.matrix.parallel <- function(mx, cut.off = 1, symmetric = TRUE, 
                                   diagonal = NULL, small.cell.reduction = 0,
-                                  n.cores = NULL, chunk.size = NULL) {
+                                  n.cores = NULL, chunk.size = NULL,
+                                  auto_tune = FALSE, tune_method = "stability", 
+                                  tune_verbose = FALSE) {
   
   if (is.null(mx)) stop("Input cannot be NULL")
   
@@ -185,9 +212,40 @@ weight.matrix.parallel <- function(mx, cut.off = 1, symmetric = TRUE,
   if (l < 2) stop("Matrix must have at least 2 rows and columns")
   if (nrow(mx) != ncol(mx)) stop("Matrix must be square")
   
+  # Auto-tune small.cell.reduction parameter if requested
+  tuning_info <- NULL
+  if (auto_tune) {
+    if (tune_verbose) {
+      message("Auto-tuning small.cell.reduction parameter using method: ", tune_method)
+    }
+    
+    # Call auto-tuning function
+    tune_result <- auto_tune_small_cell_reduction(
+      mx = mx,
+      cut.off = cut.off,
+      method = tune_method,
+      verbose = tune_verbose
+    )
+    
+    # Use the optimal parameter
+    small.cell.reduction <- tune_result$optimal_value
+    tuning_info <- tune_result
+    
+    if (tune_verbose) {
+      message("Selected optimal small.cell.reduction: ", small.cell.reduction)
+    }
+  }
+  
   # For small matrices, use sequential version
   if (l < 50) {
-    return(weight.matrix(mx, cut.off, symmetric, diagonal, small.cell.reduction))
+    result <- weight.matrix(mx, cut.off, symmetric, diagonal, small.cell.reduction)
+    # Transfer tuning attributes if auto-tuned
+    if (!is.null(tuning_info)) {
+      attr(result, "auto_tuning") <- tuning_info
+      attr(result, "auto_tuned") <- TRUE
+      attr(result, "tuned_small_cell_reduction") <- small.cell.reduction
+    }
+    return(result)
   }
   
   # Setup parallel backend if needed
@@ -253,6 +311,13 @@ weight.matrix.parallel <- function(mx, cut.off = 1, symmetric = TRUE,
   
   rownames(mx.1i) <- rownames(mx)[-l]
   colnames(mx.1i) <- colnames(mx)[-l]
+  
+  # Add tuning information as attributes if available
+  if (!is.null(tuning_info)) {
+    attr(mx.1i, "auto_tuning") <- tuning_info
+    attr(mx.1i, "auto_tuned") <- TRUE
+    attr(mx.1i, "tuned_small_cell_reduction") <- small.cell.reduction
+  }
   
   return(mx.1i)
 }

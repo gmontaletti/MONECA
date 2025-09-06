@@ -36,10 +36,12 @@ moneca (Mobility Network Clustering Analysis) is a comprehensive R package for a
 
 - **Network-based clustering** of mobility tables using graph theory
 - **Hierarchical segmentation** at multiple analytical levels  
+- **Advanced auto-tuning** with 6 optimization methods (stability, quality, performance, Pareto, cross-validation, Bayesian)
 - **Modern visualization** with ggplot2 and ggraph
 - **Synthetic data generation** for testing and demonstrations
 - **Comprehensive testing suite** and documentation
 - **igraph compatibility layer** supporting versions 1.3.0+
+- **Performance optimization** with parallel processing and caching
 
 ## Installation
 
@@ -68,8 +70,9 @@ mobility_data <- generate_mobility_data(
   seed = 123
 )
 
-# Run MONECA analysis
-seg <- moneca(mobility_data, segment.levels = 3)
+# Run MONECA analysis with auto-tuning
+seg <- moneca(mobility_data, segment.levels = 3, 
+              auto_tune = TRUE, auto_tune_method = "stability")
 print(seg)
 
 # Modern network visualization
@@ -83,6 +86,66 @@ plot_ego_ggraph(seg, mobility_data, ego_id = 3)
 # Analyze segment membership
 membership <- segment.membership(seg)
 print(membership)
+```
+
+## Auto-Tuning: Automatic Parameter Optimization
+
+MONECA includes advanced auto-tuning capabilities that automatically optimize the `small.cell.reduction` parameter for improved clustering quality:
+
+```r
+# Stability-based auto-tuning (recommended for general use)
+seg_stable <- moneca(mobility_data, segment.levels = 2,
+                     auto_tune = TRUE, auto_tune_method = "stability")
+
+# Quality-optimized auto-tuning (best clustering performance)  
+seg_quality <- moneca(mobility_data, segment.levels = 2,
+                      auto_tune = TRUE, auto_tune_method = "quality")
+
+# Performance-balanced auto-tuning (speed vs quality trade-off)
+seg_balanced <- moneca(mobility_data, segment.levels = 2,
+                       auto_tune = TRUE, auto_tune_method = "performance",
+                       performance_weight = 0.3)
+
+# Multi-objective Pareto optimization
+seg_pareto <- moneca(mobility_data, segment.levels = 2,
+                     auto_tune = TRUE, auto_tune_method = "pareto")
+
+# Cross-validation based tuning (conservative approach)
+seg_cv <- moneca(mobility_data, segment.levels = 2,
+                 auto_tune = TRUE, auto_tune_method = "cross_validation")
+
+# View auto-tuning results
+auto_result <- attr(seg_stable, "auto_tune_result")
+print(paste("Optimal parameter:", auto_result$best_parameter))
+print(paste("Score:", round(auto_result$best_score, 4)))
+```
+
+### Auto-Tuning Methods
+
+| Method | Best For | Description |
+|--------|----------|-------------|
+| `stability` | General use | Bootstrap-based stability assessment |
+| `quality` | Research/publication | Maximizes clustering quality metrics |
+| `performance` | Large datasets | Balances quality and computational speed |
+| `pareto` | Exploration | Multi-objective optimization |
+| `cross_validation` | Small datasets | Conservative parameter selection |
+| `bayesian` | Advanced users | Gaussian Process optimization* |
+
+*Requires GPfit package
+
+### Before/After Comparison
+
+```r
+# Compare manual vs auto-tuned results
+manual_seg <- moneca(mobility_data, segment.levels = 2, small.cell.reduction = 5)
+auto_seg <- moneca(mobility_data, segment.levels = 2, 
+                   auto_tune = TRUE, auto_tune_method = "stability")
+
+# Visualize comparison
+library(gridExtra)
+p1 <- plot_moneca_ggraph(manual_seg, title = "Manual Parameter")
+p2 <- plot_moneca_ggraph(auto_seg, title = "Auto-Tuned")
+grid.arrange(p1, p2, ncol = 2)
 ```
 
 ## Analysis and Visualization

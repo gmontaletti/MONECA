@@ -20,6 +20,14 @@
 #'   for efficiency. Default is TRUE.
 #' @param small.cell.reduction Numeric value to handle small cell counts. Cells with
 #'   counts below this threshold are set to 0. Default is 0 (no reduction).
+#' @param auto_tune Logical indicating whether to automatically tune the 
+#'   small.cell.reduction parameter. When TRUE, uses optimization methods to
+#'   select the best value. Default is FALSE.
+#' @param tune_method Character string specifying the auto-tuning method when
+#'   auto_tune is TRUE. Options are "stability" (default), "quality", or 
+#'   "performance". See \code{\link{auto_tune_small_cell_reduction}} for details.
+#' @param tune_verbose Logical indicating whether to print verbose messages
+#'   during auto-tuning. Default is FALSE.
 #' 
 #' @return An object of class "moneca" containing:
 #'   \describe{
@@ -51,6 +59,12 @@
 #' seg <- moneca(mobility_data, segment.levels = 3)
 #' print(seg)
 #' 
+#' # Run moneca with auto-tuning for optimal small.cell.reduction
+#' seg_tuned <- moneca(mobility_data, segment.levels = 3, 
+#'                     auto_tune = TRUE, tune_method = "stability", 
+#'                     tune_verbose = TRUE)
+#' print(seg_tuned)
+#' 
 #' # Examine segment membership
 #' membership <- segment.membership(seg)
 #' print(membership)
@@ -69,7 +83,7 @@
 #' 
 #' @export
 
-moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.upper.tri=TRUE, small.cell.reduction=0){
+moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.upper.tri=TRUE, small.cell.reduction=0, auto_tune = FALSE, tune_method = "stability", tune_verbose = FALSE){
   
   # Find segments based on a matrix
   # This is where find.segments options should be specified  
@@ -79,7 +93,8 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
     if (!is.matrix(mx)) {
       mx <- as.matrix(mx)
     }
-    mx.1i           <- weight.matrix(mx, cut.off, small.cell.reduction=small.cell.reduction)
+    mx.1i           <- weight.matrix(mx, cut.off, small.cell.reduction=small.cell.reduction, 
+                                     auto_tune=auto_tune, tune_method=tune_method, tune_verbose=tune_verbose)
     
     # Ensure matrix is symmetric for undirected graph
     # Replace NAs with 0 for graph creation

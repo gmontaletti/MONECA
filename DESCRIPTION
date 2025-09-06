@@ -1,8 +1,8 @@
 Package: moneca
-Title: Mobility Network Clustering Analysis
-Description: moneca creates a weighted network from a mobility table and uses cliques (or similar) to create discrete and nested clusters. This is a maintained fork of the original MONECA package with modernized visualizations, comprehensive testing, and enhanced documentation.
+Title: Mobility Network Clustering Analysis with Auto-Tuning
+Description: moneca creates a weighted network from a mobility table and uses cliques (or similar) to create discrete and nested clusters. Features comprehensive auto-tuning capabilities for parameter optimization including stability-based, quality-based, performance-balanced, Pareto multi-objective, and cross-validation methods. This is a maintained fork of the original MONECA package with modernized visualizations, comprehensive testing, enhanced documentation, and advanced optimization features.
 URL: https://github.com/gmontaletti/moneca
-Version: 0.5.9
+Version: 0.6.0
 Maintainer: Giampaolo Montaletti <giampaolo.montaletti@gmail.com>
 Authors@R: c(
     person("Giampaolo", "Montaletti", 
@@ -39,7 +39,8 @@ Suggests:
   knitr,
   rmarkdown,
   testthat (>= 3.0.0),
-  Matrix
+  Matrix,
+  GPfit
 License: GPL-3
 Date: 2025-09-06
 RoxygenNote: 7.3.2

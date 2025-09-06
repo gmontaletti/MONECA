@@ -1,0 +1,868 @@
+---
+title: "Auto-Tuning Guide for MONECA: Advanced Parameter Optimization"
+author: "Giampaolo Montaletti"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 4
+    fig_width: 10
+    fig_height: 8
+vignette: >
+  %\VignetteIndexEntry{Auto-Tuning Guide for MONECA: Advanced Parameter Optimization}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "figures/auto-tuning-",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 12,
+  fig.height = 10,
+  dpi = 150,
+  out.width = "100%"
+)
+
+# Check if required packages are available
+required_packages <- c("ggplot2", "ggraph", "igraph", "dplyr", "tidygraph", "gridExtra")
+missing_packages <- required_packages[!sapply(required_packages, requireNamespace, quietly = TRUE)]
+
+if (length(missing_packages) > 0) {
+  knitr::opts_chunk$set(eval = FALSE)
+  message("Some required packages are missing: ", paste(missing_packages, collapse = ", "))
+  message("Code examples will not be evaluated.")
+}
+```
+
+```{r load_libraries, echo=FALSE}
+library(moneca)
+library(ggplot2)
+library(ggraph)
+library(dplyr)
+library(gridExtra)
+```
+
+## Introduction
+
+The MONECA package includes comprehensive auto-tuning functionality that automatically optimizes the `small.cell.reduction` parameter for improved clustering results. This vignette provides an in-depth guide to using these advanced features effectively.
+
+### What This Guide Covers
+
+- **Complete auto-tuning workflow**: From basic usage to advanced optimization
+- **Method comparison**: Detailed analysis of each tuning method
+- **Performance optimization**: Tips for large datasets and computational efficiency
+- **Real-world examples**: Practical scenarios and best practices
+- **Troubleshooting**: Common issues and solutions
+- **Advanced features**: Pareto optimization, Bayesian methods, and custom objectives
+
+### Prerequisites
+
+This guide assumes familiarity with basic MONECA usage. If you're new to MONECA, start with the main introduction vignette:
+
+```{r prerequisites, eval=FALSE}
+vignette("moneca-introduction", package = "moneca")
+```
+
+## Understanding the Problem: Why Auto-Tuning?
+
+### The Challenge of Parameter Selection
+
+The `small.cell.reduction` parameter in MONECA controls how small mobility cells are handled during clustering. This seemingly simple parameter has profound effects on clustering quality:
+
+- **Too low**: May create overly complex clusters with poor stability
+- **Too high**: May oversimplify by merging distinct mobility patterns
+- **Data-dependent**: Optimal values vary significantly across datasets
+
+### Traditional Manual Approach Problems
+
+```{r manual_problems_demo, eval=TRUE}
+# Generate example dataset
+set.seed(123)
+test_data <- generate_mobility_data(
+  n_classes = 8,
+  immobility_strength = 0.6,
+  class_clustering = 0.9,
+  noise_level = 0.15,
+  class_names = paste0("Group_", 1:8)
+)
+
+# Test different manual parameters
+manual_params <- c(2, 5, 10, 20)
+manual_results <- list()
+
+for(i in seq_along(manual_params)) {
+  param <- manual_params[i]
+  cat("Testing small.cell.reduction =", param, "\n")
+  
+  # Run clustering
+  result <- moneca(test_data, segment.levels = 2, 
+                   small.cell.reduction = param, 
+                   verbose = FALSE)
+  
+  # Store basic metrics
+  manual_results[[i]] <- list(
+    parameter = param,
+    n_segments_level1 = length(unique(result$segment.list[[1]])),
+    n_segments_level2 = length(unique(result$segment.list[[2]])),
+    total_segments = length(unique(result$segment.list[[1]])) + 
+                     length(unique(result$segment.list[[2]]))
+  )
+}
+
+# Show results
+manual_df <- do.call(rbind, lapply(manual_results, function(x) {
+  data.frame(
+    Parameter = x$parameter,
+    Level1_Segments = x$n_segments_level1,
+    Level2_Segments = x$n_segments_level2,
+    Total_Segments = x$total_segments
+  )
+}))
+
+print("Manual parameter testing results:")
+print(manual_df)
+
+cat("\nKey observations:\n")
+cat("- Results vary dramatically with parameter choice\n")
+cat("- No clear 'best' value without quality metrics\n")
+cat("- Manual testing is time-consuming and subjective\n")
+```
+
+## Auto-Tuning Methods: Complete Reference
+
+### Method 1: Stability-Based Tuning
+
+**Best for**: General-purpose clustering, robust results
+
+```{r stability_method, eval=TRUE}
+cat("=== Stability-Based Auto-Tuning ===\n")
+
+# Basic stability tuning
+stability_result <- moneca(
+  test_data,
+  segment.levels = 2,
+  auto_tune = TRUE,
+  auto_tune_method = "stability",
+  n_trials = 15,  # More trials for better stability assessment
+  seed = 456,     # For reproducibility
+  verbose = TRUE
+)
+
+# Extract auto-tuning diagnostics
+stability_info <- attr(stability_result, "auto_tune_result")
+cat("\nStability tuning results:\n")
+cat("Optimal parameter:", stability_info$best_parameter, "\n")
+cat("Stability score:", round(stability_info$best_score, 4), "\n")
+cat("Evaluation time:", round(stability_info$evaluation_time, 2), "seconds\n")
+
+# Visualize the clustering
+stability_plot <- plot_moneca_ggraph(
+  stability_result,
+  title = paste("Stability-Tuned Clustering (param =", stability_info$best_parameter, ")"),
+  node_color = "segment",
+  node_size = "immobility",
+  show_segments = TRUE,
+  color_palette = "Set2"
+)
+
+print(stability_plot)
+```
+
+**How it works**:
+- Performs bootstrap resampling of the mobility matrix
+- Tests clustering stability across resampled versions
+- Selects parameter with highest consistency across trials
+- Robust to outliers and sampling variations
+
+**Advantages**:
+- Reliable across diverse datasets
+- Good balance of quality and robustness
+- Less sensitive to data peculiarities
+
+**Disadvantages**:
+- Computationally intensive for large datasets
+- May not optimize for specific quality metrics
+
+### Method 2: Quality-Based Tuning
+
+**Best for**: Maximum clustering performance, publication-quality results
+
+```{r quality_method, eval=TRUE}
+cat("=== Quality-Based Auto-Tuning ===\n")
+
+quality_result <- moneca(
+  test_data,
+  segment.levels = 2,
+  auto_tune = TRUE,
+  auto_tune_method = "quality",
+  seed = 456,
+  verbose = TRUE
+)
+
+quality_info <- attr(quality_result, "auto_tune_result")
+cat("\nQuality tuning results:\n")
+cat("Optimal parameter:", quality_info$best_parameter, "\n")
+cat("Quality score:", round(quality_info$best_score, 4), "\n")
+
+quality_plot <- plot_moneca_ggraph(
+  quality_result,
+  title = paste("Quality-Tuned Clustering (param =", quality_info$best_parameter, ")"),
+  node_color = "segment",
+  node_size = "mobility",
+  show_segments = TRUE,
+  color_palette = "Set3"
+)
+
+print(quality_plot)
+```
+
+**How it works**:
+- Optimizes silhouette score and modularity
+- Evaluates cluster coherence and separation
+- Selects parameter maximizing clustering quality metrics
+
+**Advantages**:
+- Highest clustering quality
+- Optimizes well-established metrics
+- Good for analytical studies
+
+**Disadvantages**:
+- May overfit to quality metrics
+- Computationally expensive
+- Less robust to outliers
+
+### Method 3: Performance-Balanced Tuning
+
+**Best for**: Large datasets, production environments
+
+```{r performance_method, eval=TRUE}
+cat("=== Performance-Balanced Auto-Tuning ===\n")
+
+# Test different performance weights
+performance_weights <- c(0.1, 0.3, 0.7)
+performance_results <- list()
+
+for(w in performance_weights) {
+  cat("\nTesting performance weight:", w, "\n")
+  
+  result <- moneca(
+    test_data,
+    segment.levels = 2,
+    auto_tune = TRUE,
+    auto_tune_method = "performance",
+    performance_weight = w,
+    seed = 456,
+    verbose = TRUE
+  )
+  
+  info <- attr(result, "auto_tune_result")
+  performance_results[[as.character(w)]] <- list(
+    weight = w,
+    parameter = info$best_parameter,
+    score = info$best_score,
+    time = info$evaluation_time
+  )
+}
+
+# Compare performance weights
+perf_df <- do.call(rbind, lapply(performance_results, function(x) {
+  data.frame(
+    Weight = x$weight,
+    Parameter = x$parameter,
+    Score = round(x$score, 4),
+    Time = round(x$time, 2)
+  )
+}))
+
+print("Performance weight comparison:")
+print(perf_df)
+
+# Use medium weight for visualization
+medium_result <- moneca(test_data, segment.levels = 2,
+                       auto_tune = TRUE, auto_tune_method = "performance",
+                       performance_weight = 0.3, seed = 456, verbose = FALSE)
+
+performance_plot <- plot_moneca_ggraph(
+  medium_result,
+  title = "Performance-Balanced Clustering",
+  node_color = "segment",
+  node_size = "total",
+  show_segments = TRUE,
+  color_palette = "Dark2"
+)
+
+print(performance_plot)
+```
+
+**How it works**:
+- Combines quality metrics with computational efficiency
+- Uses weighted scoring: (1-weight) × quality + weight × speed
+- Balances clustering performance with computational cost
+
+**Key parameter**: `performance_weight`
+- 0.0 = Pure quality optimization (slowest, highest quality)
+- 0.5 = Balanced approach
+- 1.0 = Pure speed optimization (fastest, lower quality)
+
+### Method 4: Pareto Multi-Objective Optimization
+
+**Best for**: Exploring trade-offs, research applications
+
+```{r pareto_method, eval=TRUE}
+cat("=== Pareto Multi-Objective Optimization ===\n")
+
+pareto_result <- moneca(
+  test_data,
+  segment.levels = 2,
+  auto_tune = TRUE,
+  auto_tune_method = "pareto",
+  seed = 456,
+  verbose = TRUE
+)
+
+pareto_info <- attr(pareto_result, "auto_tune_result")
+cat("\nPareto optimization results:\n")
+cat("Selected parameter:", pareto_info$best_parameter, "\n")
+cat("Pareto score:", round(pareto_info$best_score, 4), "\n")
+
+# Show Pareto front if available
+if(!is.null(pareto_info$pareto_front)) {
+  cat("\nPareto front solutions:\n")
+  print(head(pareto_info$pareto_front, 10))
+  
+  # Visualize Pareto front
+  pareto_plot <- ggplot(pareto_info$pareto_front, 
+                        aes(x = quality_score, y = speed_score)) +
+    geom_point(alpha = 0.6, size = 3) +
+    geom_point(data = pareto_info$pareto_front[pareto_info$pareto_front$parameter == pareto_info$best_parameter, ],
+               color = "red", size = 5) +
+    labs(title = "Pareto Front: Quality vs Speed Trade-offs",
+         x = "Quality Score (higher = better)",
+         y = "Speed Score (higher = faster)") +
+    theme_minimal()
+  
+  print(pareto_plot)
+}
+
+pareto_cluster_plot <- plot_moneca_ggraph(
+  pareto_result,
+  title = "Pareto-Optimized Clustering",
+  node_color = "segment",
+  node_size = "immobility",
+  show_segments = TRUE,
+  color_palette = "Spectral"
+)
+
+print(pareto_cluster_plot)
+```
+
+**How it works**:
+- Optimizes multiple objectives simultaneously
+- Identifies Pareto frontier of non-dominated solutions
+- Provides insight into quality/speed trade-offs
+
+**Advantages**:
+- Shows all optimal trade-offs
+- No single-objective bias
+- Excellent for research and exploration
+
+**Disadvantages**:
+- More complex to interpret
+- Computationally intensive
+- Requires understanding of multi-objective optimization
+
+### Method 5: Cross-Validation Based Tuning
+
+**Best for**: Small datasets, avoiding overfitting
+
+```{r cv_method, eval=TRUE}
+cat("=== Cross-Validation Based Tuning ===\n")
+
+cv_result <- moneca(
+  test_data,
+  segment.levels = 2,
+  auto_tune = TRUE,
+  auto_tune_method = "cross_validation",
+  n_trials = 5,  # 5-fold CV
+  seed = 456,
+  verbose = TRUE
+)
+
+cv_info <- attr(cv_result, "auto_tune_result")
+cat("\nCross-validation results:\n")
+cat("Optimal parameter:", cv_info$best_parameter, "\n")
+cat("CV score:", round(cv_info$best_score, 4), "\n")
+cat("CV standard deviation:", round(cv_info$score_sd, 4), "\n")
+
+cv_plot <- plot_moneca_ggraph(
+  cv_result,
+  title = paste("Cross-Validation Tuned Clustering (CV Score:", 
+                round(cv_info$best_score, 3), ")"),
+  node_color = "segment",
+  node_size = "total",
+  show_segments = TRUE,
+  color_palette = "Paired"
+)
+
+print(cv_plot)
+```
+
+**How it works**:
+- Splits data into k-folds for cross-validation
+- Tests parameter stability across different data subsets
+- Selects parameter with best cross-validation performance
+
+**Advantages**:
+- Reduces overfitting risk
+- Conservative parameter selection
+- Good statistical foundation
+
+**Disadvantages**:
+- May be overly conservative
+- Sensitive to data splitting
+- Less suitable for very large datasets
+
+## Advanced Features
+
+### Bayesian Optimization
+
+For users with the GPfit package installed, Bayesian optimization provides sophisticated parameter search:
+
+```{r bayesian_method, eval=FALSE}
+# Bayesian optimization (requires GPfit package)
+if(requireNamespace("GPfit", quietly = TRUE)) {
+  bayesian_result <- moneca(
+    test_data,
+    segment.levels = 2,
+    auto_tune = TRUE,
+    auto_tune_method = "bayesian",
+    seed = 456,
+    verbose = TRUE
+  )
+  
+  bayesian_info <- attr(bayesian_result, "auto_tune_result")
+  cat("Bayesian optimization parameter:", bayesian_info$best_parameter, "\n")
+} else {
+  cat("GPfit package not available - Bayesian optimization skipped\n")
+}
+```
+
+### Custom Candidate Values
+
+Control the search space with custom candidate values:
+
+```{r custom_candidates, eval=TRUE}
+# Define custom parameter search space
+custom_candidates <- c(1, 2, 3, 5, 8, 12, 20, 30)
+
+custom_result <- moneca(
+  test_data,
+  segment.levels = 2,
+  auto_tune = TRUE,
+  auto_tune_method = "stability",
+  candidate_values = custom_candidates,
+  seed = 456,
+  verbose = TRUE
+)
+
+custom_info <- attr(custom_result, "auto_tune_result")
+cat("Custom candidate search results:\n")
+cat("Searched values:", paste(custom_candidates, collapse = ", "), "\n")
+cat("Optimal parameter:", custom_info$best_parameter, "\n")
+```
+
+## Comparative Analysis
+
+### Method Comparison on Real Data
+
+```{r method_comparison, eval=TRUE, fig.width=16, fig.height=12}
+# Compare all methods on the same dataset
+comparison_methods <- c("stability", "quality", "performance")
+comparison_results <- list()
+
+cat("=== Comprehensive Method Comparison ===\n")
+
+for(method in comparison_methods) {
+  cat("\nTesting method:", method, "\n")
+  
+  start_time <- Sys.time()
+  result <- moneca(
+    test_data,
+    segment.levels = 2,
+    auto_tune = TRUE,
+    auto_tune_method = method,
+    seed = 456,
+    verbose = FALSE
+  )
+  end_time <- Sys.time()
+  
+  info <- attr(result, "auto_tune_result")
+  comparison_results[[method]] <- list(
+    method = method,
+    parameter = info$best_parameter,
+    score = info$best_score,
+    time = as.numeric(difftime(end_time, start_time, units = "secs")),
+    result = result
+  )
+}
+
+# Create comparison table
+comp_df <- do.call(rbind, lapply(comparison_results, function(x) {
+  data.frame(
+    Method = stringr::str_to_title(x$method),
+    Parameter = x$parameter,
+    Score = round(x$score, 4),
+    Time_Seconds = round(x$time, 2),
+    stringsAsFactors = FALSE
+  )
+}))
+
+print("Method comparison summary:")
+print(comp_df)
+
+# Create comparison plots
+plots <- list()
+for(method in comparison_methods) {
+  result_data <- comparison_results[[method]]
+  
+  plots[[method]] <- plot_moneca_ggraph(
+    result_data$result,
+    title = paste0(stringr::str_to_title(method), " Method\n",
+                   "Parameter: ", result_data$parameter, 
+                   " | Score: ", round(result_data$score, 3)),
+    node_color = "segment",
+    node_size = "total",
+    show_segments = TRUE,
+    color_palette = switch(method,
+                          "stability" = "Set1",
+                          "quality" = "Set2", 
+                          "performance" = "Dark2")
+  )
+}
+
+# Arrange comparison plots
+do.call(grid.arrange, c(plots, ncol = 2))
+```
+
+### Performance Benchmarking
+
+```{r performance_benchmark, eval=TRUE}
+# Test performance across different dataset sizes
+sizes <- c(4, 6, 8)
+benchmark_results <- list()
+
+cat("=== Performance Benchmark Across Dataset Sizes ===\n")
+
+for(size in sizes) {
+  cat("\nTesting dataset size:", size, "x", size, "\n")
+  
+  # Generate appropriately sized dataset
+  bench_data <- generate_mobility_data(
+    n_classes = size,
+    immobility_strength = 0.6,
+    class_clustering = 0.8,
+    seed = 789
+  )
+  
+  # Test different methods
+  for(method in c("stability", "performance")) {
+    start_time <- Sys.time()
+    
+    result <- moneca(
+      bench_data,
+      segment.levels = 2,
+      auto_tune = TRUE,
+      auto_tune_method = method,
+      seed = 789,
+      verbose = FALSE
+    )
+    
+    end_time <- Sys.time()
+    execution_time <- as.numeric(difftime(end_time, start_time, units = "secs"))
+    
+    info <- attr(result, "auto_tune_result")
+    
+    benchmark_results[[paste(size, method, sep = "_")]] <- data.frame(
+      Size = size,
+      Method = method,
+      Parameter = info$best_parameter,
+      Score = round(info$best_score, 4),
+      Time = round(execution_time, 2)
+    )
+  }
+}
+
+# Combine benchmark results
+benchmark_df <- do.call(rbind, benchmark_results)
+print("Performance benchmark results:")
+print(benchmark_df)
+
+# Visualize performance scaling
+if(nrow(benchmark_df) > 0) {
+  perf_plot <- ggplot(benchmark_df, aes(x = Size, y = Time, color = Method)) +
+    geom_line(size = 1.2) +
+    geom_point(size = 3) +
+    labs(title = "Auto-Tuning Performance Scaling",
+         x = "Dataset Size (n × n matrix)",
+         y = "Execution Time (seconds)") +
+    theme_minimal() +
+    scale_color_brewer(palette = "Dark2")
+  
+  print(perf_plot)
+}
+```
+
+## Best Practices and Guidelines
+
+### Choosing the Right Method
+
+```{r method_selection_guide, eval=FALSE}
+# Method selection flowchart (conceptual)
+
+# For general use:
+result_general <- moneca(data, auto_tune = TRUE, auto_tune_method = "stability")
+
+# For maximum quality:
+result_quality <- moneca(data, auto_tune = TRUE, auto_tune_method = "quality")
+
+# For large datasets:
+result_large <- moneca(data, auto_tune = TRUE, auto_tune_method = "performance", 
+                       performance_weight = 0.4)
+
+# For research/exploration:
+result_research <- moneca(data, auto_tune = TRUE, auto_tune_method = "pareto")
+
+# For conservative results:
+result_conservative <- moneca(data, auto_tune = TRUE, 
+                             auto_tune_method = "cross_validation")
+```
+
+### Decision Matrix
+
+| Scenario | Recommended Method | Key Parameters |
+|----------|-------------------|----------------|
+| **General analysis** | `stability` | `n_trials = 10-20` |
+| **Publication quality** | `quality` | Default settings |
+| **Large datasets (>20×20)** | `performance` | `performance_weight = 0.3-0.5` |
+| **Computational constraints** | `performance` | `performance_weight = 0.6-0.8` |
+| **Research/exploration** | `pareto` | Default settings |
+| **Small datasets** | `cross_validation` | `n_trials = 5-10` |
+| **Reproducible results** | Any method | Always set `seed` |
+
+### Performance Optimization Tips
+
+```{r performance_tips, eval=TRUE}
+# 1. Parallel processing for large datasets
+cat("=== Performance Optimization Tips ===\n\n")
+
+cat("1. Use parallel processing:\n")
+cat('   moneca(data, auto_tune = TRUE, parallel_cores = 4)\n\n')
+
+cat("2. Limit candidate values for faster search:\n")
+cat('   moneca(data, auto_tune = TRUE, max_candidates = 10)\n\n')
+
+cat("3. Use performance method for speed:\n")
+cat('   moneca(data, auto_tune = TRUE, auto_tune_method = "performance",\n')
+cat('          performance_weight = 0.5)\n\n')
+
+cat("4. Reduce trials for faster results:\n")
+cat('   moneca(data, auto_tune = TRUE, n_trials = 5)\n\n')
+
+cat("5. Enable caching for repeated analyses:\n")
+cat('   moneca(data, auto_tune = TRUE, use_cache = TRUE)\n\n')
+```
+
+### Reproducibility Guidelines
+
+```{r reproducibility, eval=TRUE}
+cat("=== Reproducibility Best Practices ===\n\n")
+
+# Always set seed for reproducible results
+reproducible_example <- moneca(
+  test_data,
+  segment.levels = 2,
+  auto_tune = TRUE,
+  auto_tune_method = "stability",
+  seed = 12345,  # Always set seed
+  verbose = FALSE
+)
+
+cat("1. Always set a seed value\n")
+cat("2. Record package versions\n")
+cat("3. Document auto-tuning parameters\n")
+cat("4. Save auto-tuning results for later reference\n\n")
+
+# Example of saving auto-tuning results
+auto_tune_info <- attr(reproducible_example, "auto_tune_result")
+cat("Auto-tuning metadata saved:\n")
+str(auto_tune_info)
+```
+
+## Troubleshooting Common Issues
+
+### Issue 1: Auto-Tuning Takes Too Long
+
+**Problem**: Auto-tuning is slower than expected
+
+**Solutions**:
+```{r troubleshoot_speed, eval=FALSE}
+# Solution 1: Use performance method
+fast_result <- moneca(data, auto_tune = TRUE, auto_tune_method = "performance",
+                      performance_weight = 0.6)
+
+# Solution 2: Reduce candidates
+fast_result <- moneca(data, auto_tune = TRUE, max_candidates = 8)
+
+# Solution 3: Fewer trials
+fast_result <- moneca(data, auto_tune = TRUE, n_trials = 5)
+
+# Solution 4: Parallel processing
+fast_result <- moneca(data, auto_tune = TRUE, parallel_cores = 4)
+```
+
+### Issue 2: Unstable Results
+
+**Problem**: Different runs produce different parameters
+
+**Solutions**:
+```{r troubleshoot_stability, eval=FALSE}
+# Solution 1: Set seed for reproducibility
+stable_result <- moneca(data, auto_tune = TRUE, seed = 123)
+
+# Solution 2: Increase trials for better stability
+stable_result <- moneca(data, auto_tune = TRUE, n_trials = 20)
+
+# Solution 3: Use cross-validation method
+stable_result <- moneca(data, auto_tune = TRUE, 
+                       auto_tune_method = "cross_validation")
+```
+
+### Issue 3: Poor Auto-Tuning Performance
+
+**Problem**: Auto-tuning selects suboptimal parameters
+
+**Solutions**:
+```{r troubleshoot_quality, eval=FALSE}
+# Solution 1: Use quality method
+better_result <- moneca(data, auto_tune = TRUE, auto_tune_method = "quality")
+
+# Solution 2: Expand search space
+better_result <- moneca(data, auto_tune = TRUE, 
+                       candidate_values = c(1, 2, 3, 5, 8, 12, 20, 30, 50))
+
+# Solution 3: Try multiple methods and compare
+methods <- c("stability", "quality", "performance")
+results <- lapply(methods, function(m) {
+  moneca(data, auto_tune = TRUE, auto_tune_method = m, seed = 123)
+})
+```
+
+### Issue 4: Memory Issues
+
+**Problem**: Out of memory errors during auto-tuning
+
+**Solutions**:
+```{r troubleshoot_memory, eval=FALSE}
+# Solution 1: Disable caching
+memory_result <- moneca(data, auto_tune = TRUE, use_cache = FALSE)
+
+# Solution 2: Use performance method (more memory efficient)
+memory_result <- moneca(data, auto_tune = TRUE, auto_tune_method = "performance")
+
+# Solution 3: Reduce matrix size or segment levels
+memory_result <- moneca(data, segment.levels = 1, auto_tune = TRUE)
+```
+
+## Advanced Use Cases
+
+### Custom Quality Metrics
+
+For advanced users wanting to implement custom quality assessment:
+
+```{r custom_quality, eval=FALSE}
+# Example of accessing raw results for custom evaluation
+evaluate_custom_quality <- function(result) {
+  # Extract segment assignments
+  segments <- result$segment.list
+  
+  # Calculate custom metrics
+  # (Implementation would depend on specific quality measures)
+  
+  return(custom_score)
+}
+
+# Use with manual parameter testing
+parameters <- c(2, 5, 10, 15, 20)
+custom_scores <- sapply(parameters, function(p) {
+  result <- moneca(data, small.cell.reduction = p, verbose = FALSE)
+  evaluate_custom_quality(result)
+})
+
+optimal_param <- parameters[which.max(custom_scores)]
+```
+
+### Batch Processing
+
+For processing multiple datasets:
+
+```{r batch_processing, eval=FALSE}
+# Example batch processing with auto-tuning
+datasets <- list(data1, data2, data3)
+
+batch_results <- lapply(datasets, function(data) {
+  moneca(data, auto_tune = TRUE, auto_tune_method = "stability", seed = 123)
+})
+
+# Extract optimal parameters
+optimal_params <- sapply(batch_results, function(result) {
+  attr(result, "auto_tune_result")$best_parameter
+})
+```
+
+## Conclusion
+
+The auto-tuning functionality in MONECA provides powerful tools for automatic parameter optimization. Key takeaways:
+
+### When to Use Auto-Tuning
+
+- **Always recommended** for new datasets or analyses
+- **Essential** when parameter effects are unclear
+- **Valuable** for ensuring reproducible, optimized results
+- **Critical** for comparative studies across datasets
+
+### Method Selection Summary
+
+- **Stability**: Best general-purpose choice
+- **Quality**: When clustering quality is paramount  
+- **Performance**: For large datasets or time constraints
+- **Pareto**: For research and trade-off analysis
+- **Cross-validation**: For conservative parameter selection
+
+### Best Practices Recap
+
+1. **Always set a seed** for reproducible results
+2. **Start with stability method** for most analyses
+3. **Consider performance method** for large datasets
+4. **Compare multiple methods** for important analyses
+5. **Document auto-tuning settings** in research
+6. **Validate results** using clustering quality metrics
+
+### Getting Help
+
+For additional support:
+
+- Use `?moneca` for detailed parameter documentation
+- Check function help: `?auto_tune_moneca`
+- Visit the package GitHub repository for updates
+- Report issues or request features through GitHub
+
+The auto-tuning functionality makes MONECA more accessible and reliable, enabling users to focus on interpreting results rather than parameter selection.
+
+```{r session_info}
+# Session information for reproducibility
+sessionInfo()
+```

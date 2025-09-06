@@ -29,7 +29,10 @@ moneca_fast <- function(mx = mx,
                        use.sparse = FALSE,
                        min.density = 0.01,
                        max.clique.size = NULL,
-                       progress = TRUE) {
+                       progress = TRUE,
+                       auto_tune = FALSE, 
+                       tune_method = "stability", 
+                       tune_verbose = FALSE) {
   
   # Convert to sparse matrix if requested and Matrix package is available
   if (use.sparse && requireNamespace("Matrix", quietly = TRUE)) {
@@ -248,7 +251,8 @@ moneca_fast <- function(mx = mx,
   make.segments.fast <- function(mx, cut.off = 1, mode = mode, delete.upper.tri = delete.upper.tri, 
                                 small.cell.reduction = small.cell.reduction) {
     
-    mx.1i <- weight.matrix.fast(mx, cut.off, small.cell.reduction = small.cell.reduction)
+    mx.1i <- weight.matrix(mx, cut.off, small.cell.reduction = small.cell.reduction,
+                           auto_tune = auto_tune, tune_method = tune_method, tune_verbose = tune_verbose)
     
     # Create graph
     mx.1i.graph <- mx.1i
