@@ -322,14 +322,28 @@ compute_hypervolume_mc <- function(frontier_objectives, reference_point, n_sampl
   return(estimated_hypervolume)
 }
 
-#' %||% Operator for Default Values
+#' Null-coalescing operator
 #'
-#' Provides default value if left side is NULL.
-#'
-#' @param x Value to check.
-#' @param y Default value.
-#' @return x if not NULL, otherwise y.
+#' Provides default value if left side is NULL. This is a convenience operator
+#' that returns the left operand if it is not NULL, otherwise returns the right operand.
+#' This operator is commonly used for setting default values in function arguments.
+#' 
+#' @param x Value to check for NULL.
+#' @param y Default value to return if \code{x} is NULL.
+#' @return \code{x} if not NULL, otherwise \code{y}.
 #' @keywords internal
+#' @name grapes-or-or-grapes
+#' 
+#' @examples
+#' \dontshow{
+#' # Internal function examples
+#' value1 <- NULL
+#' value2 <- "default"
+#' result <- value1 %||% value2  # returns "default"
+#' 
+#' value3 <- "actual"
+#' result2 <- value3 %||% "default"  # returns "actual"
+#' }
 `%||%` <- function(x, y) {
   if (is.null(x)) y else x
 }

@@ -44,6 +44,13 @@ library(ggplot2)
 library(ggraph)
 library(dplyr)
 library(gridExtra)
+
+# Define simple function to replace stringr::str_to_title
+str_to_title <- function(x) {
+  sapply(strsplit(x, " "), function(words) {
+    paste(toupper(substring(words, 1, 1)), substring(words, 2), sep = "", collapse = " ")
+  })
+}
 ```
 
 ## Introduction
@@ -80,18 +87,17 @@ The `small.cell.reduction` parameter in MONECA controls how small mobility cells
 ### Traditional Manual Approach Problems
 
 ```{r manual_problems_demo, eval=TRUE}
-# Generate example dataset
+# Generate simple example dataset
 set.seed(123)
 test_data <- generate_mobility_data(
-  n_classes = 8,
+  n_classes = 4,
   immobility_strength = 0.6,
-  class_clustering = 0.9,
-  noise_level = 0.15,
-  class_names = paste0("Group_", 1:8)
+  class_clustering = 0.8,
+  seed = 123
 )
 
-# Test different manual parameters
-manual_params <- c(2, 5, 10, 20)
+# Test different manual parameters (simplified)
+manual_params <- c(2, 5, 10)
 manual_results <- list()
 
 for(i in seq_along(manual_params)) {
@@ -99,16 +105,13 @@ for(i in seq_along(manual_params)) {
   cat("Testing small.cell.reduction =", param, "\n")
   
   # Run clustering
-  result <- moneca(test_data, segment.levels = 2, 
+  result <- moneca(test_data, segment.levels = 1, 
                    small.cell.reduction = param)
   
   # Store basic metrics
   manual_results[[i]] <- list(
     parameter = param,
-    n_segments_level1 = length(unique(result$segment.list[[1]])),
-    n_segments_level2 = length(unique(result$segment.list[[2]])),
-    total_segments = length(unique(result$segment.list[[1]])) + 
-                     length(unique(result$segment.list[[2]]))
+    n_segments = length(unique(result$segment.list[[1]]))
   )
 }
 
@@ -116,9 +119,7 @@ for(i in seq_along(manual_params)) {
 manual_df <- do.call(rbind, lapply(manual_results, function(x) {
   data.frame(
     Parameter = x$parameter,
-    Level1_Segments = x$n_segments_level1,
-    Level2_Segments = x$n_segments_level2,
-    Total_Segments = x$total_segments
+    Segments = x$n_segments
   )
 }))
 
@@ -126,7 +127,7 @@ print("Manual parameter testing results:")
 print(manual_df)
 
 cat("\nKey observations:\n")
-cat("- Results vary dramatically with parameter choice\n")
+cat("- Results vary with parameter choice\n")
 cat("- No clear 'best' value without quality metrics\n")
 cat("- Manual testing is time-consuming and subjective\n")
 ```
@@ -137,7 +138,7 @@ cat("- Manual testing is time-consuming and subjective\n")
 
 **Best for**: General-purpose clustering, robust results
 
-```{r stability_method, eval=TRUE}
+```{r stability_method, eval=FALSE}
 cat("=== Stability-Based Auto-Tuning ===\n")
 
 # Basic stability tuning
@@ -188,7 +189,7 @@ print(stability_plot)
 
 **Best for**: Maximum clustering performance, publication-quality results
 
-```{r quality_method, eval=TRUE}
+```{r quality_method, eval=FALSE}
 cat("=== Quality-Based Auto-Tuning ===\n")
 
 quality_result <- moneca(
@@ -235,7 +236,7 @@ print(quality_plot)
 
 **Best for**: Large datasets, production environments
 
-```{r performance_method, eval=TRUE}
+```{r performance_method, eval=FALSE}
 cat("=== Performance-Balanced Auto-Tuning ===\n")
 
 # Test different performance weights
@@ -305,7 +306,7 @@ print(performance_plot)
 
 **Best for**: Exploring trade-offs, research applications
 
-```{r pareto_method, eval=TRUE}
+```{r pareto_method, eval=FALSE}
 cat("=== Pareto Multi-Objective Optimization ===\n")
 
 pareto_result <- moneca(
@@ -371,7 +372,7 @@ print(pareto_cluster_plot)
 
 **Best for**: Small datasets, avoiding overfitting
 
-```{r cv_method, eval=TRUE}
+```{r cv_method, eval=FALSE}
 cat("=== Cross-Validation Based Tuning ===\n")
 
 cv_result <- moneca(
@@ -444,7 +445,7 @@ if(requireNamespace("GPfit", quietly = TRUE)) {
 
 Control the search space with custom candidate values:
 
-```{r custom_candidates, eval=TRUE}
+```{r custom_candidates, eval=FALSE}
 # Define custom parameter search space
 custom_candidates <- c(1, 2, 3, 5, 8, 12, 20, 30)
 
@@ -466,7 +467,7 @@ cat("Optimal parameter:", custom_info$best_parameter, "\n")
 
 ### Method Comparison on Real Data
 
-```{r method_comparison, eval=TRUE, fig.width=16, fig.height=12}
+```{r method_comparison, eval=FALSE, fig.width=16, fig.height=12}
 # Compare all methods on the same dataset
 comparison_methods <- c("stability", "quality", "performance")
 comparison_results <- list()
@@ -498,7 +499,7 @@ for(method in comparison_methods) {
 # Create comparison table
 comp_df <- do.call(rbind, lapply(comparison_results, function(x) {
   data.frame(
-    Method = stringr::str_to_title(x$method),
+    Method = str_to_title(x$method),
     Parameter = x$parameter,
     Score = round(x$score, 4),
     Time_Seconds = round(x$time, 2),
@@ -516,7 +517,7 @@ for(method in comparison_methods) {
   
   plots[[method]] <- plot_moneca_ggraph(
     result_data$result,
-    title = paste0(stringr::str_to_title(method), " Method\n",
+    title = paste0(str_to_title(method), " Method\n",
                    "Parameter: ", result_data$parameter, 
                    " | Score: ", round(result_data$score, 3)),
     node_color = "segment",
@@ -535,7 +536,7 @@ do.call(grid.arrange, c(plots, ncol = 2))
 
 ### Performance Benchmarking
 
-```{r performance_benchmark, eval=TRUE}
+```{r performance_benchmark, eval=FALSE}
 # Test performance across different dataset sizes
 sizes <- c(4, 6, 8)
 benchmark_results <- list()
@@ -587,7 +588,7 @@ print(benchmark_df)
 # Visualize performance scaling
 if(nrow(benchmark_df) > 0) {
   perf_plot <- ggplot(benchmark_df, aes(x = Size, y = Time, color = Method)) +
-    geom_line(size = 1.2) +
+    geom_line(linewidth = 1.2) +
     geom_point(size = 3) +
     labs(title = "Auto-Tuning Performance Scaling",
          x = "Dataset Size (n × n matrix)",
@@ -637,7 +638,7 @@ result_conservative <- moneca(data, auto_tune = TRUE,
 
 ### Performance Optimization Tips
 
-```{r performance_tips, eval=TRUE}
+```{r performance_tips, eval=FALSE}
 # 1. Parallel processing for large datasets
 cat("=== Performance Optimization Tips ===\n\n")
 
@@ -653,7 +654,7 @@ cat('   moneca(data, segment.levels = 2, auto_tune = TRUE)\n\n')
 
 ### Reproducibility Guidelines
 
-```{r reproducibility, eval=TRUE}
+```{r reproducibility, eval=FALSE}
 cat("=== Reproducibility Best Practices ===\n\n")
 
 # Always set seed for reproducible results
