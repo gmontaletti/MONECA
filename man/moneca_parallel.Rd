@@ -15,7 +15,10 @@ moneca_parallel(
   parallel.backend = "auto",
   chunk.size = NULL,
   fallback.sequential = TRUE,
-  progress = TRUE
+  progress = TRUE,
+  auto_tune = FALSE,
+  tune_method = "stability",
+  tune_verbose = FALSE
 )
 }
 \arguments{
@@ -50,6 +53,17 @@ Default is NULL (auto-calculate based on data size).}
 processing if parallel fails. Default is TRUE.}
 
 \item{progress}{Logical indicating whether to show progress bars. Default is TRUE.}
+
+\item{auto_tune}{Logical indicating whether to automatically tune the 
+small.cell.reduction parameter. When TRUE, uses optimization methods to
+select the best value. Default is FALSE.}
+
+\item{tune_method}{Character string specifying the auto-tuning method when
+auto_tune is TRUE. Options are "stability" (default), "quality", or 
+"performance". See \code{\link{auto_tune_small_cell_reduction}} for details.}
+
+\item{tune_verbose}{Logical indicating whether to print verbose messages
+during auto-tuning. Default is FALSE.}
 }
 \value{
 An object of class "moneca" containing:

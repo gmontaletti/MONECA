@@ -10,7 +10,10 @@ moneca(
   cut.off = 1,
   mode = "symmetric",
   delete.upper.tri = TRUE,
-  small.cell.reduction = 0
+  small.cell.reduction = 0,
+  auto_tune = FALSE,
+  tune_method = "stability",
+  tune_verbose = FALSE
 )
 }
 \arguments{
@@ -32,6 +35,17 @@ for efficiency. Default is TRUE.}
 
 \item{small.cell.reduction}{Numeric value to handle small cell counts. Cells with
 counts below this threshold are set to 0. Default is 0 (no reduction).}
+
+\item{auto_tune}{Logical indicating whether to automatically tune the 
+small.cell.reduction parameter. When TRUE, uses optimization methods to
+select the best value. Default is FALSE.}
+
+\item{tune_method}{Character string specifying the auto-tuning method when
+auto_tune is TRUE. Options are "stability" (default), "quality", or 
+"performance". See \code{\link{auto_tune_small_cell_reduction}} for details.}
+
+\item{tune_verbose}{Logical indicating whether to print verbose messages
+during auto-tuning. Default is FALSE.}
 }
 \value{
 An object of class "moneca" containing:
@@ -72,6 +86,12 @@ mobility_data <- generate_mobility_data(n_classes = 6, seed = 42)
 # Run moneca analysis
 seg <- moneca(mobility_data, segment.levels = 3)
 print(seg)
+
+# Run moneca with auto-tuning for optimal small.cell.reduction
+seg_tuned <- moneca(mobility_data, segment.levels = 3, 
+                    auto_tune = TRUE, tune_method = "stability", 
+                    tune_verbose = TRUE)
+print(seg_tuned)
 
 # Examine segment membership
 membership <- segment.membership(seg)

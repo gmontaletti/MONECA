@@ -14,7 +14,10 @@ moneca_fast_fixed(
   use.sparse = FALSE,
   min.density = 0.01,
   max.clique.size = NULL,
-  progress = TRUE
+  progress = TRUE,
+  auto_tune = FALSE,
+  tune_method = "stability",
+  tune_verbose = FALSE
 )
 }
 \arguments{
@@ -40,6 +43,17 @@ a significant tie. Default is 1.}
 \item{max.clique.size}{Maximum size of cliques to consider (NULL for no limit). Default is NULL.}
 
 \item{progress}{Logical indicating whether to show progress bars. Default is TRUE.}
+
+\item{auto_tune}{Logical indicating whether to automatically tune the 
+small.cell.reduction parameter. When TRUE, uses optimization methods to
+select the best value. Default is FALSE.}
+
+\item{tune_method}{Character string specifying the auto-tuning method when
+auto_tune is TRUE. Options are "stability" (default), "quality", or 
+"performance". See \code{\link{auto_tune_small_cell_reduction}} for details.}
+
+\item{tune_verbose}{Logical indicating whether to print verbose messages
+during auto-tuning. Default is FALSE.}
 }
 \description{
 An optimized version of the moneca algorithm with improved performance for large datasets.

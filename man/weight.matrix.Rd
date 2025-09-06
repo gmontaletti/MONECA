@@ -9,7 +9,10 @@ weight.matrix(
   cut.off = 1,
   symmetric = TRUE,
   diagonal = NULL,
-  small.cell.reduction = 0
+  small.cell.reduction = 0,
+  auto_tune = FALSE,
+  tune_method = "stability",
+  tune_verbose = FALSE
 )
 }
 \arguments{
@@ -28,6 +31,17 @@ to NA. Otherwise, diagonal values are preserved.}
 \item{small.cell.reduction}{Numeric value for handling small cells. Cells with
 counts below this threshold are set to 0 before calculating relative risks.
 Default is 0.}
+
+\item{auto_tune}{Logical indicating whether to automatically tune the 
+small.cell.reduction parameter. When TRUE, uses optimization methods to
+select the best value. Default is FALSE.}
+
+\item{tune_method}{Character string specifying the auto-tuning method when
+auto_tune is TRUE. Options are "stability" (default), "quality", or 
+"performance". See \code{\link{auto_tune_small_cell_reduction}} for details.}
+
+\item{tune_verbose}{Logical indicating whether to print verbose messages
+during auto-tuning. Default is FALSE.}
 }
 \value{
 A matrix of relative risks where:
@@ -35,6 +49,12 @@ A matrix of relative risks where:
     \item Values > 1 indicate mobility above expected levels
     \item Values < 1 indicate mobility below expected levels  
     \item Values below cut.off are set to NA
+  }
+  When auto_tune is TRUE, the matrix includes additional attributes:
+  \itemize{
+    \item \code{auto_tuning}: Complete results from auto-tuning process
+    \item \code{auto_tuned}: Logical flag indicating auto-tuning was used
+    \item \code{tuned_small_cell_reduction}: The selected optimal value
   }
 }
 \description{
@@ -60,7 +80,18 @@ rownames(mob_table) <- colnames(mob_table) <- c("A", "B", "C", "Total")
 # Calculate relative risk matrix
 rr_matrix <- weight.matrix(mob_table, cut.off = 1.5)
 
+# Use automatic tuning for small.cell.reduction parameter
+rr_matrix_tuned <- weight.matrix(mob_table, auto_tune = TRUE, 
+                                 tune_method = "stability", tune_verbose = TRUE)
+
+# Check tuning results
+if (attr(rr_matrix_tuned, "auto_tuned", exact = TRUE)) {
+  optimal_value <- attr(rr_matrix_tuned, "tuned_small_cell_reduction", exact = TRUE)
+  message("Optimal small.cell.reduction: ", optimal_value)
+}
+
 }
 \seealso{
-\code{\link{moneca}} for the main analysis function
+\code{\link{moneca}} for the main analysis function, 
+  \code{\link{auto_tune_small_cell_reduction}} for auto-tuning details
 }
