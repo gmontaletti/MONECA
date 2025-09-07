@@ -1,3 +1,76 @@
+# moneca 0.7.0
+
+## Major New Features
+
+### **Temporal Analysis Framework**
+
+* **Added comprehensive temporal clustering analysis**:
+  - `moneca_temporal()`: Moving window clustering for time series of mobility matrices
+  - Maintains stable segment labels across time periods using Hungarian algorithm
+  - Tracks segment evolution and transitions over time
+  - Supports multiple aggregation methods (mean, sum, weighted) for temporal windows
+  - Parallel processing support for efficient temporal analysis
+
+* **Temporal stability assessment**:
+  - `temporal_stability_analysis()`: Comprehensive stability metrics over time
+  - `assess_clustering_stability_parallel()`: Multi-core stability evaluation
+  - Tracks clustering consistency across different time windows
+  - Provides stability scores and temporal robustness metrics
+
+* **Advanced temporal visualization**:
+  - `plot_temporal_segments()`: Network evolution visualization across time
+  - `plot_alluvial_diagram()`: Flow-based visualization of segment transitions
+  - `plot_segment_timeline()`: Temporal progression of individual segments
+  - `plot_transition_heatmap()`: Heatmap visualization of segment transitions
+  - `plot_stability_metrics()`: Temporal stability trend visualization
+
+* **Temporal data management**:
+  - `aggregate_mobility_window()`: Efficient temporal window aggregation
+  - `match_segments_across_time()`: Intelligent segment matching between time periods
+  - `compute_transition_matrix()`: Segment-to-segment transition analysis
+  - `export_node_trajectories()`: Node-level temporal trajectory extraction
+
+### **Enhanced Documentation**
+
+* **Comprehensive temporal analysis examples**: 
+  - Added `example_temporal_analysis.R` with practical workflows
+  - Complete documentation for all temporal functions with roxygen2
+  - Integration examples showing temporal analysis with auto-tuning
+  - Performance optimization guides for large temporal datasets
+
+* **New temporal-specific test suite**:
+  - `test-temporal-clustering.R`: Core temporal functionality validation
+  - `test-temporal-stability.R`: Stability analysis testing
+  - Comprehensive edge case handling and error validation
+
+## Performance Improvements
+
+### **Temporal Processing Optimization**
+
+* **Parallel temporal analysis**: Multi-core processing for temporal windows
+* **Memory-efficient aggregation**: Optimized matrix operations for large time series
+* **Progressive stability assessment**: Efficient bootstrap-based temporal stability
+* **Caching system**: Avoid redundant computations across temporal windows
+
+## API Enhancements
+
+### **Temporal Analysis Integration**
+
+* All temporal functions integrate seamlessly with existing moneca workflow
+* Temporal results maintain full compatibility with standard moneca objects
+* Enhanced print methods for temporal analysis results
+* Comprehensive progress reporting for long-running temporal analyses
+
+### **New S3 Classes**
+
+* `moneca_temporal`: Primary temporal analysis results object
+* `temporal_stability`: Stability analysis results with specialized methods
+* Custom print methods for clear temporal result interpretation
+
+## Breaking Changes
+
+**None** - Full backward compatibility maintained. All temporal functionality is additive.
+
 # moneca 0.6.0
 
 ## Major New Features
