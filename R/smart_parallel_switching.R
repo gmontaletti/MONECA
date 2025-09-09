@@ -59,30 +59,65 @@ detect_system_resources <- function(verbose = FALSE) {
   # Cap at reasonable maximum to avoid overhead
   max_recommended_cores <- min(usable_cores, 8)  # Rarely beneficial beyond 8 cores for typical workloads
   
-  # Estimate memory (rough approximation)
+  # Estimate memory (cross-platform with proper macOS support)
   memory_gb <- tryCatch({
     # Try to get memory info on different platforms
     if (.Platform$OS.type == "unix") {
-      # Unix/Linux/Mac
-      system_info <- try(system("free -m", intern = TRUE), silent = TRUE)
-      if (inherits(system_info, "try-error")) {
-        # Fallback for Mac
-        system_info <- try(system("vm_stat", intern = TRUE), silent = TRUE)
-        if (!inherits(system_info, "try-error")) {
-          # Very rough estimate for Mac
-          4.0  # Conservative default
-        } else {
-          4.0  # Conservative default
+      # Check if this is macOS first
+      if (Sys.info()["sysname"] == "Darwin") {
+        # macOS-specific memory detection
+        # Try vm_stat first (most reliable on macOS)
+        vm_stat_info <- try(system("vm_stat", intern = TRUE), silent = TRUE)
+        if (!inherits(vm_stat_info, "try-error")) {
+          # Parse vm_stat output for page size and free/total pages
+          page_size_line <- vm_stat_info[1]
+          page_size_match <- regmatches(page_size_line, regexec("page size of ([0-9]+)", page_size_line))
+          
+          if (length(page_size_match[[1]]) > 1) {
+            page_size <- as.numeric(page_size_match[[1]][2])
+            
+            # Look for Pages free line
+            free_line <- vm_stat_info[grepl("Pages free:", vm_stat_info)]
+            if (length(free_line) > 0) {
+              free_match <- regmatches(free_line, regexec("Pages free:\\s+([0-9]+)", free_line))
+              if (length(free_match[[1]]) > 1) {
+                free_pages <- as.numeric(free_match[[1]][2])
+                # Estimate total memory based on free pages (rough approximation)
+                free_gb <- (free_pages * page_size) / (1024^3)
+                # Assume free is about 20-30% of total, so total ≈ free / 0.25
+                total_gb <- max(4.0, free_gb / 0.25)
+                total_gb
+              }
+            }
+          }
         }
+        
+        # Fallback: Try system_profiler (more detailed but slower)
+        profiler_info <- try(system("system_profiler SPHardwareDataType", intern = TRUE), silent = TRUE)
+        if (!inherits(profiler_info, "try-error")) {
+          mem_line <- profiler_info[grepl("Memory:", profiler_info)]
+          if (length(mem_line) > 0) {
+            mem_match <- regmatches(mem_line, regexec("([0-9]+)\\s*GB", mem_line))
+            if (length(mem_match[[1]]) > 1) {
+              as.numeric(mem_match[[1]][2])
+            }
+          }
+        }
+        
+        # Conservative default for macOS
+        8.0  # macOS systems typically have more RAM
       } else {
-        # Parse Linux free output
-        mem_line <- system_info[2]  # Second line has memory info
-        mem_match <- regmatches(mem_line, regexec("\\s+([0-9]+)", mem_line))
-        if (length(mem_match[[1]]) > 1) {
-          as.numeric(mem_match[[1]][2]) / 1024  # Convert MB to GB
-        } else {
-          4.0  # Default
+        # Linux/Unix systems - try free command
+        system_info <- try(system("free -m", intern = TRUE), silent = TRUE)
+        if (!inherits(system_info, "try-error")) {
+          # Parse Linux free output
+          mem_line <- system_info[2]  # Second line has memory info
+          mem_match <- regmatches(mem_line, regexec("\\s+([0-9]+)", mem_line))
+          if (length(mem_match[[1]]) > 1) {
+            as.numeric(mem_match[[1]][2]) / 1024  # Convert MB to GB
+          }
         }
+        4.0  # Default for Linux/Unix
       }
     } else {
       # Windows - use memory.size() if available
@@ -93,7 +128,12 @@ detect_system_resources <- function(verbose = FALSE) {
       }
     }
   }, error = function(e) {
-    4.0  # Default fallback
+    # Platform-specific defaults
+    if (.Platform$OS.type == "unix" && Sys.info()["sysname"] == "Darwin") {
+      8.0  # macOS default
+    } else {
+      4.0  # Other systems default
+    }
   })
   
   # Check for parallel packages
@@ -539,15 +579,31 @@ should_use_parallel <- function(n_combinations, matrix_size, n_bootstrap = 50,
     
     # User override - use parallel even if not optimal
     optimal_cores <- get_optimal_cores(n_combinations, matrix_size, system_resources)
-    decision$use_parallel <- TRUE
-    decision$n_cores <- optimal_cores
-    decision$reasoning <- "Parallel processing requested by user (override)"
-    decision$user_override <- TRUE
     
-    if (verbose) {
-      cat("Parallel Processing Decision: PARALLEL (user requested)\n")
-      cat("Cores to use:", decision$n_cores, "\n")
-      cat("Reasoning:", decision$reasoning, "\n\n")
+    # Even with user override, check if we have multiple cores available
+    if (optimal_cores > 1) {
+      decision$use_parallel <- TRUE
+      decision$n_cores <- optimal_cores
+      decision$reasoning <- "Parallel processing requested by user (override)"
+      decision$user_override <- TRUE
+      
+      if (verbose) {
+        cat("Parallel Processing Decision: PARALLEL (user requested)\n")
+        cat("Cores to use:", decision$n_cores, "\n")
+        cat("Reasoning:", decision$reasoning, "\n\n")
+      }
+    } else {
+      # Even user override can't make single-core parallel make sense
+      decision$use_parallel <- FALSE
+      decision$n_cores <- 1
+      decision$reasoning <- "Parallel processing requested but resource constraints limit to 1 core (sequential used)"
+      decision$user_override <- TRUE
+      
+      if (verbose) {
+        cat("Parallel Processing Decision: SEQUENTIAL (resource limited)\n")
+        cat("Cores to use:", decision$n_cores, "\n")
+        cat("Reasoning:", decision$reasoning, "\n\n")
+      }
     }
     return(decision)
   }
@@ -609,14 +665,26 @@ should_use_parallel <- function(n_combinations, matrix_size, n_bootstrap = 50,
   # Make decision based on performance estimates
   if (performance_est$recommendation == "parallel") {
     optimal_cores <- get_optimal_cores(n_combinations, matrix_size, system_resources)
-    decision$use_parallel <- TRUE
-    decision$n_cores <- optimal_cores
-    decision$reasoning <- sprintf(
-      "Parallel processing beneficial (estimated %.1fx speedup, %.0f%% efficiency with %d cores)",
-      performance_est$speedup_est, 
-      performance_est$efficiency_est * 100,
-      optimal_cores
-    )
+    
+    # Final consistency check: only use parallel if optimal cores > 1
+    if (optimal_cores > 1) {
+      decision$use_parallel <- TRUE
+      decision$n_cores <- optimal_cores
+      decision$reasoning <- sprintf(
+        "Parallel processing beneficial (estimated %.1fx speedup, %.0f%% efficiency with %d cores)",
+        performance_est$speedup_est, 
+        performance_est$efficiency_est * 100,
+        optimal_cores
+      )
+    } else {
+      # Performance estimates suggest parallel but optimal cores is 1 - use sequential
+      decision$use_parallel <- FALSE
+      decision$n_cores <- 1
+      decision$reasoning <- sprintf(
+        "Sequential processing optimal (resource constraints limit to 1 core, negating %.1fx speedup)",
+        performance_est$speedup_est
+      )
+    }
   } else {
     decision$reasoning <- sprintf(
       "Sequential processing optimal (estimated parallel speedup only %.1fx with %.0f%% efficiency)",

@@ -123,6 +123,7 @@ for (method in names(method_comparison)) {
 cat("\n✓ Temporal analysis complete!\n")
 cat("\nNext steps:\n")
 cat("- Use plot_temporal_segments() for visualization\n")
+cat("- Use plot_temporal_stability() for stability metrics visualization\n")
 cat("- Analyze specific transitions of interest\n") 
 cat("- Compare stability across different time periods\n")
 cat("- Export results for further statistical analysis\n")

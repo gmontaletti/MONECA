@@ -1,0 +1,469 @@
+---
+title: "Joint Parameter Calibration in MONECA"
+author: "MONECA Development Team"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Joint Parameter Calibration in MONECA}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE
+)
+library(moneca)
+library(ggplot2)
+```
+
+# Joint Parameter Calibration in MONECA
+
+## Introduction
+
+The MONECA algorithm uses two key parameters that control the filtering process:
+- `small.cell.reduction`: Filters raw mobility counts before relative risk calculation
+- `cut.off`: Filters relative risk values after calculation
+
+This vignette demonstrates how to calibrate both parameters jointly to achieve optimal clustering results.
+
+## Mathematical Relationships
+
+### Sequential Filtering Process
+
+The parameters work in a two-stage filtering pipeline:
+
+1. **Stage 1**: Raw count filtering with `small.cell.reduction`
+   ```
+   if (mobility_count[i,j] < small.cell.reduction) 
+     then mobility_count[i,j] = 0
+   ```
+   **Important**: Since mobility counts are integers, `small.cell.reduction` must be an integer. Non-integer values are automatically rounded down to the nearest integer.
+
+2. **Stage 2**: Relative risk filtering with `cut.off`
+   ```
+   relative_risk[i,j] = observed[i,j] / expected[i,j]
+   if (relative_risk[i,j] < cut.off) 
+     then relative_risk[i,j] = NA
+   ```
+   **Note**: `cut.off` can be any positive real number since it operates on continuous relative risk values.
+
+### Compound Effects
+
+The parameters have multiplicative effects on network sparsity:
+$$P(\text{edge retained}) = P(\text{count} \geq \text{scr}) \times P(\text{RR} \geq \text{cutoff} | \text{count} \geq \text{scr})$$
+
+## Integer Constraint for small.cell.reduction
+
+The joint calibration framework automatically ensures that `small.cell.reduction` values are integers, since this parameter filters integer mobility counts. This provides several benefits:
+
+- **Mathematical accuracy**: Parameters correspond to actual filtering behavior
+- **Computational efficiency**: Eliminates redundant testing of equivalent parameter combinations
+- **Clearer interpretation**: Integer thresholds are more intuitive for count data
+
+```{r integer_demo}
+# Non-integer values are automatically converted to integers
+result_with_decimals <- auto_tune_joint_parameters(
+  mx = mobility_data,
+  scr_range = c(0.5, 5.7),  # Non-integer range
+  method = "grid",
+  n_grid_points = 4,
+  n_bootstrap = 5,
+  verbose = TRUE
+)
+
+cat("Optimal SCR (automatically converted to integer):", result_with_decimals$optimal_scr, "\n")
+```
+
+## Basic Usage
+
+### Automatic Joint Calibration
+
+The simplest approach is to use automatic joint calibration:
+
+```{r basic_usage}
+# Generate example mobility data
+set.seed(123)
+mobility_data <- generate_mobility_data(n_classes = 6, 
+                                       immobility_strength = 0.75,
+                                       class_clustering = 0.7,
+                                       seed = 123)
+
+# Automatic joint parameter calibration
+joint_result <- auto_tune_joint_parameters(
+  mx = mobility_data,
+  method = "grid",
+  n_grid_points = 8,
+  n_bootstrap = 20,
+  verbose = TRUE
+)
+
+print(joint_result)
+```
+
+### Using Optimal Parameters
+
+```{r use_optimal}
+# Apply optimal parameters to MONECA clustering
+segments <- moneca(
+  mobility_data,
+  small.cell.reduction = joint_result$optimal_scr,
+  cut.off = joint_result$optimal_cutoff,
+  segment.levels = 3
+)
+
+# Visualize results
+plot_moneca_ggraph(segments, 
+                   node_color = "segment",
+                   layout = "stress")
+```
+
+## Advanced Calibration Methods
+
+### Adaptive Refinement
+
+For computational efficiency, use adaptive refinement that starts with a coarse grid and refines promising regions:
+
+```{r adaptive}
+adaptive_result <- auto_tune_joint_parameters(
+  mx = mobility_data,
+  method = "adaptive",
+  objectives = c("stability", "quality"),
+  verbose = TRUE
+)
+
+cat("Optimal parameters:\n")
+cat("small.cell.reduction:", adaptive_result$optimal_scr, "\n")
+cat("cut.off:", adaptive_result$optimal_cutoff, "\n")
+```
+
+### Pareto Frontier Analysis
+
+When optimizing multiple objectives, use Pareto frontier analysis:
+
+```{r pareto}
+pareto_result <- auto_tune_joint_parameters(
+  mx = mobility_data,
+  method = "pareto",
+  objectives = c("stability", "quality", "sparsity"),
+  n_grid_points = 6,
+  verbose = TRUE
+)
+
+cat("Number of Pareto-optimal solutions:", length(pareto_result$pareto_indices), "\n")
+```
+
+## Parameter Interaction Analysis
+
+### Understanding Parameter Relationships
+
+Analyze how the parameters interact mathematically:
+
+```{r interaction}
+interaction <- analyze_parameter_interaction(
+  mx = mobility_data,
+  scr = joint_result$optimal_scr,
+  cutoff = joint_result$optimal_cutoff,
+  n_samples = 15
+)
+
+print(interaction)
+```
+
+### Interpretation
+
+- **Interaction strength** (0-1): How strongly parameters interact
+  - 0 = independent effects
+  - 1 = strong interaction
+- **Optimal ratio**: Suggested ratio of small.cell.reduction to cut.off
+- **Sensitivity**: Which parameter has stronger effects on outcomes
+
+## Visualization
+
+### Optimization Surface
+
+Visualize the parameter optimization landscape:
+
+```{r surface_plot, fig.width=8, fig.height=6}
+# Heatmap of optimization surface
+plot_optimization_surface(joint_result, type = "heatmap")
+```
+
+```{r contour_plot, fig.width=8, fig.height=6}
+# Contour plot
+plot_optimization_surface(joint_result, type = "contour")
+```
+
+### Parameter Range Suggestions
+
+Get data-driven suggestions for parameter ranges:
+
+```{r suggest_ranges}
+# Conservative approach (safer, less aggressive filtering)
+conservative <- suggest_parameter_ranges(mobility_data, method = "conservative")
+
+# Moderate approach (balanced filtering)
+moderate <- suggest_parameter_ranges(mobility_data, method = "moderate") 
+
+# Aggressive approach (more stringent filtering)
+aggressive <- suggest_parameter_ranges(mobility_data, method = "aggressive")
+
+# Compare suggestions
+comparison <- data.frame(
+  Method = c("Conservative", "Moderate", "Aggressive"),
+  SCR_Min = c(conservative$scr_range[1], moderate$scr_range[1], aggressive$scr_range[1]),
+  SCR_Max = c(conservative$scr_range[2], moderate$scr_range[2], aggressive$scr_range[2]),
+  Cutoff_Min = c(conservative$cutoff_range[1], moderate$cutoff_range[1], aggressive$cutoff_range[1]),
+  Cutoff_Max = c(conservative$cutoff_range[2], moderate$cutoff_range[2], aggressive$cutoff_range[2])
+)
+
+knitr::kable(comparison, digits = 2, 
+             caption = "Suggested Parameter Ranges by Method")
+```
+
+## Practical Guidelines
+
+### 1. Start with Data-Driven Ranges
+
+```{r guidelines1}
+# Get data characteristics
+ranges <- suggest_parameter_ranges(mobility_data, method = "moderate")
+cat("Matrix sparsity:", ranges$data_characteristics$sparsity, "\n")
+cat("Suggested SCR range:", ranges$scr_range[1], "-", ranges$scr_range[2], "\n")
+cat("Suggested cutoff range:", ranges$cutoff_range[1], "-", ranges$cutoff_range[2], "\n")
+```
+
+### 2. Use Grid Search for Initial Exploration
+
+```{r guidelines2}
+# Quick exploration with coarse grid
+quick_result <- auto_tune_joint_parameters(
+  mx = mobility_data,
+  method = "grid",
+  scr_range = ranges$scr_range,
+  cutoff_range = ranges$cutoff_range,
+  n_grid_points = 5,  # Coarse for speed
+  n_bootstrap = 10,
+  verbose = FALSE
+)
+```
+
+### 3. Refine with Adaptive Method
+
+```{r guidelines3}
+# Refine around promising region
+refined_result <- auto_tune_joint_parameters(
+  mx = mobility_data,
+  method = "adaptive",
+  scr_range = ranges$scr_range,
+  cutoff_range = ranges$cutoff_range,
+  objectives = c("stability", "quality"),
+  verbose = FALSE
+)
+```
+
+### 4. Validate Results
+
+```{r validation}
+# Compare single vs joint optimization
+single_scr <- auto_tune_small_cell_reduction(
+  mx = mobility_data,
+  cut.off = 1,  # Fixed cutoff
+  method = "stability",
+  verbose = FALSE
+)
+
+cat("Single parameter optimization:\n")
+cat("  small.cell.reduction:", single_scr$optimal_value, "\n")
+cat("  cut.off: 1 (fixed)\n\n")
+
+cat("Joint parameter optimization:\n")
+cat("  small.cell.reduction:", joint_result$optimal_scr, "\n")
+cat("  cut.off:", joint_result$optimal_cutoff, "\n")
+```
+
+## Performance Considerations
+
+### Computational Trade-offs
+
+```{r performance}
+# Fast approximate tuning
+fast_result <- auto_tune_joint_parameters(
+  mx = mobility_data,
+  method = "grid",
+  n_grid_points = 5,
+  n_bootstrap = 10,
+  parallel = TRUE,
+  verbose = FALSE
+)
+
+# High-quality tuning
+quality_result <- auto_tune_joint_parameters(
+  mx = mobility_data,
+  method = "adaptive",
+  n_bootstrap = 50,
+  parallel = TRUE,
+  verbose = FALSE
+)
+
+cat("Fast tuning time:", fast_result$computation_time, "seconds\n")
+cat("Quality tuning time:", quality_result$computation_time, "seconds\n")
+```
+
+### Memory Considerations
+
+For large matrices (>100x100), consider:
+- Using `method = "adaptive"` for efficiency
+- Reducing `n_bootstrap` for initial exploration
+- Using parallel processing
+- Starting with suggested parameter ranges to avoid extreme values
+
+## Case Study: Different Data Types
+
+### High Mobility Data
+
+```{r case_high_mobility}
+# Generate high mobility data (dense matrix)
+high_mobility <- generate_mobility_data(
+  n_classes = 5,
+  immobility_strength = 0.2,  # Low diagonal dominance
+  class_clustering = 0.3,     # Low clustering
+  seed = 456
+)
+
+high_result <- auto_tune_joint_parameters(
+  mx = high_mobility,
+  method = "grid",
+  n_grid_points = 6,
+  verbose = FALSE
+)
+
+cat("High mobility data optimal parameters:\n")
+cat("SCR:", high_result$optimal_scr, "Cutoff:", high_result$optimal_cutoff, "\n")
+```
+
+### Low Mobility Data
+
+```{r case_low_mobility}
+# Generate low mobility data (sparse matrix)
+low_mobility <- generate_mobility_data(
+  n_classes = 5,
+  immobility_strength = 0.9,  # High diagonal dominance
+  class_clustering = 0.8,     # High clustering
+  seed = 789
+)
+
+low_result <- auto_tune_joint_parameters(
+  mx = low_mobility,
+  method = "grid", 
+  n_grid_points = 6,
+  verbose = FALSE
+)
+
+cat("Low mobility data optimal parameters:\n")
+cat("SCR:", low_result$optimal_scr, "Cutoff:", low_result$optimal_cutoff, "\n")
+```
+
+### Parameter Sensitivity by Data Type
+
+```{r sensitivity_comparison}
+high_interaction <- analyze_parameter_interaction(
+  mx = high_mobility,
+  scr = high_result$optimal_scr,
+  cutoff = high_result$optimal_cutoff,
+  n_samples = 10
+)
+
+low_interaction <- analyze_parameter_interaction(
+  mx = low_mobility,
+  scr = low_result$optimal_scr,
+  cutoff = low_result$optimal_cutoff,
+  n_samples = 10
+)
+
+sensitivity_comparison <- data.frame(
+  Data_Type = c("High Mobility", "Low Mobility"),
+  SCR_Sensitivity = c(high_interaction$sensitivity$scr, low_interaction$sensitivity$scr),
+  Cutoff_Sensitivity = c(high_interaction$sensitivity$cutoff, low_interaction$sensitivity$cutoff),
+  Interaction_Strength = c(high_interaction$interaction_strength, low_interaction$interaction_strength)
+)
+
+knitr::kable(sensitivity_comparison, digits = 3,
+             caption = "Parameter Sensitivity by Data Type")
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **All parameters yield poor results**
+   - Check data quality and matrix structure
+   - Ensure sufficient non-zero off-diagonal values
+   - Try wider parameter ranges
+
+2. **Optimization is too slow**
+   - Reduce `n_grid_points` for initial exploration
+   - Use `method = "adaptive"` 
+   - Enable parallel processing
+   - Reduce `n_bootstrap` for preliminary analysis
+
+3. **Inconsistent results**
+   - Set `seed` parameter for reproducibility
+   - Increase `n_bootstrap` for more stable estimates
+   - Check for very sparse or degenerate data
+
+### Diagnostic Functions
+
+```{r diagnostics}
+# Check data characteristics
+ranges <- suggest_parameter_ranges(mobility_data)
+cat("Data diagnostics:\n")
+cat("Matrix size:", ranges$data_characteristics$matrix_size, "\n")
+cat("Sparsity:", round(ranges$data_characteristics$sparsity, 3), "\n")
+cat("Value range:", 
+    round(ranges$data_characteristics$value_distribution["10%"], 1), "-",
+    round(ranges$data_characteristics$value_distribution["90%"], 1), "\n")
+
+# Test parameter combinations manually
+test_scores <- evaluate_parameter_combination(
+  mx = mobility_data,
+  scr = 2,
+  cutoff = 1.5,
+  objectives = c("stability", "quality"),
+  n_bootstrap = 10
+)
+
+cat("\nTest parameter combination (scr=2, cutoff=1.5):\n")
+print(test_scores)
+```
+
+## Conclusion
+
+Joint parameter calibration provides several advantages over single-parameter optimization:
+
+1. **Better performance**: Considers parameter interactions
+2. **Theoretical grounding**: Based on mathematical relationships
+3. **Flexibility**: Multiple optimization methods available
+4. **Interpretability**: Provides insights into parameter effects
+
+### Recommended Workflow
+
+1. Start with `suggest_parameter_ranges()` for initial bounds
+2. Use `auto_tune_joint_parameters(method = "adaptive")` for efficiency
+3. Analyze results with `analyze_parameter_interaction()`
+4. Visualize optimization surface for insights
+5. Validate with actual MONECA clustering
+
+This approach ensures robust, data-driven parameter selection that improves clustering quality while maintaining computational efficiency.
+
+## References
+
+For more information on MONECA clustering:
+- Package documentation: `help(package = "moneca")`
+- Core algorithm: `?moneca`
+- Single parameter tuning: `?auto_tune_small_cell_reduction`

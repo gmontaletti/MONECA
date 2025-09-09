@@ -243,3 +243,4 @@ devtools::build_vignettes()
 - **Dependencies**: Package now requires ggraph and tidygraph for modern features
 - never change the original moneca() function!
 - the reference directory for the cleanup / mive files operations is in ../reference/moneca/ tell it to the agents
+- when bumping, update citation in README.md

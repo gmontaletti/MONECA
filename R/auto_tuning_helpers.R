@@ -120,52 +120,92 @@ evaluate_candidates_optimized <- function(mx, candidate_values, cut.off, method,
                                   seq_along(candidate_values),
                                   evaluate_single_candidate)
   } else {
-    # Sequential evaluation with early stopping
+    # VECTORIZED SEQUENTIAL EVALUATION - Optimized batch processing
     results <- vector("list", n_candidates)
     
-    for (i in seq_along(candidate_values)) {
+    # Process candidates in small batches for better memory management
+    batch_size <- min(5, n_candidates)
+    n_batches <- ceiling(n_candidates / batch_size)
+    
+    for (batch in seq_len(n_batches)) {
+      batch_start <- (batch - 1) * batch_size + 1
+      batch_end <- min(batch * batch_size, n_candidates)
+      batch_indices <- batch_start:batch_end
+      
       if (verbose) {
-        cat("\rEvaluating candidate", i, "of", n_candidates, 
-            sprintf("(%.1f%%)    ", 100 * i / n_candidates))
+        cat("\rProcessing batch", batch, "of", n_batches, 
+            sprintf("(%.1f%% complete)    ", 100 * batch_end / n_candidates))
         flush.console()
       }
       
-      results[[i]] <- evaluate_single_candidate(i)
+      # Vectorized batch processing
+      batch_results <- lapply(batch_indices, evaluate_single_candidate)
+      results[batch_indices] <- batch_results
       
-      # Early stopping check
-      if (early_stopping && i >= trend_window) {
-        current_quality <- results[[i]]$quality_metrics$overall
-        quality_trend[((i - 1) %% length(quality_trend)) + 1] <- current_quality
-        
-        # Check if quality is consistently decreasing
-        if (i >= 5 && is_quality_declining(quality_trend)) {
-          if (verbose) {
-            cat("\nEarly stopping activated - quality declining\n")
+      # Early stopping check on batch completion
+      if (early_stopping && batch_end >= trend_window) {
+        # Extract quality scores from recent results
+        recent_indices <- max(1, batch_end - trend_window + 1):batch_end
+        recent_qualities <- vapply(results[recent_indices], function(r) {
+          if (!is.null(r) && !is.null(r$quality_metrics)) {
+            r$quality_metrics$overall
+          } else {
+            0
           }
-          # Truncate results and candidates
-          candidate_values <- candidate_values[1:i]
-          results <- results[1:i]
-          break
+        }, FUN.VALUE = numeric(1), USE.NAMES = FALSE)
+        
+        # Check if quality is consistently decreasing using vectorized operations
+        if (length(recent_qualities) >= 3) {
+          quality_diffs <- diff(recent_qualities)
+          if (all(quality_diffs <= -0.01)) {  # All declining by at least 1%
+            if (verbose) {
+              cat("\nEarly stopping activated - quality consistently declining\n")
+            }
+            # Truncate results and candidates
+            candidate_values <- candidate_values[1:batch_end]
+            results <- results[1:batch_end]
+            break
+          }
         }
       }
     }
   }
   
-  # Extract results from list
-  for (i in seq_along(results)) {
-    if (!is.null(results[[i]])) {
-      stability_scores[i] <- results[[i]]$stability_score
-      quality_metrics[[i]] <- results[[i]]$quality_metrics
-      performance_metrics[[i]] <- results[[i]]$performance_metrics
-      network_properties[[i]] <- results[[i]]$network_properties
+  # VECTORIZED RESULTS EXTRACTION - Replace individual assignments with bulk operations
+  # Use vapply for type-safe vectorized extraction
+  valid_results <- !vapply(results, is.null, FUN.VALUE = logical(1), USE.NAMES = FALSE)
+  
+  stability_scores <- vapply(seq_along(results), function(i) {
+    if (valid_results[i] && !is.null(results[[i]]$stability_score)) {
+      results[[i]]$stability_score
     } else {
-      # Handle missing results
-      stability_scores[i] <- 0
-      quality_metrics[[i]] <- create_invalid_result()$quality_metrics
-      performance_metrics[[i]] <- create_invalid_result()$performance_metrics
-      network_properties[[i]] <- create_invalid_result()$network_properties
+      0
     }
-  }
+  }, FUN.VALUE = numeric(1), USE.NAMES = FALSE)
+  
+  quality_metrics <- lapply(seq_along(results), function(i) {
+    if (valid_results[i] && !is.null(results[[i]]$quality_metrics)) {
+      results[[i]]$quality_metrics
+    } else {
+      create_invalid_result()$quality_metrics
+    }
+  })
+  
+  performance_metrics <- lapply(seq_along(results), function(i) {
+    if (valid_results[i] && !is.null(results[[i]]$performance_metrics)) {
+      results[[i]]$performance_metrics
+    } else {
+      create_invalid_result()$performance_metrics
+    }
+  })
+  
+  network_properties <- lapply(seq_along(results), function(i) {
+    if (valid_results[i] && !is.null(results[[i]]$network_properties)) {
+      results[[i]]$network_properties
+    } else {
+      create_invalid_result()$network_properties
+    }
+  })
   
   if (verbose) cat("\n")
   

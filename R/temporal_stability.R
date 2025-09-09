@@ -4,28 +4,6 @@
 #' providing comprehensive metrics on segment persistence, node volatility,
 #' and structural changes in the mobility network.
 #'
-#' @param temporal_result A moneca_temporal object returned by \code{\link{moneca_temporal}}.
-#' @param stability_threshold Numeric threshold (0-1) for considering a segment stable.
-#'   Default is 0.7 (70% of nodes remain).
-#' @param min_segment_size Minimum number of nodes for a segment to be included in
-#'   stability calculations. Default is 2.
-#' @param compute_node_metrics Logical indicating whether to compute detailed
-#'   node-level metrics. Default is TRUE.
-#' @param verbose Logical indicating whether to show progress messages. Default is TRUE.
-#'
-#' @return An object of class "temporal_stability" containing:
-#'   \describe{
-#'     \item{stability_scores}{Data frame with per-segment and overall stability metrics}
-#'     \item{node_trajectories}{Matrix showing the path of each node through segments}
-#'     \item{change_points}{Vector of window indices with significant restructuring}
-#'     \item{stable_core}{Character vector of nodes with consistent segment membership}
-#'     \item{volatile_nodes}{Character vector of frequently changing nodes}
-#'     \item{segment_lifetimes}{Data frame with segment appearance and persistence}
-#'     \item{transition_summary}{Summary statistics of the transition matrix}
-#'     \item{volatility_scores}{Per-node volatility scores}
-#'     \item{parameters}{Analysis parameters used}
-#'   }
-#'
 #' @details
 #' The function computes several types of stability metrics:
 #'
@@ -50,6 +28,25 @@
 #'   \item \strong{Fragmentation index}: Rate of segment splits and merges
 #'   \item \strong{Change points}: Windows with above-average restructuring
 #' }
+#'
+#' @param temporal_result A moneca_temporal object returned by \code{\link{moneca_temporal}}.
+#' @param stability_threshold Numeric threshold (0-1) for considering a segment stable. Default is 0.7 (70% of nodes remain).
+#' @param min_segment_size Minimum number of nodes for a segment to be included in stability calculations. Default is 2.
+#' @param compute_node_metrics Logical indicating whether to compute detailed node-level metrics. Default is TRUE.
+#' @param verbose Logical indicating whether to show progress messages. Default is TRUE.
+#'
+#' @return An object of class "temporal_stability" containing:
+#'   \describe{
+#'     \item{stability_scores}{Data frame with per-segment and overall stability metrics}
+#'     \item{node_trajectories}{Matrix showing the path of each node through segments}
+#'     \item{change_points}{Vector of window indices with significant restructuring}
+#'     \item{stable_core}{Character vector of nodes with consistent segment membership}
+#'     \item{volatile_nodes}{Character vector of frequently changing nodes}
+#'     \item{segment_lifetimes}{Data frame with segment appearance and persistence}
+#'     \item{transition_summary}{Summary statistics of the transition matrix}
+#'     \item{volatility_scores}{Per-node volatility scores}
+#'     \item{parameters}{Analysis parameters used}
+#'   }
 #'
 #' @examples
 #' \dontrun{

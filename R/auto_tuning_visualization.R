@@ -262,31 +262,47 @@ create_sensitivity_plot <- function(tuning_result, candidates, quality_scores, s
   quality_sensitivity <- numeric(n)
   stability_sensitivity <- numeric(n)
   
-  # Calculate sensitivity (local derivatives)
-  for (i in seq_len(n)) {
-    if (i > 1 && i < n) {
-      dx_left <- candidates[i] - candidates[i-1]
-      dx_right <- candidates[i+1] - candidates[i]
+  # VECTORIZED SENSITIVITY CALCULATION - Replace sequential loop with vectorized operations
+  # Calculate derivatives using vectorized operations for better performance
+  
+  if (n > 1) {
+    # Initialize sensitivity vectors
+    quality_sensitivity <- numeric(n)
+    stability_sensitivity <- numeric(n)
+    
+    # Vectorized calculation for interior points (i = 2 to n-1)
+    if (n > 2) {
+      interior_indices <- 2:(n-1)
+      dx_total <- candidates[interior_indices + 1] - candidates[interior_indices - 1]
+      valid_dx <- dx_total > 0
       
-      if (dx_left > 0) {
-        quality_sensitivity[i] <- abs((quality_scores[i+1] - quality_scores[i-1]) / 
-                                     (candidates[i+1] - candidates[i-1]))
-        stability_sensitivity[i] <- abs((stability_scores[i+1] - stability_scores[i-1]) / 
-                                       (candidates[i+1] - candidates[i-1]))
-      }
-    } else if (i == 1 && n > 1) {
-      dx <- candidates[i+1] - candidates[i]
-      if (dx > 0) {
-        quality_sensitivity[i] <- abs((quality_scores[i+1] - quality_scores[i]) / dx)
-        stability_sensitivity[i] <- abs((stability_scores[i+1] - stability_scores[i]) / dx)
-      }
-    } else if (i == n && n > 1) {
-      dx <- candidates[i] - candidates[i-1]
-      if (dx > 0) {
-        quality_sensitivity[i] <- abs((quality_scores[i] - quality_scores[i-1]) / dx)
-        stability_sensitivity[i] <- abs((stability_scores[i] - stability_scores[i-1]) / dx)
-      }
+      # Quality sensitivity for interior points
+      quality_diffs <- quality_scores[interior_indices + 1] - quality_scores[interior_indices - 1]
+      quality_sensitivity[interior_indices[valid_dx]] <- abs(quality_diffs[valid_dx] / dx_total[valid_dx])
+      
+      # Stability sensitivity for interior points  
+      stability_diffs <- stability_scores[interior_indices + 1] - stability_scores[interior_indices - 1]
+      stability_sensitivity[interior_indices[valid_dx]] <- abs(stability_diffs[valid_dx] / dx_total[valid_dx])
     }
+    
+    # Handle boundary points
+    # First point
+    dx_first <- candidates[2] - candidates[1]
+    if (dx_first > 0) {
+      quality_sensitivity[1] <- abs((quality_scores[2] - quality_scores[1]) / dx_first)
+      stability_sensitivity[1] <- abs((stability_scores[2] - stability_scores[1]) / dx_first)
+    }
+    
+    # Last point
+    dx_last <- candidates[n] - candidates[n-1]
+    if (dx_last > 0) {
+      quality_sensitivity[n] <- abs((quality_scores[n] - quality_scores[n-1]) / dx_last)
+      stability_sensitivity[n] <- abs((stability_scores[n] - stability_scores[n-1]) / dx_last)
+    }
+  } else {
+    # Single point case
+    quality_sensitivity <- 0
+    stability_sensitivity <- 0
   }
   
   plot_data <- data.frame(
@@ -338,12 +354,9 @@ create_convergence_plot <- function(tuning_result) {
   bayesian_scores <- tuning_result$bayesian_results$bayesian_scores
   n_iterations <- length(bayesian_scores)
   
-  # Calculate cumulative best
-  cumulative_best <- numeric(n_iterations)
-  cumulative_best[1] <- bayesian_scores[1]
-  for (i in 2:n_iterations) {
-    cumulative_best[i] <- max(cumulative_best[i-1], bayesian_scores[i])
-  }
+  # VECTORIZED CUMULATIVE BEST CALCULATION
+  # Replace sequential loop with vectorized cumulative maximum
+  cumulative_best <- cummax(bayesian_scores)
   
   plot_data <- data.frame(
     iteration = rep(seq_len(n_iterations), 2),

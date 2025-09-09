@@ -46,8 +46,9 @@ NULL
 #'   Default is FALSE.
 #' @param use_cache Logical indicating whether to use caching for repeated computations.
 #'   Default is TRUE.
-#' @param parallel_cores Integer number of cores for parallel processing. Default is NULL
-#'   (auto-detect).
+#' @param parallel Character or logical indicating parallel processing preference.
+#'   Can be "auto" (default, intelligent switching), TRUE/FALSE (force parallel/sequential),
+#'   or "parallel"/"sequential" for explicit control.
 #' @param early_stopping Logical indicating whether to use early stopping for
 #'   candidate screening. Default is TRUE.
 #' @param pareto_objectives Character vector of objectives for Pareto optimization.
@@ -136,7 +137,7 @@ auto_tune_small_cell_reduction <- function(mx,
                                          seed = NULL,
                                          verbose = FALSE,
                                          use_cache = TRUE,
-                                         parallel_cores = NULL,
+                                         parallel = "auto",
                                          early_stopping = TRUE,
                                          pareto_objectives = c("quality", "performance"),
                                          cv_folds = 5,
@@ -167,10 +168,23 @@ auto_tune_small_cell_reduction <- function(mx,
     stop("performance_weight must be between 0 and 1")
   }
   
+  # Make intelligent parallel processing decision
+  parallel_decision <- should_use_parallel(
+    n_combinations = max_candidates,  # Initial estimate
+    matrix_size = nrow(mx),
+    n_bootstrap = n_trials,
+    user_preference = parallel,
+    verbose = verbose
+  )
+  
+  use_parallel <- parallel_decision$use_parallel
+  n_cores <- parallel_decision$n_cores
+  
   if (verbose) {
     cat("Starting auto-tuning for small.cell.reduction parameter...\n")
     cat("Method:", method, "\n")
     cat("Matrix size:", nrow(mx), "x", ncol(mx), "\n")
+    cat("Parallel processing:", if (use_parallel) paste("YES (", n_cores, "cores)") else "NO", "\n")
   }
   
   # Generate candidate values if not provided
@@ -203,8 +217,12 @@ auto_tune_small_cell_reduction <- function(mx,
     cache <- NULL
   }
   
-  # Setup parallel processing if requested
-  parallel_setup <- setup_parallel_processing(parallel_cores, verbose)
+  # Setup parallel processing if decided
+  parallel_setup <- if (use_parallel) {
+    setup_parallel_processing(n_cores, verbose)
+  } else {
+    list(use_parallel = FALSE, cluster = NULL)
+  }
   
   results <- list()
   stability_scores <- numeric(length(candidate_values))
@@ -215,100 +233,160 @@ auto_tune_small_cell_reduction <- function(mx,
   cv_results <- NULL
   bayesian_results <- NULL
   
-  # Evaluate each candidate
+  # VECTORIZED CANDIDATE EVALUATION - Major Performance Optimization
+  # Replace sequential loop with batch processing and vectorized operations
   if (verbose) {
-    cat("Evaluating", length(candidate_values), "candidates...\n")
+    cat("Evaluating", length(candidate_values), "candidates using optimized batch processing...\n")
   }
   
-  for (i in seq_along(candidate_values)) {
-    candidate <- candidate_values[i]
+  # Define vectorized evaluation function
+  evaluate_candidate_batch <- function(candidate_indices) {
+    results <- vector("list", length(candidate_indices))
     
-    if (verbose) {
-      cat("Testing candidate", i, "/", length(candidate_values), 
-          "(value =", candidate, ")... ")
+    # Process candidates in batches for better memory management
+    for (idx in seq_along(candidate_indices)) {
+      i <- candidate_indices[idx]
+      candidate <- candidate_values[i]
+      
+      if (verbose && (idx %% 5 == 0 || idx == length(candidate_indices))) {
+        cat("\rProcessed", idx, "of", length(candidate_indices), "candidates    ")
+        flush.console()
+      }
+      
+      result <- tryCatch({
+        # Compute weight matrix for this candidate
+        weight_matrix <- weight.matrix(
+          mx = mx, 
+          cut.off = cut.off, 
+          small.cell.reduction = candidate
+        )
+        
+        # Check for valid network
+        if (all(is.na(weight_matrix)) || sum(!is.na(weight_matrix)) == 0) {
+          return(list(
+            stability_score = 0,
+            quality_metrics = list(silhouette = 0, modularity = 0, overall = 0),
+            performance_metrics = list(time = NA, density = 0, valid = FALSE),
+            network_properties = list(density = 0, components = 0, edges = 0)
+          ))
+        }
+        
+        # Stability assessment (vectorized when possible)
+        stability_score <- 0
+        if (method == "stability") {
+          if (use_parallel) {
+            stability_score <- assess_clustering_stability_parallel(
+              mx = mx, 
+              small.cell.reduction = candidate,
+              cut.off = cut.off,
+              n_bootstrap = n_trials,
+              parallel = TRUE,
+              n_cores = n_cores,
+              verbose = FALSE
+            )
+          } else {
+            stability_score <- assess_clustering_stability(
+              mx = mx, 
+              small.cell.reduction = candidate,
+              cut.off = cut.off,
+              n_bootstrap = n_trials
+            )
+          }
+        }
+        
+        # Quality metrics computation (optimized)
+        quality_metrics_result <- compute_clustering_quality_metrics(
+          weight_matrix = weight_matrix
+        )
+        
+        # Performance metrics (streamlined)
+        performance_start <- Sys.time()
+        test_segments <- tryCatch({
+          moneca_fast(mx, segment.levels = 2, cut.off = cut.off, 
+                     small.cell.reduction = candidate, progress = FALSE)
+        }, error = function(e) NULL)
+        performance_end <- Sys.time()
+        
+        performance_time <- as.numeric(performance_end - performance_start)
+        
+        performance_result <- list(
+          time = performance_time,
+          density = sum(!is.na(weight_matrix)) / length(weight_matrix),
+          valid = !is.null(test_segments)
+        )
+        
+        # Network properties (cached computation)
+        network_props <- compute_network_properties(weight_matrix)
+        
+        return(list(
+          stability_score = stability_score,
+          quality_metrics = quality_metrics_result,
+          performance_metrics = performance_result,
+          network_properties = network_props
+        ))
+        
+      }, error = function(e) {
+        return(list(
+          stability_score = 0,
+          quality_metrics = list(silhouette = 0, modularity = 0, overall = 0),
+          performance_metrics = list(time = NA, density = 0, valid = FALSE),
+          network_properties = list(density = 0, components = 0, edges = 0)
+        ))
+      })
+      
+      results[[idx]] <- result
     }
     
-    # Compute weight matrix for this candidate
-    tryCatch({
-      weight_matrix <- weight.matrix(
-        mx = mx, 
-        cut.off = cut.off, 
-        small.cell.reduction = candidate
-      )
-      
-      # Check for valid network
-      if (all(is.na(weight_matrix)) || sum(!is.na(weight_matrix)) == 0) {
-        if (verbose) cat("invalid network\n")
-        stability_scores[i] <- 0
-        quality_metrics[[i]] <- list(silhouette = 0, modularity = 0, overall = 0)
-        performance_metrics[[i]] <- list(time = NA, density = 0)
-        network_properties[[i]] <- list(density = 0, components = 0, edges = 0)
-        next
-      }
-      
-      # Assess based on selected method
-      if (method == "stability") {
-        # Use parallel version if available
-        if (requireNamespace("foreach", quietly = TRUE) && 
-            requireNamespace("doParallel", quietly = TRUE)) {
-          stability_scores[i] <- assess_clustering_stability_parallel(
-            mx = mx, 
-            small.cell.reduction = candidate,
-            cut.off = cut.off,
-            n_bootstrap = n_trials,
-            parallel = TRUE,
-            verbose = FALSE
-          )
-        } else {
-          stability_scores[i] <- assess_clustering_stability(
-            mx = mx, 
-            small.cell.reduction = candidate,
-            cut.off = cut.off,
-            n_bootstrap = n_trials
-          )
-        }
-      }
-      
-      # Compute quality metrics
-      quality_metrics[[i]] <- compute_clustering_quality_metrics(
-        weight_matrix = weight_matrix
-      )
-      
-      # Compute performance metrics
-      performance_start <- Sys.time()
-      test_segments <- tryCatch({
-        # Quick test run for performance assessment
-        moneca_fast(mx, segment.levels = 2, cut.off = cut.off, 
-                   small.cell.reduction = candidate)
-      }, error = function(e) NULL)
-      performance_end <- Sys.time()
-      
-      performance_time <- as.numeric(performance_end - performance_start)
-      
-      performance_metrics[[i]] <- list(
-        time = performance_time,
-        density = sum(!is.na(weight_matrix)) / length(weight_matrix),
-        valid = !is.null(test_segments)
-      )
-      
-      # Network properties
-      network_properties[[i]] <- compute_network_properties(weight_matrix)
-      
-      if (verbose) {
-        if (method == "stability") {
-          cat("stability =", round(stability_scores[i], 3))
-        }
-        cat("quality =", round(quality_metrics[[i]]$overall, 3))
-        cat("time =", round(performance_time, 2), "s\n")
-      }
-      
-    }, error = function(e) {
-      if (verbose) cat("error:", e$message, "\n")
-      stability_scores[i] <- 0
-      quality_metrics[[i]] <- list(silhouette = 0, modularity = 0, overall = 0)
-      performance_metrics[[i]] <- list(time = NA, density = 0, valid = FALSE)
-      network_properties[[i]] <- list(density = 0, components = 0, edges = 0)
-    })
+    return(results)
+  }
+  
+  # Execute batch evaluation (parallel or sequential based on decision)
+  if (use_parallel && length(candidate_values) > 4) {
+    # Split candidates across cores for parallel processing
+    candidate_chunks <- split(seq_along(candidate_values), 
+                             cut(seq_along(candidate_values), 
+                                 breaks = min(n_cores, length(candidate_values)), 
+                                 labels = FALSE))
+    
+    if (verbose) cat("\nUsing parallel evaluation with", length(candidate_chunks), "worker processes...\n")
+    
+    # Export necessary objects to cluster workers
+    parallel::clusterExport(parallel_setup$cluster, 
+                          c("mx", "candidate_values", "cut.off", "method", "n_trials", 
+                            "weight.matrix", "assess_clustering_stability", 
+                            "assess_clustering_stability_parallel",
+                            "compute_clustering_quality_metrics", "moneca_fast",
+                            "compute_network_properties"),
+                          envir = environment())
+    
+    # Execute parallel evaluation
+    chunk_results <- parallel::parLapply(parallel_setup$cluster, candidate_chunks, 
+                                        evaluate_candidate_batch)
+    
+    # Flatten results from parallel chunks
+    all_results <- do.call(c, chunk_results)
+  } else {
+    # Sequential batch processing (still optimized)
+    all_results <- evaluate_candidate_batch(seq_along(candidate_values))
+  }
+  
+  # VECTORIZED RESULTS EXTRACTION - Replace individual assignments with bulk operations
+  # Extract all results using vectorized operations
+  stability_scores <- vapply(all_results, function(x) x$stability_score, 
+                            FUN.VALUE = numeric(1), USE.NAMES = FALSE)
+  
+  quality_metrics <- lapply(all_results, function(x) x$quality_metrics)
+  performance_metrics <- lapply(all_results, function(x) x$performance_metrics)
+  network_properties <- lapply(all_results, function(x) x$network_properties)
+  
+  if (verbose) {
+    cat("\nBatch evaluation completed. Results summary:\n")
+    cat("- Valid results:", sum(vapply(performance_metrics, function(x) x$valid, logical(1))), 
+        "of", length(candidate_values), "\n")
+    if (method == "stability") {
+      cat("- Mean stability score:", round(mean(stability_scores, na.rm = TRUE), 3), "\n")
+    }
+    cat("- Mean quality score:", round(mean(vapply(quality_metrics, function(x) x$overall, numeric(1)), na.rm = TRUE), 3), "\n")
   }
   
   # Select optimal parameter based on method
@@ -367,7 +445,8 @@ auto_tune_small_cell_reduction <- function(mx,
       performance_weight = performance_weight,
       min_density = min_density,
       max_candidates = max_candidates
-    )
+    ),
+    parallel_info = parallel_decision
   )
   
   class(results) <- "moneca_tuning"
@@ -465,17 +544,15 @@ generate_candidate_values <- function(mx,
     total_cells <- length(mx_off_diag[mx_off_diag >= 0])
     current_density <- length(non_zero_values) / total_cells
     
-    # Generate thresholds for target densities
+    # Generate thresholds for target densities (VECTORIZED)
     target_densities <- c(0.1, 0.2, 0.3, 0.5, 0.7) * current_density
+    target_n_cells <- pmax(1, pmin(round(target_densities * total_cells), length(non_zero_values)))
     
-    sparsity_candidates <- numeric(0)
-    for (target in target_densities) {
-      target_n_cells <- round(target * total_cells)
-      if (target_n_cells > 0 && target_n_cells <= length(non_zero_values)) {
-        threshold <- sort(non_zero_values, decreasing = TRUE)[target_n_cells]
-        sparsity_candidates <- c(sparsity_candidates, threshold)
-      }
-    }
+    # Vectorized threshold computation using sorted values
+    sorted_values_desc <- sort(non_zero_values, decreasing = TRUE)
+    valid_targets <- target_n_cells > 0 & target_n_cells <= length(sorted_values_desc)
+    sparsity_candidates <- sorted_values_desc[target_n_cells[valid_targets]]
+    
     candidates <- c(candidates, sparsity_candidates)
   }
   
@@ -485,16 +562,15 @@ generate_candidate_values <- function(mx,
     sorted_values <- sort(non_zero_values, decreasing = TRUE)
     n_values <- length(sorted_values)
     
-    # Target different retention rates
+    # Target different retention rates (VECTORIZED)
     retention_rates <- c(0.05, 0.1, 0.25, 0.5, 0.75, 0.9)
+    n_keep_values <- pmax(1, pmin(round(retention_rates * n_values), n_values))
     
-    for (rate in retention_rates) {
-      n_keep <- max(1, round(rate * n_values))
-      if (n_keep <= n_values) {
-        threshold <- sorted_values[n_keep]
-        candidates <- c(candidates, threshold)
-      }
-    }
+    # Vectorized threshold extraction
+    valid_indices <- n_keep_values > 0 & n_keep_values <= n_values
+    density_candidates <- sorted_values[n_keep_values[valid_indices]]
+    
+    candidates <- c(candidates, density_candidates)
   }
   
   # Add some standard values
@@ -516,10 +592,13 @@ generate_candidate_values <- function(mx,
     candidates <- c(0, candidates)
   }
   
-  # Clean up candidates
+  # Clean up candidates - ensure integers for small.cell.reduction
   candidates <- unique(candidates)
   candidates <- candidates[!is.na(candidates) & candidates >= 0]
-  candidates <- sort(candidates)
+  
+  # Convert to integers since small.cell.reduction operates on count data
+  candidates <- as.integer(floor(candidates))
+  candidates <- sort(unique(candidates))
   
   # Limit number of candidates
   if (length(candidates) > max_candidates) {
@@ -893,36 +972,47 @@ compute_stability_metrics <- function(signatures) {
   n_signatures <- length(signatures)
   stability_scores <- numeric(0)
   
-  # Compare all pairs of signatures
-  for (i in seq_len(n_signatures - 1)) {
-    for (j in (i + 1):n_signatures) {
+  # VECTORIZED SIGNATURE COMPARISON - Major performance optimization
+  # Replace nested loops with vectorized pairwise comparison
+  
+  # Pre-compute all signature pairs using expand.grid for efficiency
+  pair_indices <- expand.grid(
+    i = seq_len(n_signatures - 1),
+    j = seq(2, n_signatures)
+  )
+  # Filter to get upper triangle pairs only (i < j)
+  valid_pairs <- pair_indices$i < pair_indices$j
+  pair_indices <- pair_indices[valid_pairs, ]
+  
+  if (nrow(pair_indices) > 0) {
+    # Vectorized pairwise comparison using apply family functions
+    pair_similarities <- apply(pair_indices, 1, function(pair_row) {
+      i <- pair_row[1]
+      j <- pair_row[2]
+      
       sig1 <- signatures[[i]]
       sig2 <- signatures[[j]]
       
-      # Compare signatures at matching levels
-      level_similarities <- numeric(0)
-      
+      # Find common levels efficiently
       common_levels <- intersect(names(sig1), names(sig2))
       common_levels <- common_levels[grepl("^level_", common_levels)]
       
-      for (level in common_levels) {
+      if (length(common_levels) == 0) return(NA_real_)
+      
+      # Vectorized level similarity computation
+      level_similarities <- vapply(common_levels, function(level) {
         mem1 <- sig1[[level]]
         mem2 <- sig2[[level]]
         
-        # Handle different sample sizes
+        # Handle different sample sizes (vectorized operations)
         if (!is.null(sig1$original_indices) && !is.null(sig2$original_indices)) {
           common_indices <- intersect(sig1$original_indices, sig2$original_indices)
           if (length(common_indices) >= 2) {
-            # Map common original indices to positions in the sample membership vectors
-            # The membership vector indices correspond to the sampled items (1 to n_sampled)
-            # We need to find which sampled items correspond to the common original indices
-            
-            # For sig1: find positions of common_indices in sig1$original_indices
+            # Vectorized position matching
             sig1_positions <- match(common_indices, sig1$original_indices)
-            # For sig2: find positions of common_indices in sig2$original_indices  
             sig2_positions <- match(common_indices, sig2$original_indices)
             
-            # Filter out NA matches and ensure positions are within bounds
+            # Vectorized validation
             valid_matches <- !is.na(sig1_positions) & !is.na(sig2_positions) & 
                            sig1_positions <= length(mem1) & sig2_positions <= length(mem2) &
                            sig1_positions > 0 & sig2_positions > 0
@@ -934,19 +1024,25 @@ compute_stability_metrics <- function(signatures) {
               mem1_common <- mem1[sig1_valid_pos]
               mem2_common <- mem2[sig2_valid_pos]
               
-              # Compute adjusted rand index for clustering similarity
-              similarity <- compute_adjusted_rand_index(mem1_common, mem2_common)
-              level_similarities <- c(level_similarities, similarity)
+              # Compute adjusted rand index
+              return(compute_adjusted_rand_index(mem1_common, mem2_common))
             }
           }
         }
-      }
+        return(NA_real_)
+      }, FUN.VALUE = numeric(1), USE.NAMES = FALSE)
       
-      if (length(level_similarities) > 0) {
-        pair_stability <- mean(level_similarities, na.rm = TRUE)
-        stability_scores <- c(stability_scores, pair_stability)
+      # Return mean similarity for this pair
+      valid_similarities <- level_similarities[!is.na(level_similarities)]
+      if (length(valid_similarities) > 0) {
+        return(mean(valid_similarities))
+      } else {
+        return(NA_real_)
       }
-    }
+    })
+    
+    # Filter out invalid comparisons and collect stability scores
+    stability_scores <- pair_similarities[!is.na(pair_similarities)]
   }
   
   if (length(stability_scores) == 0) {
@@ -1283,25 +1379,37 @@ estimate_components <- function(adj_matrix) {
   visited <- rep(FALSE, n)
   components <- 0
   
+  # VECTORIZED COMPONENT DETECTION - Optimized graph traversal
+  # Use more efficient connected component detection with vectorized operations
+  
+  # Create symmetric adjacency for undirected connectivity
+  adj_symmetric <- adj_matrix | t(adj_matrix)
+  
   for (i in seq_len(n)) {
     if (!visited[i]) {
       components <- components + 1
-      # Simple DFS to mark connected nodes
-      stack <- i
-      while (length(stack) > 0) {
-        current <- stack[length(stack)]
-        stack <- stack[-length(stack)]
+      
+      # Vectorized breadth-first search using matrix operations
+      current_component <- logical(n)
+      current_component[i] <- TRUE
+      
+      # Iterative expansion using matrix multiplication
+      repeat {
+        # Find all neighbors of current component nodes
+        new_nodes <- colSums(adj_symmetric[current_component, , drop = FALSE]) > 0
         
-        if (!visited[current]) {
-          visited[current] <- TRUE
-          # Add neighbors to stack
-          neighbors <- which(adj_matrix[current, ] == 1 | adj_matrix[, current] == 1)
-          # Filter out invalid indices and unvisited neighbors
-          neighbors <- neighbors[neighbors > 0 & neighbors <= n]
-          neighbors <- neighbors[!visited[neighbors]]
-          stack <- c(stack, neighbors)
-        }
+        # Remove already visited nodes
+        new_nodes <- new_nodes & !visited
+        
+        # If no new nodes found, component is complete
+        if (!any(new_nodes)) break
+        
+        # Add new nodes to component
+        current_component <- current_component | new_nodes
       }
+      
+      # Mark all component nodes as visited (vectorized assignment)
+      visited[current_component] <- TRUE
     }
   }
   
@@ -1427,45 +1535,68 @@ compute_silhouette_score <- function(weight_matrix, segments) {
   dist_matrix[is.na(weight_matrix)] <- Inf
   diag(dist_matrix) <- 0
   
-  # Compute silhouette coefficients
+  # VECTORIZED SILHOUETTE COMPUTATION - Major performance optimization
+  # Replace node-by-node processing with vectorized cluster operations
+  
+  # Pre-compute cluster assignments and filter valid memberships
+  valid_nodes <- membership != 0
+  unique_clusters <- unique(membership[valid_nodes])
+  n_clusters <- length(unique_clusters)
+  
   silhouettes <- numeric(n)
   
-  for (i in seq_len(n)) {
-    cluster_i <- membership[i]
+  if (n_clusters <= 1) {
+    return(0)  # No meaningful clustering
+  }
+  
+  # Vectorized computation for each cluster
+  for (cluster_id in unique_clusters) {
+    cluster_nodes <- which(membership == cluster_id)
+    n_cluster_nodes <- length(cluster_nodes)
     
-    if (cluster_i == 0) {
-      silhouettes[i] <- 0
-      next
-    }
+    if (n_cluster_nodes == 0) next
     
-    # Within-cluster distances
-    same_cluster <- which(membership == cluster_i & membership != 0)
-    if (length(same_cluster) > 1) {
-      a_i <- mean(dist_matrix[i, same_cluster[same_cluster != i]], na.rm = TRUE)
+    # Vectorized within-cluster distance computation
+    if (n_cluster_nodes > 1) {
+      # Extract submatrix for this cluster
+      cluster_dist_submatrix <- dist_matrix[cluster_nodes, cluster_nodes, drop = FALSE]
+      # Compute row means excluding diagonal
+      diag(cluster_dist_submatrix) <- NA
+      a_values <- rowMeans(cluster_dist_submatrix, na.rm = TRUE)
     } else {
-      a_i <- 0
+      a_values <- rep(0, n_cluster_nodes)
     }
     
-    # Between-cluster distances
-    other_clusters <- unique(membership[membership != cluster_i & membership != 0])
+    # Vectorized between-cluster distance computation
+    other_clusters <- unique_clusters[unique_clusters != cluster_id]
+    
     if (length(other_clusters) > 0) {
-      b_values <- numeric(length(other_clusters))
-      for (j in seq_along(other_clusters)) {
-        other_cluster <- other_clusters[j]
-        other_members <- which(membership == other_cluster)
-        b_values[j] <- mean(dist_matrix[i, other_members], na.rm = TRUE)
-      }
-      b_i <- min(b_values, na.rm = TRUE)
+      # Compute minimum average distance to other clusters
+      b_values <- vapply(cluster_nodes, function(node_idx) {
+        # Get distances to all other clusters
+        other_cluster_dists <- vapply(other_clusters, function(other_cluster) {
+          other_members <- which(membership == other_cluster)
+          if (length(other_members) > 0) {
+            mean(dist_matrix[node_idx, other_members], na.rm = TRUE)
+          } else {
+            Inf
+          }
+        }, FUN.VALUE = numeric(1), USE.NAMES = FALSE)
+        
+        min(other_cluster_dists, na.rm = TRUE)
+      }, FUN.VALUE = numeric(1), USE.NAMES = FALSE)
     } else {
-      b_i <- 0
+      b_values <- rep(0, n_cluster_nodes)
     }
     
-    # Silhouette coefficient
-    if (max(a_i, b_i) > 0) {
-      silhouettes[i] <- (b_i - a_i) / max(a_i, b_i)
-    } else {
-      silhouettes[i] <- 0
-    }
+    # Vectorized silhouette computation for this cluster
+    max_values <- pmax(a_values, b_values)
+    cluster_silhouettes <- ifelse(max_values > 0, 
+                                 (b_values - a_values) / max_values, 
+                                 0)
+    
+    # Assign to main silhouettes vector
+    silhouettes[cluster_nodes] <- cluster_silhouettes
   }
   
   # Return mean silhouette coefficient

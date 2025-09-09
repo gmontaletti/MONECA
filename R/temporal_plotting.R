@@ -139,77 +139,162 @@ plot_alluvial_diagram <- function(temporal_data, min_flow, color_scheme, show_la
     stop("Package 'ggalluvial' is required for alluvial plots. Install with: install.packages('ggalluvial')")
   }
   
+  # Validate input data
+  if (is.null(temporal_data$stable_labels) || length(temporal_data$stable_labels) == 0) {
+    stop("No stable labels found in temporal data")
+  }
+  
   # Prepare data for alluvial plot
   aligned_memberships <- temporal_data$stable_labels
   n_windows <- length(aligned_memberships)
   
-  # Create long format data
+  # Validate window data
+  if (n_windows < 2) {
+    stop("At least 2 time windows are required for alluvial diagram")
+  }
+  
+  # Create long format data with better error handling
   alluvial_data <- NULL
+  total_nodes <- 0
   
   for (w in 1:n_windows) {
     window_data <- aligned_memberships[[w]]
+    
+    # Validate window data structure
+    if (is.null(window_data) || nrow(window_data) == 0) {
+      warning(paste("Window", w, "contains no data, skipping"))
+      next
+    }
+    
+    # Ensure required columns exist
+    if (!all(c("name", "stable_label") %in% names(window_data))) {
+      stop(paste("Window", w, "missing required columns: name, stable_label"))
+    }
+    
     window_data$window <- w
+    window_subset <- window_data[, c("name", "stable_label", "window")]
+    
+    # Remove rows with missing values
+    window_subset <- window_subset[complete.cases(window_subset), ]
+    
+    if (nrow(window_subset) == 0) {
+      warning(paste("Window", w, "contains no complete cases, skipping"))
+      next
+    }
     
     if (is.null(alluvial_data)) {
-      alluvial_data <- window_data[, c("name", "stable_label", "window")]
+      alluvial_data <- window_subset
+      total_nodes <- length(unique(window_subset$name))
     } else {
-      alluvial_data <- rbind(alluvial_data, 
-                            window_data[, c("name", "stable_label", "window")])
+      alluvial_data <- rbind(alluvial_data, window_subset)
     }
   }
   
-  # Convert to wide format for ggalluvial
-  alluvial_wide <- reshape(alluvial_data,
-                          idvar = "name",
-                          timevar = "window",
-                          direction = "wide")
+  # Validate final data
+  if (is.null(alluvial_data) || nrow(alluvial_data) == 0) {
+    stop("No valid data found across all windows")
+  }
   
-  # Count flows
-  flow_counts <- table(alluvial_wide)
+  # Check data size to prevent memory issues
+  if (nrow(alluvial_data) > 50000) {
+    warning("Large dataset detected. Consider using min_flow to filter small flows.")
+  }
   
-  # Filter small flows
-  min_count <- max(1, floor(nrow(alluvial_wide) * min_flow))
+  # Apply minimum flow filtering at the node level
+  if (min_flow > 0) {
+    # Count how many times each node appears
+    node_counts <- table(alluvial_data$name)
+    min_appearances <- max(1, floor(total_nodes * min_flow))
+    
+    # Keep only nodes that appear frequently enough
+    frequent_nodes <- names(node_counts)[node_counts >= min_appearances]
+    
+    if (length(frequent_nodes) > 0) {
+      alluvial_data <- alluvial_data[alluvial_data$name %in% frequent_nodes, ]
+    }
+  }
+  
+  # Ensure we still have data after filtering
+  if (nrow(alluvial_data) == 0) {
+    stop("No data remaining after applying min_flow filter")
+  }
   
   # Create color palette
   all_segments <- unique(alluvial_data$stable_label)
   n_segments <- length(all_segments)
   
-  if (color_scheme == "viridis") {
-    colors <- viridis::viridis(n_segments)
-  } else if (color_scheme == "RdYlBu") {
-    colors <- RColorBrewer::brewer.pal(min(n_segments, 11), "RdYlBu")
-  } else if (color_scheme == "Set3") {
-    colors <- RColorBrewer::brewer.pal(min(n_segments, 12), "Set3")
-  } else {
-    colors <- scales::hue_pal()(n_segments)
+  if (n_segments == 0) {
+    stop("No segments found in data")
   }
+  
+  # Handle color schemes with proper error checking
+  tryCatch({
+    if (color_scheme == "viridis") {
+      if (!requireNamespace("viridis", quietly = TRUE)) {
+        warning("viridis package not available, using default colors")
+        colors <- scales::hue_pal()(n_segments)
+      } else {
+        colors <- viridis::viridis(n_segments)
+      }
+    } else if (color_scheme == "RdYlBu") {
+      if (!requireNamespace("RColorBrewer", quietly = TRUE)) {
+        warning("RColorBrewer package not available, using default colors")
+        colors <- scales::hue_pal()(n_segments)
+      } else {
+        colors <- RColorBrewer::brewer.pal(min(max(3, n_segments), 11), "RdYlBu")
+        if (n_segments > 11) {
+          colors <- colorRampPalette(colors)(n_segments)
+        }
+      }
+    } else if (color_scheme == "Set3") {
+      if (!requireNamespace("RColorBrewer", quietly = TRUE)) {
+        warning("RColorBrewer package not available, using default colors")
+        colors <- scales::hue_pal()(n_segments)
+      } else {
+        colors <- RColorBrewer::brewer.pal(min(max(3, n_segments), 12), "Set3")
+        if (n_segments > 12) {
+          colors <- colorRampPalette(colors)(n_segments)
+        }
+      }
+    } else {
+      colors <- scales::hue_pal()(n_segments)
+    }
+  }, error = function(e) {
+    warning(paste("Error in color palette generation:", e$message, ". Using default colors."))
+    colors <- scales::hue_pal()(n_segments)
+  })
   
   names(colors) <- all_segments
   
-  # Create plot
-  p <- ggplot2::ggplot(alluvial_data,
-                       ggplot2::aes(x = window, 
-                                   stratum = stable_label,
-                                   alluvium = name,
-                                   fill = stable_label)) +
-    ggalluvial::geom_flow(alpha = 0.6) +
-    ggalluvial::geom_stratum(alpha = 0.8) +
-    ggplot2::scale_fill_manual(values = colors, name = "Segment") +
-    ggplot2::scale_x_continuous(breaks = 1:n_windows,
-                               labels = paste0("W", 1:n_windows)) +
-    ggplot2::labs(x = "Time Window",
-                 y = "Number of Nodes",
-                 title = "Segment Evolution Over Time") +
-    ggplot2::theme_minimal() +
-    ggplot2::theme(legend.position = "right")
-  
-  if (show_labels) {
-    p <- p + ggalluvial::geom_text(stat = "stratum",
+  # Create plot with error handling
+  tryCatch({
+    p <- ggplot2::ggplot(alluvial_data,
+                         ggplot2::aes(x = window, 
+                                     stratum = stable_label,
+                                     alluvium = name,
+                                     fill = stable_label)) +
+      ggalluvial::geom_flow(alpha = 0.6) +
+      ggalluvial::geom_stratum(alpha = 0.8) +
+      ggplot2::scale_fill_manual(values = colors, name = "Segment") +
+      ggplot2::scale_x_continuous(breaks = 1:n_windows,
+                                 labels = paste0("W", 1:n_windows)) +
+      ggplot2::labs(x = "Time Window",
+                   y = "Number of Nodes",
+                   title = "Segment Evolution Over Time") +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(legend.position = "right")
+    
+    if (show_labels) {
+      p <- p + ggplot2::geom_text(stat = ggalluvial::StatStratum,
                                   ggplot2::aes(label = stable_label),
                                   size = 3)
-  }
-  
-  return(p)
+    }
+    
+    return(p)
+    
+  }, error = function(e) {
+    stop(paste("Error creating alluvial plot:", e$message))
+  })
 }
 
 #' Create Transition Probability Heatmap
@@ -436,4 +521,85 @@ generate_temporal_report <- function(temporal_result,
   cat("print() methods for summaries.\n")
   
   invisible(NULL)
+}
+
+#' Plot Temporal Stability Metrics
+#'
+#' Convenience function for visualizing temporal stability metrics. This is a wrapper
+#' for \code{plot_temporal_segments(type = "stability")} that provides a more intuitive
+#' function name for stability-specific visualizations.
+#'
+#' @param stability_result A temporal_stability object from \code{temporal_stability_analysis()}.
+#' @param color_scheme Character string specifying color scheme: "default", "viridis",
+#'   "RdYlBu", or "Set3". Default is "default".
+#' @param show_labels Logical indicating whether to show segment labels. Default is TRUE.
+#' @param title Character string for plot title. If NULL, auto-generated.
+#' @param ... Additional arguments passed to \code{plot_temporal_segments()}.
+#'
+#' @return A ggplot2 object showing stability metrics over time, including:
+#'   \itemize{
+#'     \item Overall stability trends
+#'     \item Number of active segments per window
+#'     \item Change point indicators
+#'     \item Volatility patterns
+#'   }
+#'
+#' @details
+#' This function creates multi-panel visualizations of stability metrics computed
+#' by \code{temporal_stability_analysis()}. The plots help identify:
+#' \itemize{
+#'   \item Periods of structural stability vs. change
+#'   \item Trends in segment formation and dissolution
+#'   \item Critical transition points
+#'   \item Overall system volatility
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' # Generate temporal data
+#' months_data <- lapply(1:12, function(m) {
+#'   generate_mobility_data(n_classes = 6, seed = m * 100)
+#' })
+#' 
+#' # Run temporal analysis
+#' temporal_result <- moneca_temporal(months_data, window_size = 3)
+#' 
+#' # Compute stability metrics
+#' stability <- temporal_stability_analysis(temporal_result)
+#' 
+#' # Plot stability metrics
+#' plot_temporal_stability(stability)
+#' 
+#' # Customize visualization
+#' plot_temporal_stability(stability, 
+#'                        color_scheme = "viridis",
+#'                        title = "Mobility Network Stability Over Time")
+#' }
+#'
+#' @seealso 
+#' \code{\link{temporal_stability_analysis}} for computing stability metrics,
+#' \code{\link{plot_temporal_segments}} for other visualization types,
+#' \code{\link{moneca_temporal}} for temporal clustering analysis
+#'
+#' @export
+plot_temporal_stability <- function(stability_result,
+                                  color_scheme = "default",
+                                  show_labels = TRUE,
+                                  title = NULL,
+                                  ...) {
+  
+  # Validate input
+  if (!inherits(stability_result, "temporal_stability")) {
+    stop("Input must be a temporal_stability object from temporal_stability_analysis()")
+  }
+  
+  # Call the main plotting function with type = "stability"
+  plot_temporal_segments(
+    temporal_result = stability_result,
+    type = "stability",
+    color_scheme = color_scheme,
+    show_labels = show_labels,
+    title = title,
+    ...
+  )
 }

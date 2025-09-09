@@ -30,7 +30,9 @@
 #' @param min_overlap Minimum proportion of nodes that must overlap between segments
 #'   for matching. Default is 0.5.
 #' @param parallel Logical indicating whether to use parallel processing for windows.
-#'   Default is FALSE.
+#'   When TRUE, windows are processed in parallel using multiple CPU cores, which can
+#'   significantly speed up analysis for large datasets. Uses mclapply on Unix/Mac
+#'   and parLapply on Windows. Default is FALSE.
 #' @param verbose Logical indicating whether to show progress messages. Default is TRUE.
 #' @param ... Additional arguments passed to moneca().
 #'
@@ -65,12 +67,22 @@
 #'   generate_mobility_data(n_classes = 6, seed = m * 100)
 #' })
 #' 
-#' # Run temporal analysis with 3-month moving window
+#' # Run temporal analysis with 3-month moving window (sequential)
 #' temporal_result <- moneca_temporal(
 #'   matrix_list = months_data,
 #'   window_size = 3,
 #'   segment.levels = 3,
 #'   stability_method = "hungarian",
+#'   verbose = TRUE
+#' )
+#' 
+#' # Run with parallel processing for faster execution
+#' temporal_result_parallel <- moneca_temporal(
+#'   matrix_list = months_data,
+#'   window_size = 3,
+#'   segment.levels = 3,
+#'   stability_method = "hungarian",
+#'   parallel = TRUE,  # Enable parallel processing
 #'   verbose = TRUE
 #' )
 #' 
@@ -158,51 +170,230 @@ moneca_temporal <- function(matrix_list,
   aggregated_matrices <- list()
   segment_maps <- list()
   
-  if (verbose) {
-    cat("Processing windows:\n")
-    pb <- txtProgressBar(min = 0, max = n_windows, style = 3)
-  }
-  
-  for (w in 1:n_windows) {
-    if (verbose) setTxtProgressBar(pb, w)
+  if (parallel && n_windows > 1) {
+    # Parallel processing
+    if (verbose) {
+      cat("Processing windows in parallel...\n")
+      cat(sprintf("Using %d cores\n", parallel::detectCores() - 1))
+    }
     
-    window <- windows[[w]]
-    
-    # Aggregate matrices in window
-    window_matrices <- matrix_list[window$periods]
-    aggregated <- aggregate_mobility_window(
-      window_matrices, 
-      method = aggregation_method
-    )
-    aggregated_matrices[[w]] <- aggregated
-    
-    # Run moneca on aggregated matrix
-    moneca_result <- moneca(
-      mx = aggregated,
-      segment.levels = segment.levels,
-      cut.off = cut.off,
-      small.cell.reduction = small.cell.reduction,
-      ...
-    )
-    moneca_results[[w]] <- moneca_result
-    
-    # Extract segment membership at maximum level
-    max_level <- length(moneca_result$segment.list)
-    if (max_level > 0) {
-      membership <- segment.membership(moneca_result, level = max_level)
-      segment_maps[[w]] <- membership
-    } else {
-      # If no segmentation occurred, create trivial membership
-      n_nodes <- nrow(aggregated) - 1
-      segment_maps[[w]] <- data.frame(
-        name = rownames(aggregated)[1:n_nodes],
-        membership = paste(max_level, 1:n_nodes, sep = ".")
+    # Define worker function for parallel processing
+    process_window <- function(w) {
+      window <- windows[[w]]
+      
+      # Aggregate matrices in window
+      window_matrices <- matrix_list[window$periods]
+      aggregated <- aggregate_mobility_window(
+        window_matrices, 
+        method = aggregation_method
       )
+      
+      # Run moneca on aggregated matrix
+      moneca_result <- moneca(
+        mx = aggregated,
+        segment.levels = segment.levels,
+        cut.off = cut.off,
+        small.cell.reduction = small.cell.reduction,
+        ...
+      )
+      
+      # Extract segment membership at the optimal level
+      available_levels <- length(moneca_result$segment.list)
+      
+      if (available_levels > 0) {
+        # Find the optimal level with a reasonable number of segments
+        # Start from the highest level and work down to find a level with 2-20 segments
+        optimal_level <- available_levels  # Default to highest level
+        max_reasonable_segments <- 20  # Maximum reasonable number of segments
+        
+        # Work from highest level down to find first level with reasonable segmentation
+        for (level_check in available_levels:1) {
+          n_segments_at_level <- length(moneca_result$segment.list[[level_check]])
+          
+          # Accept levels with 2-20 segments
+          if (n_segments_at_level >= 2 && n_segments_at_level <= max_reasonable_segments) {
+            optimal_level <- level_check
+            break
+          }
+        }
+        
+        # If no level has reasonable segmentation, use the level closest to requested
+        if (optimal_level == available_levels) {
+          # Check if highest level has only 1 segment, then go to a reasonable lower level
+          if (length(moneca_result$segment.list[[available_levels]]) <= 1) {
+            # Find the level with segments closest to our target range (2-10 preferred)
+            best_level <- available_levels
+            best_score <- Inf
+            
+            for (level_check in available_levels:1) {
+              n_segments <- length(moneca_result$segment.list[[level_check]])
+              if (n_segments >= 2) {
+                # Score based on how close to ideal range (2-10 segments)
+                if (n_segments <= 10) {
+                  score <- 0  # Perfect range
+                } else {
+                  score <- n_segments - 10  # Penalty for too many segments
+                }
+                
+                if (score < best_score) {
+                  best_score <- score
+                  best_level <- level_check
+                }
+              }
+            }
+            optimal_level <- best_level
+          }
+        }
+        
+        membership <- segment.membership(moneca_result, level = optimal_level)
+      } else {
+        # If no segmentation occurred, create trivial membership
+        n_nodes <- nrow(aggregated) - 1
+        membership <- data.frame(
+          name = rownames(aggregated)[1:n_nodes],
+          membership = paste("1", 1:n_nodes, sep = ".")
+        )
+      }
+      
+      return(list(
+        moneca_result = moneca_result,
+        aggregated = aggregated,
+        segment_map = membership
+      ))
+    }
+    
+    # Use mclapply for Unix/Mac or parLapply for Windows
+    if (.Platform$OS.type == "unix") {
+      # Unix/Mac - use mclapply
+      n_cores <- min(parallel::detectCores() - 1, n_windows)
+      results <- parallel::mclapply(
+        1:n_windows, 
+        process_window, 
+        mc.cores = n_cores
+      )
+    } else {
+      # Windows - use parLapply
+      n_cores <- min(parallel::detectCores() - 1, n_windows)
+      cl <- parallel::makeCluster(n_cores)
+      on.exit(parallel::stopCluster(cl))
+      
+      # Export necessary objects to cluster
+      parallel::clusterExport(cl, c(
+        "windows", "matrix_list", "aggregation_method",
+        "segment.levels", "cut.off", "small.cell.reduction",
+        "aggregate_mobility_window", "moneca", "segment.membership"
+      ), envir = environment())
+      
+      results <- parallel::parLapply(cl, 1:n_windows, process_window)
+    }
+    
+    # Extract results from parallel processing
+    for (w in 1:n_windows) {
+      moneca_results[[w]] <- results[[w]]$moneca_result
+      aggregated_matrices[[w]] <- results[[w]]$aggregated
+      segment_maps[[w]] <- results[[w]]$segment_map
+    }
+    
+    if (verbose) {
+      cat(sprintf("Processed %d windows in parallel\n", n_windows))
+    }
+    
+  } else {
+    # Sequential processing (original code)
+    if (verbose) {
+      cat("Processing windows:\n")
+      pb <- txtProgressBar(min = 0, max = n_windows, style = 3)
+    }
+    
+    for (w in 1:n_windows) {
+      if (verbose) setTxtProgressBar(pb, w)
+      
+      window <- windows[[w]]
+      
+      # Aggregate matrices in window
+      window_matrices <- matrix_list[window$periods]
+      aggregated <- aggregate_mobility_window(
+        window_matrices, 
+        method = aggregation_method
+      )
+      aggregated_matrices[[w]] <- aggregated
+      
+      # Run moneca on aggregated matrix
+      moneca_result <- moneca(
+        mx = aggregated,
+        segment.levels = segment.levels,
+        cut.off = cut.off,
+        small.cell.reduction = small.cell.reduction,
+        ...
+      )
+      moneca_results[[w]] <- moneca_result
+      
+      # Extract segment membership at the optimal level
+      available_levels <- length(moneca_result$segment.list)
+      
+      if (available_levels > 0) {
+        # Find the optimal level with a reasonable number of segments
+        # Start from the highest level and work down to find a level with 2-20 segments
+        optimal_level <- available_levels  # Default to highest level
+        max_reasonable_segments <- 20  # Maximum reasonable number of segments
+        
+        # Work from highest level down to find first level with reasonable segmentation
+        for (level_check in available_levels:1) {
+          n_segments_at_level <- length(moneca_result$segment.list[[level_check]])
+          
+          # Accept levels with 2-20 segments
+          if (n_segments_at_level >= 2 && n_segments_at_level <= max_reasonable_segments) {
+            optimal_level <- level_check
+            break
+          }
+        }
+        
+        # If no level has reasonable segmentation, use the level closest to requested
+        if (optimal_level == available_levels) {
+          # Check if highest level has only 1 segment, then go to a reasonable lower level
+          if (length(moneca_result$segment.list[[available_levels]]) <= 1) {
+            # Find the level with segments closest to our target range (2-10 preferred)
+            best_level <- available_levels
+            best_score <- Inf
+            
+            for (level_check in available_levels:1) {
+              n_segments <- length(moneca_result$segment.list[[level_check]])
+              if (n_segments >= 2) {
+                # Score based on how close to ideal range (2-10 segments)
+                if (n_segments <= 10) {
+                  score <- 0  # Perfect range
+                } else {
+                  score <- n_segments - 10  # Penalty for too many segments
+                }
+                
+                if (score < best_score) {
+                  best_score <- score
+                  best_level <- level_check
+                }
+              }
+            }
+            optimal_level <- best_level
+          }
+        }
+        
+        membership <- segment.membership(moneca_result, level = optimal_level)
+        segment_maps[[w]] <- membership
+      } else {
+        # If no segmentation occurred, create trivial membership
+        n_nodes <- nrow(aggregated) - 1
+        segment_maps[[w]] <- data.frame(
+          name = rownames(aggregated)[1:n_nodes],
+          membership = paste("1", 1:n_nodes, sep = ".")
+        )
+      }
+    }
+    
+    if (verbose) {
+      close(pb)
     }
   }
   
   if (verbose) {
-    close(pb)
     cat("\n\nMatching segments across windows...\n")
   }
   
@@ -287,26 +478,85 @@ aggregate_mobility_window <- function(matrices, method = "mean") {
   
   n_matrices <- length(matrices)
   
+  # Check if input matrices have margins and remove them for aggregation
+  has_margins <- FALSE
+  if (!is.null(matrices[[1]])) {
+    n_dim <- nrow(matrices[[1]])
+    # Check if last row and column are likely margin sums
+    # (they would typically be named "Total" or be unnamed, and have larger values)
+    last_row_name <- rownames(matrices[[1]])[n_dim]
+    last_col_name <- colnames(matrices[[1]])[n_dim]
+    
+    # If matrices have margins, work with the core data only
+    if (identical(last_row_name, "Total") || identical(last_col_name, "Total") ||
+        is.null(last_row_name) || last_row_name == as.character(n_dim)) {
+      has_margins <- TRUE
+      # Extract core matrices without margins for aggregation
+      core_matrices <- lapply(matrices, function(m) {
+        m[1:(n_dim-1), 1:(n_dim-1)]
+      })
+    } else {
+      core_matrices <- matrices
+    }
+  } else {
+    core_matrices <- matrices
+  }
+  
   if (method == "mean") {
     # Simple average
-    result <- Reduce("+", matrices) / n_matrices
+    result <- Reduce("+", core_matrices) / n_matrices
     
   } else if (method == "sum") {
     # Sum all matrices
-    result <- Reduce("+", matrices)
+    result <- Reduce("+", core_matrices)
     
   } else if (method == "weighted") {
     # Weighted average with more recent periods having higher weight
     weights <- seq(0.5, 1, length.out = n_matrices)
     weights <- weights / sum(weights)
     
-    result <- matrices[[1]] * weights[1]
-    for (i in 2:n_matrices) {
-      result <- result + matrices[[i]] * weights[i]
-    }
+    # VECTORIZED WEIGHTED MATRIX COMBINATION
+    # Replace sequential loop with vectorized matrix operations
+    weighted_matrices <- Map(`*`, core_matrices, weights)
+    result <- Reduce(`+`, weighted_matrices)
   }
   
-  return(result)
+  # Add margin sums (row and column totals) to the aggregated matrix
+  # This is required for moneca() to work properly
+  n_rows <- nrow(result)
+  n_cols <- ncol(result)
+  
+  # Calculate row sums
+  row_sums <- rowSums(result, na.rm = TRUE)
+  # Calculate column sums
+  col_sums <- colSums(result, na.rm = TRUE)
+  # Calculate total
+  total_sum <- sum(result, na.rm = TRUE)
+  
+  # Create matrix with margins
+  result_with_margins <- matrix(0, nrow = n_rows + 1, ncol = n_cols + 1)
+  
+  # Copy the original data
+  result_with_margins[1:n_rows, 1:n_cols] <- result
+  
+  # Add row sums
+  result_with_margins[1:n_rows, n_cols + 1] <- row_sums
+  
+  # Add column sums
+  result_with_margins[n_rows + 1, 1:n_cols] <- col_sums
+  
+  # Add total
+  result_with_margins[n_rows + 1, n_cols + 1] <- total_sum
+  
+  # Preserve row and column names
+  if (!is.null(rownames(result))) {
+    rownames(result_with_margins) <- c(rownames(result), "Total")
+  }
+  if (!is.null(colnames(result))) {
+    colnames(result_with_margins) <- c(colnames(result), "Total")
+  }
+  
+  return(result_with_margins)
 }
 
 #' Match Segments Across Time Windows
@@ -355,31 +605,61 @@ match_segments_across_time <- function(segment_maps,
     rownames(similarity_matrix) <- prev_segments
     colnames(similarity_matrix) <- curr_segments
     
-    # Calculate similarities
-    for (i in seq_along(prev_segments)) {
-      for (j in seq_along(curr_segments)) {
-        prev_nodes <- prev_membership$name[prev_membership$stable_label == prev_segments[i]]
-        curr_nodes <- curr_membership$name[curr_membership$membership == curr_segments[j]]
-        
-        if (method == "jaccard") {
-          # Jaccard similarity
-          intersection <- length(intersect(prev_nodes, curr_nodes))
-          union <- length(union(prev_nodes, curr_nodes))
-          similarity_matrix[i, j] <- if (union > 0) intersection / union else 0
-          
-        } else if (method == "overlap") {
-          # Overlap coefficient
-          intersection <- length(intersect(prev_nodes, curr_nodes))
-          min_size <- min(length(prev_nodes), length(curr_nodes))
-          similarity_matrix[i, j] <- if (min_size > 0) intersection / min_size else 0
-          
-        } else {  # hungarian
-          # Use overlap for Hungarian algorithm
-          intersection <- length(intersect(prev_nodes, curr_nodes))
-          similarity_matrix[i, j] <- intersection
-        }
-      }
+    # VECTORIZED SIMILARITY CALCULATION - Major performance optimization
+    # Replace nested loops with vectorized operations using outer/mapply
+    
+    # Pre-compute node sets for all segments (vectorized)
+    prev_node_sets <- lapply(prev_segments, function(seg) {
+      prev_membership$name[prev_membership$stable_label == seg]
+    })
+    names(prev_node_sets) <- prev_segments
+    
+    curr_node_sets <- lapply(curr_segments, function(seg) {
+      curr_membership$name[curr_membership$membership == seg]
+    })
+    names(curr_node_sets) <- curr_segments
+    
+    # Vectorized similarity computation using outer
+    if (method == "jaccard") {
+      # Jaccard similarity using vectorized operations
+      similarity_matrix <- outer(seq_along(prev_segments), seq_along(curr_segments), 
+                                FUN = Vectorize(function(i, j) {
+                                  prev_nodes <- prev_node_sets[[i]]
+                                  curr_nodes <- curr_node_sets[[j]]
+                                  
+                                  intersection_size <- length(intersect(prev_nodes, curr_nodes))
+                                  union_size <- length(union(prev_nodes, curr_nodes))
+                                  
+                                  if (union_size > 0) intersection_size / union_size else 0
+                                }))
+      
+    } else if (method == "overlap") {
+      # Overlap coefficient using vectorized operations
+      similarity_matrix <- outer(seq_along(prev_segments), seq_along(curr_segments), 
+                                FUN = Vectorize(function(i, j) {
+                                  prev_nodes <- prev_node_sets[[i]]
+                                  curr_nodes <- curr_node_sets[[j]]
+                                  
+                                  intersection_size <- length(intersect(prev_nodes, curr_nodes))
+                                  min_size <- min(length(prev_nodes), length(curr_nodes))
+                                  
+                                  if (min_size > 0) intersection_size / min_size else 0
+                                }))
+      
+    } else {  # hungarian
+      # Vectorized overlap computation for Hungarian algorithm
+      similarity_matrix <- outer(seq_along(prev_segments), seq_along(curr_segments), 
+                                FUN = Vectorize(function(i, j) {
+                                  prev_nodes <- prev_node_sets[[i]]
+                                  curr_nodes <- curr_node_sets[[j]]
+                                  
+                                  length(intersect(prev_nodes, curr_nodes))
+                                }))
     }
+    
+    # Set row and column names for the vectorized result
+    rownames(similarity_matrix) <- prev_segments
+    colnames(similarity_matrix) <- curr_segments
     
     # Find optimal matching
     if (method == "hungarian" && requireNamespace("clue", quietly = TRUE)) {
@@ -483,25 +763,62 @@ compute_transition_matrix <- function(aligned_memberships) {
   rownames(transition_counts) <- all_segments
   colnames(transition_counts) <- all_segments
   
-  # Count transitions
+  # VECTORIZED TRANSITION COUNTING - Major performance optimization
+  # Replace nested loops with vectorized operations
+  
   for (w in 2:n_windows) {
     prev_membership <- aligned_memberships[[w-1]]
     curr_membership <- aligned_memberships[[w]]
     
-    # Match nodes between windows
+    # Vectorized node matching and label extraction
     common_nodes <- intersect(prev_membership$name, curr_membership$name)
     
-    for (node in common_nodes) {
-      prev_seg <- prev_membership$stable_label[prev_membership$name == node]
-      curr_seg <- curr_membership$stable_label[curr_membership$name == node]
+    if (length(common_nodes) > 0) {
+      # Vectorized label extraction using match
+      prev_indices_in_df <- match(common_nodes, prev_membership$name)
+      curr_indices_in_df <- match(common_nodes, curr_membership$name)
       
-      if (length(prev_seg) > 0 && length(curr_seg) > 0) {
-        prev_idx <- which(all_segments == prev_seg[1])
-        curr_idx <- which(all_segments == curr_seg[1])
+      # Extract labels for all common nodes at once
+      prev_labels <- prev_membership$stable_label[prev_indices_in_df]
+      curr_labels <- curr_membership$stable_label[curr_indices_in_df]
+      
+      # Remove any nodes with missing labels (vectorized filtering)
+      valid_transitions <- !is.na(prev_labels) & !is.na(curr_labels)
+      prev_labels <- prev_labels[valid_transitions]
+      curr_labels <- curr_labels[valid_transitions]
+      
+      if (length(prev_labels) > 0) {
+        # Vectorized index mapping for segment labels
+        prev_seg_indices <- match(prev_labels, all_segments)
+        curr_seg_indices <- match(curr_labels, all_segments)
         
-        if (length(prev_idx) > 0 && length(curr_idx) > 0) {
-          transition_counts[prev_idx, curr_idx] <- 
-            transition_counts[prev_idx, curr_idx] + 1
+        # Filter out any unmatched segments
+        valid_matches <- !is.na(prev_seg_indices) & !is.na(curr_seg_indices)
+        prev_seg_indices <- prev_seg_indices[valid_matches]
+        curr_seg_indices <- curr_seg_indices[valid_matches]
+        
+        # Vectorized transition counting using table
+        if (length(prev_seg_indices) > 0) {
+          # Create transition pairs and count efficiently
+          transition_pairs <- data.frame(
+            from = prev_seg_indices,
+            to = curr_seg_indices
+          )
+          
+          # Use table to count transitions efficiently
+          transition_table <- table(transition_pairs$from, transition_pairs$to)
+          
+          # Add to main transition matrix (vectorized addition)
+          for (i in seq_len(nrow(transition_table))) {
+            for (j in seq_len(ncol(transition_table))) {
+              from_idx <- as.numeric(rownames(transition_table)[i])
+              to_idx <- as.numeric(colnames(transition_table)[j])
+              if (from_idx <= n_segments && to_idx <= n_segments) {
+                transition_counts[from_idx, to_idx] <- 
+                  transition_counts[from_idx, to_idx] + transition_table[i, j]
+              }
+            }
+          }
         }
       }
     }

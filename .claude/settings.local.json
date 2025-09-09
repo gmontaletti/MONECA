@@ -9,7 +9,11 @@
       "Bash(mkdir:*)",
       "Bash(git add:*)",
       "Bash(git mv:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "mcp__cran__search_packages",
+      "mcp__cran__get_package_info",
+      "Bash(tar:*)",
+      "mcp__sequential-thinking__sequentialthinking"
     ]
   },
   "enableAllProjectMcpServers": false

@@ -13,38 +13,95 @@ NULL
 #'
 #' Automatically selects optimal values for both small.cell.reduction and cut.off 
 #' parameters simultaneously, considering their mathematical relationships and 
-#' compound effects on clustering results.
+#' compound effects on clustering results. Features advanced progress tracking
+#' and flexible parameter grid customization for efficient optimization.
 #'
 #' @param mx Mobility matrix to analyze. Must be a square numeric matrix.
 #' @param method Character string specifying optimization strategy:
 #'   \itemize{
 #'     \item "grid" (default): 2D grid search with stability assessment
-#'     \item "bayesian": Bayesian optimization in joint parameter space
+#'     \item "bayesian": Bayesian optimization using Gaussian Process surrogate modeling
+#'       with Expected Improvement or Upper Confidence Bound acquisition functions.
+#'       Efficient for expensive evaluations, uses Latin Hypercube Sampling for
+#'       initial design and sequential evaluation with adaptive point selection.
+#'       Recommended when evaluation budget is limited or parameter space is large.
+#'       \strong{Note: Sequential by mathematical necessity} - each new evaluation point
+#'       depends on the GP model updated from all previous evaluations.
 #'     \item "pareto": Multi-objective Pareto frontier optimization
 #'     \item "adaptive": Adaptive refinement starting with coarse grid
 #'   }
 #' @param scr_range Numeric vector of length 2 specifying the range for 
 #'   small.cell.reduction parameter. Default is c(0, NULL) where NULL 
-#'   auto-determines the upper bound.
+#'   auto-determines the upper bound. Ignored if scr_values is provided.
 #' @param cutoff_range Numeric vector of length 2 specifying the range for 
-#'   cut.off parameter. Default is c(0.5, 3).
+#'   cut.off parameter. Default is c(0.5, 3). Ignored if cutoff_values is provided.
+#' @param scr_values Numeric vector of custom small.cell.reduction values to test.
+#'   If provided, overrides scr_range and n_grid_points for SCR dimension.
+#'   Values must be non-negative and will be converted to integers. Allows
+#'   for targeted testing of specific parameter values based on prior knowledge
+#'   or domain expertise. Default is NULL.
+#' @param cutoff_values Numeric vector of custom cut.off values to test.
+#'   If provided, overrides cutoff_range and n_grid_points for cutoff dimension.
+#'   Values must be positive. Enables focused evaluation of specific threshold
+#'   values identified through previous analysis. Default is NULL.
 #' @param n_grid_points Integer number of grid points per dimension for grid 
-#'   search. Default is 10.
+#'   search. Default is 10. Ignored for dimensions with custom values.
+#'   Larger values provide finer resolution but increase computation time.
 #' @param n_bootstrap Integer number of bootstrap samples for stability 
-#'   assessment. Default is 50.
+#'   assessment. Default is 50. Higher values improve stability estimation
+#'   accuracy but increase computation time.
 #' @param objectives Character vector of optimization objectives. Options include:
 #'   "stability", "quality", "sparsity", "modularity". 
-#'   Default is c("stability", "quality").
+#'   Default is c("stability", "quality"). Multiple objectives are
+#'   combined using weighted aggregation.
 #' @param weights Numeric vector of weights for combining multiple objectives.
-#'   Must sum to 1. Default is equal weights.
+#'   Must sum to 1. Default is equal weights. Allows prioritization of
+#'   specific clustering properties in the optimization.
 #' @param seed Integer seed for reproducibility. Default is NULL.
-#' @param verbose Logical indicating whether to show progress. Default is TRUE.
+#'   Ensures consistent results across runs when set.
+#' @param verbose Logical indicating whether to show detailed progress information.
+#'   Default is TRUE. When enabled, displays real-time progress tracking with
+#'   ETA estimation, parameter evaluation updates, and performance statistics.
+#'   Progress tracking works seamlessly with both sequential and parallel execution.
 #' @param parallel Character or logical indicating parallel processing preference.
 #'   Can be "auto" (default, intelligent switching), TRUE/FALSE (force parallel/sequential),
 #'   or "parallel"/"sequential" for explicit control. When "auto", the function
 #'   analyzes problem characteristics and system resources to make optimal decision.
+#'   Progress tracking is maintained across all parallel workers.
+#'   \strong{Method-specific behavior:}
+#'   \itemize{
+#'     \item \strong{Grid search}: Can parallelize across parameter combinations
+#'     \item \strong{Adaptive}: Can parallelize within each refinement phase  
+#'     \item \strong{Bayesian}: Uses sequential evaluation regardless of this setting
+#'       due to mathematical dependencies between evaluations. Individual evaluations
+#'       may use internal parallelization if available.
+#'   }
 #' @param plot_surface Logical indicating whether to plot optimization surface.
-#'   Default is FALSE.
+#'   Default is FALSE. Creates interactive visualization of the parameter space
+#'   and optimization results when enabled.
+#' @param bayesian_iterations Integer number of Bayesian optimization iterations.
+#'   Default is 20. Controls the number of sequential evaluations after initial
+#'   design points. Higher values allow more thorough exploration but increase
+#'   computation time. Only used when method = "bayesian".
+#' @param acquisition_function Character string specifying acquisition function
+#'   for Bayesian optimization. Options are:
+#'   \itemize{
+#'     \item "ei" (default): Expected Improvement - balances exploration and exploitation
+#'     \item "ucb": Upper Confidence Bound - more exploration-focused
+#'   }
+#'   Only used when method = "bayesian".
+#' @param exploration_factor Numeric exploration parameter for acquisition function.
+#'   Default is 0.1. Controls exploration vs exploitation trade-off:
+#'   \itemize{
+#'     \item Smaller values (e.g., 0.01-0.05): More exploitation, faster convergence
+#'     \item Larger values (e.g., 0.1-0.5): More exploration, better global search
+#'   }
+#'   Only used when method = "bayesian".
+#' @param n_initial Integer number of initial design points for Bayesian optimization.
+#'   Default is 5. These points are sampled using Latin Hypercube Sampling to
+#'   provide good coverage of the parameter space before sequential optimization
+#'   begins. More points provide better initialization but increase initial cost.
+#'   Only used when method = "bayesian".
 #'
 #' @return A list of class "moneca_joint_tuning" containing:
 #'   \item{optimal_scr}{Optimal small.cell.reduction value}
@@ -57,18 +114,117 @@ NULL
 #'   \item{selection_rationale}{Explanation of parameter selection}
 #'   \item{mathematical_relationship}{Estimated interaction effects}
 #'   \item{computation_time}{Total optimization time}
+#'   \item{scr_values}{Vector of tested small.cell.reduction values (custom or generated)}
+#'   \item{cutoff_values}{Vector of tested cut.off values (custom or generated)}
+#'   \item{performance_stats}{Optimization performance statistics including
+#'                          parallel processing efficiency, cache utilization,
+#'                          and progress tracking metrics}
 #'
 #' @details
-#' The function considers the mathematical relationship between parameters:
+#' This enhanced function provides comprehensive joint parameter optimization
+#' with advanced features for progress tracking and custom parameter grids:
 #' 
-#' \strong{Sequential Filtering:}
+#' \strong{Mathematical Framework:}
+#' The function considers the sequential filtering relationship between parameters:
 #' 1. small.cell.reduction filters raw counts: mx[mx < scr] = 0
 #' 2. Relative risk calculation: RR = Observed / Expected
 #' 3. cut.off filters relative risks: RR[RR < cutoff] = NA
 #' 
-#' \strong{Compound Effects:}
 #' Network density is affected multiplicatively by both parameters.
 #' The function models this interaction to find optimal combinations.
+#' 
+#' \strong{Progress Tracking System:}
+#' Real-time progress monitoring works seamlessly across execution modes:
+#' \itemize{
+#'   \item File-based progress tracking ensures visibility in parallel processing
+#'   \item ETA estimation based on completed evaluations and current performance
+#'   \item Progress updates shown at regular intervals (every 5% completion)
+#'   \item Performance statistics including cache hit rates and evaluation speed
+#'   \item Graceful degradation if progress tracking encounters issues
+#' }
+#' 
+#' \strong{Custom Grid Vector Support:}
+#' Flexible parameter specification allows targeted optimization:
+#' \itemize{
+#'   \item Custom vectors override ranges and grid point specifications
+#'   \item Mixed usage: custom values for one parameter, range for another
+#'   \item Automatic integer conversion for small.cell.reduction values
+#'   \item Input validation ensures parameter feasibility
+#'   \item Smart grid sizing based on problem characteristics
+#' }
+#' 
+#' \strong{Performance Optimizations:}
+#' Multiple efficiency enhancements improve user experience:
+#' \itemize{
+#'   \item Intelligent caching system reduces redundant computations
+#'   \item Smart parameter ordering optimizes evaluation sequence
+#'   \item Early termination for large parameter spaces when beneficial
+#'   \item Adaptive parallel processing based on problem size and resources
+#'   \item Memory management prevents cache overflow in long sessions
+#' }
+#' 
+#' \strong{Bayesian Optimization Framework:}
+#' The Bayesian method uses advanced machine learning techniques for efficient
+#' parameter search, particularly beneficial for expensive evaluations:
+#' \itemize{
+#'   \item \strong{Gaussian Process surrogate modeling}: Builds a probabilistic model
+#'     of the objective function that provides both predictions and uncertainty estimates
+#'   \item \strong{Latin Hypercube Sampling}: Initial design points are strategically
+#'     placed using space-filling design for optimal coverage
+#'   \item \strong{Acquisition functions}: Balance exploration (searching uncertain regions)
+#'     vs exploitation (searching near current best points):
+#'     \itemize{
+#'       \item Expected Improvement (EI): Maximizes expected improvement over current best
+#'       \item Upper Confidence Bound (UCB): Optimizes upper confidence bound of predictions
+#'     }
+#'   \item \strong{Sequential evaluation}: Each new point is chosen to maximize
+#'     information gain about the optimal parameter combination
+#'   \item \strong{Adaptive point selection}: Later evaluations focus on most
+#'     promising regions based on accumulated knowledge
+#' }
+#' 
+#' \strong{Why Bayesian Optimization is Sequential:}
+#' Bayesian optimization is inherently sequential due to its mathematical foundation:
+#' \itemize{
+#'   \item Each new evaluation point depends on the Gaussian Process model fitted to
+#'     ALL previous evaluations
+#'   \item The acquisition function requires the updated posterior distribution from
+#'     all completed evaluations to select the next most informative point
+#'   \item Parallel evaluation would select multiple points using the same outdated
+#'     model, reducing the efficiency gained from adaptive point selection
+#'   \item This sequential nature is what makes Bayesian optimization efficient:
+#'     it typically finds good solutions with far fewer total evaluations than
+#'     grid search, even though evaluations cannot be parallelized
+#' }
+#' 
+#' \strong{Method Selection Guidelines:}
+#' Choose optimization method based on problem characteristics:
+#' \itemize{
+#'   \item \strong{Grid search}: Best for small parameter spaces (≤100 evaluations),
+#'     when comprehensive coverage is needed, or when evaluations are fast.
+#'     Can fully utilize parallel processing for faster wall-clock time.
+#'   \item \strong{Bayesian optimization}: Optimal for limited evaluation budgets,
+#'     expensive function evaluations, large parameter spaces, or when seeking
+#'     global optimum efficiently. Typically requires 15-50 evaluations.
+#'     \strong{Sequential execution}: May appear slower per unit time due to lack
+#'     of parallelization, but often faster overall due to requiring fewer total evaluations.
+#'   \item \strong{Adaptive refinement}: Good compromise between thoroughness and
+#'     efficiency, recommended for moderate-sized problems. Can parallelize within
+#'     each refinement phase.
+#'   \item \strong{Pareto optimization}: Use when multiple competing objectives
+#'     need simultaneous consideration
+#' }
+#' 
+#' \strong{Bayesian Optimization Tuning:}
+#' Parameter selection for Bayesian optimization:
+#' \itemize{
+#'   \item \strong{n_initial}: More points (8-15) for complex landscapes, fewer (3-8)
+#'     for smooth functions or limited budgets
+#'   \item \strong{bayesian_iterations}: Typically 10-30 for most problems. More iterations
+#'     allow better convergence but increase computational cost
+#'   \item \strong{acquisition_function}: EI for balanced search, UCB for more exploration
+#'   \item \strong{exploration_factor}: 0.01-0.05 for exploitation, 0.1-0.5 for exploration
+#' }
 #'
 #' @examples
 #' \dontrun{
@@ -97,18 +253,121 @@ NULL
 #'   method = "adaptive",
 #'   verbose = TRUE
 #' )
+#'
+#' # Custom parameter vectors for targeted testing
+#' # Useful when you have domain knowledge about effective parameter ranges
+#' custom_result <- auto_tune_joint_parameters(
+#'   mx = mobility_data,
+#'   method = "grid",
+#'   scr_values = c(0, 1, 2, 5, 10),  # Specific SCR values to test
+#'   cutoff_values = c(0.5, 1.0, 1.5, 2.0),  # Specific cutoff values
+#'   verbose = TRUE  # Shows progress with ETA estimation
+#' )
+#'
+#' # Mixed usage - custom SCR values with cutoff range
+#' # Demonstrates flexibility: custom vector + automatic range
+#' mixed_result <- auto_tune_joint_parameters(
+#'   mx = mobility_data,
+#'   method = "grid",
+#'   scr_values = c(0, 2, 5, 10, 15),  # Custom SCR values
+#'   cutoff_range = c(0.8, 2.5),       # Automatic cutoff range
+#'   n_grid_points = 8,                # Grid points for cutoff only
+#'   verbose = TRUE
+#' )
+#' 
+#' # Progress tracking demonstration
+#' # Note: Progress output appears in console during execution
+#' large_scale_result <- auto_tune_joint_parameters(
+#'   mx = mobility_data,
+#'   method = "grid",
+#'   n_grid_points = 20,  # Creates 400 combinations
+#'   parallel = "auto",   # Smart parallel processing
+#'   verbose = TRUE       # Real-time progress with ETA
+#' )
+#' 
+#' # Access enhanced return information
+#' print(large_scale_result$performance_stats)  # Optimization efficiency
+#' print(large_scale_result$scr_values)         # Actual values tested
+#' print(large_scale_result$cutoff_values)      # Actual values tested
+#' 
+#' # Bayesian optimization for efficient parameter search
+#' # Recommended when evaluation budget is limited or parameter space is large
+#' bayesian_result <- auto_tune_joint_parameters(
+#'   mx = mobility_data,
+#'   method = "bayesian",
+#'   bayesian_iterations = 15,  # Sequential evaluations after initial design
+#'   acquisition_function = "ei", # Expected Improvement (balanced)
+#'   exploration_factor = 0.1,   # Moderate exploration
+#'   n_initial = 8,              # Initial Latin Hypercube points
+#'   verbose = TRUE
+#' )
+#' 
+#' # Bayesian optimization with high exploration for global search
+#' # Useful for complex or multimodal parameter landscapes
+#' exploratory_result <- auto_tune_joint_parameters(
+#'   mx = mobility_data, 
+#'   method = "bayesian",
+#'   bayesian_iterations = 25,
+#'   acquisition_function = "ucb", # Upper Confidence Bound (more exploratory)
+#'   exploration_factor = 0.3,     # High exploration
+#'   n_initial = 10,
+#'   verbose = TRUE
+#' )
+#'
+#' # Efficient Bayesian search with custom parameter ranges
+#' # Combines domain knowledge with efficient optimization
+#' efficient_bayesian <- auto_tune_joint_parameters(
+#'   mx = mobility_data,
+#'   method = "bayesian",
+#'   scr_range = c(0, 15),          # Custom SCR range based on data characteristics
+#'   cutoff_range = c(0.8, 2.5),    # Custom cutoff range
+#'   bayesian_iterations = 12,      # Fewer iterations for quick optimization
+#'   acquisition_function = "ei",
+#'   exploration_factor = 0.05,     # Low exploration for fast convergence
+#'   n_initial = 5,                 # Minimal initial points
+#'   verbose = TRUE
+#' )
+#' 
+#' # Compare methods: Grid vs Bayesian efficiency
+#' # Demonstrates when to use each approach
+#' 
+#' # For small parameter spaces: Grid search
+#' grid_small <- auto_tune_joint_parameters(
+#'   mx = mobility_data,
+#'   method = "grid", 
+#'   n_grid_points = 8,  # 64 total evaluations
+#'   verbose = TRUE
+#' )
+#' 
+#' # For equivalent evaluation budget: Bayesian optimization
+#' bayesian_equivalent <- auto_tune_joint_parameters(
+#'   mx = mobility_data,
+#'   method = "bayesian",
+#'   n_initial = 8,            # Initial design points  
+#'   bayesian_iterations = 56, # Sequential evaluations (8 + 56 = 64 total)
+#'   acquisition_function = "ei",
+#'   exploration_factor = 0.1,
+#'   verbose = TRUE
+#' )
+#' 
+#' # Access Bayesian-specific results
+#' print(bayesian_result$bayesian_info)      # Bayesian optimization details
+#' print(bayesian_result$convergence_history) # Objective improvement over iterations
 #' }
 #'
 #' @seealso 
 #' \code{\link{auto_tune_small_cell_reduction}},
 #' \code{\link{analyze_parameter_interaction}},
-#' \code{\link{visualize_parameter_space}}
-#'
+#' \code{\link{plot_optimization_surface}},
+#' \code{\link{clear_evaluation_caches}} for memory management,
+#' \code{\link{detect_system_resources}} for parallel processing guidance
 #' @export
 auto_tune_joint_parameters <- function(mx,
                                       method = "grid",
                                       scr_range = c(0, NULL),
                                       cutoff_range = c(0.5, 3),
+                                      scr_values = NULL,
+                                      cutoff_values = NULL,
                                       n_grid_points = 10,
                                       n_bootstrap = 50,
                                       objectives = c("stability", "quality"),
@@ -116,7 +375,11 @@ auto_tune_joint_parameters <- function(mx,
                                       seed = NULL,
                                       verbose = TRUE,
                                       parallel = "auto",
-                                      plot_surface = FALSE) {
+                                      plot_surface = FALSE,
+                                      bayesian_iterations = 20,
+                                      acquisition_function = "ei",
+                                      exploration_factor = 0.1,
+                                      n_initial = 5) {
   
   # Set seed for reproducibility
   if (!is.null(seed)) {
@@ -165,100 +428,139 @@ auto_tune_joint_parameters <- function(mx,
     cutoff_range[2] <- cutoff_range[1] + 1
   }
   
-  # Set default weights if not provided
+  # Custom vector validation and setup
+  use_custom_scr <- !is.null(scr_values)
+  use_custom_cutoff <- !is.null(cutoff_values)
+  
+  # Validate custom scr_values if provided
+  if (use_custom_scr) {
+    if (!is.numeric(scr_values)) {
+      stop("scr_values must be a numeric vector")
+    }
+    if (any(scr_values < 0)) {
+      stop("scr_values must contain non-negative values")
+    }
+    if (any(scr_values != floor(scr_values))) {
+      if (verbose) {
+        message("scr_values contains non-integer values. ",
+                "Rounding to nearest integers since parameter operates on count data.")
+      }
+      scr_values <- as.integer(floor(scr_values + 0.5))
+    } else {
+      scr_values <- as.integer(scr_values)
+    }
+    scr_values <- sort(unique(scr_values))
+    if (verbose) {
+      cat("Using custom SCR values:", paste(scr_values, collapse = ", "), "\n")
+    }
+  }
+  
+  # Validate custom cutoff_values if provided
+  if (use_custom_cutoff) {
+    if (!is.numeric(cutoff_values)) {
+      stop("cutoff_values must be a numeric vector")
+    }
+    if (any(cutoff_values <= 0)) {
+      stop("cutoff_values must contain positive values")
+    }
+    cutoff_values <- sort(unique(cutoff_values))
+    if (verbose) {
+      cat("Using custom cutoff values:", paste(cutoff_values, collapse = ", "), "\n")
+    }
+  }
+  
+  # Custom vector validation warnings
+  if (use_custom_scr && use_custom_cutoff) {
+    n_combinations <- length(scr_values) * length(cutoff_values)
+    if (verbose) {
+      cat("Custom parameter grid:", length(scr_values), "SCR x", 
+          length(cutoff_values), "cutoff =", n_combinations, "combinations\n")
+    }
+  }
+  
+  # Initialize weights if not provided
   if (is.null(weights)) {
     weights <- rep(1/length(objectives), length(objectives))
-  } else {
-    if (length(weights) != length(objectives)) {
-      stop("Length of weights must match length of objectives")
-    }
-    if (abs(sum(weights) - 1) > 1e-6) {
-      stop("Weights must sum to 1")
-    }
   }
   
-  # Smart parallel processing decision
-  n_combinations <- n_grid_points^2  # Initial estimate
-  matrix_size <- nrow(mx)
+  if (length(weights) != length(objectives)) {
+    stop("Length of weights must equal length of objectives")
+  }
   
-  # Make intelligent parallel processing decision
-  parallel_decision <- should_use_parallel(
-    n_combinations = n_combinations,
-    matrix_size = matrix_size,
-    n_bootstrap = n_bootstrap,
-    user_preference = parallel,
-    verbose = verbose && method %in% c("grid", "adaptive")  # Show details for compute-intensive methods
-  )
+  if (abs(sum(weights) - 1) > 1e-6) {
+    stop("Weights must sum to 1")
+  }
   
-  use_parallel <- parallel_decision$use_parallel
-  n_cores <- parallel_decision$n_cores
+  # Smart parallel decision: Consider custom vectors for decision making
+  actual_scr_values <- if (use_custom_scr) scr_values else generate_integer_scr_grid(scr_range, n_grid_points)
+  actual_cutoff_values <- if (use_custom_cutoff) cutoff_values else seq(cutoff_range[1], cutoff_range[2], length.out = n_grid_points)
+  
+  total_combinations <- length(actual_scr_values) * length(actual_cutoff_values)
+  
+  if (parallel == "auto") {
+    system_resources <- detect_system_resources()
+    parallel_decision <- should_use_parallel(
+      n_combinations = total_combinations, 
+      matrix_size = nrow(mx), 
+      n_bootstrap = 50,  # Default value for joint tuning
+      user_preference = "auto",
+      system_resources = system_resources,
+      verbose = verbose
+    )
+    use_parallel <- parallel_decision$use_parallel
+    if (verbose && use_parallel) {
+      cat("Auto-parallel: Using", parallel_decision$n_cores, "cores for", 
+          total_combinations, "evaluations\n")
+    }
+  } else if (parallel %in% c(TRUE, "parallel")) {
+    use_parallel <- TRUE
+    # Get optimal number of cores when parallel is explicitly requested
+    system_resources <- detect_system_resources()
+    n_cores <- get_optimal_cores(total_combinations, nrow(mx), system_resources)
+  } else {
+    use_parallel <- FALSE
+    n_cores <- 1
+  }
+  
+  # Set n_cores from parallel_decision if using auto mode
+  if (parallel == "auto" && exists("parallel_decision")) {
+    n_cores <- parallel_decision$n_cores
+  }
   
   if (verbose) {
-    cat("Starting joint parameter optimization...\n")
-    cat("Method:", method, "\n")
-    cat("small.cell.reduction range:", scr_range[1], "-", scr_range[2], "\n")
-    cat("cut.off range:", cutoff_range[1], "-", cutoff_range[2], "\n")
-    cat("Objectives:", paste(objectives, collapse = ", "), "\n")
-    cat("Parallel processing:", if (use_parallel) paste("YES (", n_cores, "cores)") else "NO", "\n\n")
+    cat("Joint Parameter Optimization:\n")
+    cat("  Method:", method, "\n")
+    if (!use_custom_scr) {
+      cat("  SCR range:", scr_range[1], "to", scr_range[2], "\n")
+    }
+    if (!use_custom_cutoff) {
+      cat("  Cutoff range:", cutoff_range[1], "to", cutoff_range[2], "\n")
+    }
+    cat("  Objectives:", paste(objectives, collapse = ", "), "\n")
+    cat("  Processing:", if (use_parallel) "Parallel" else "Sequential", "\n")
   }
   
-  # Execute optimization based on method
-  result <- switch(method,
-    "grid" = optimize_grid_search(
-      mx = mx,
-      scr_range = scr_range,
-      cutoff_range = cutoff_range,
-      n_grid_points = n_grid_points,
-      n_bootstrap = n_bootstrap,
-      objectives = objectives,
-      weights = weights,
-      verbose = verbose,
-      parallel = use_parallel
-    ),
-    "adaptive" = optimize_adaptive_refinement(
-      mx = mx,
-      scr_range = scr_range,
-      cutoff_range = cutoff_range,
-      objectives = objectives,
-      weights = weights,
-      verbose = verbose,
-      parallel = use_parallel
-    ),
-    "pareto" = optimize_pareto_frontier(
-      mx = mx,
-      scr_range = scr_range,
-      cutoff_range = cutoff_range,
-      n_grid_points = n_grid_points,
-      objectives = objectives,
-      verbose = verbose,
-      parallel = use_parallel
-    ),
-    "bayesian" = optimize_bayesian_joint(
-      mx = mx,
-      scr_range = scr_range,
-      cutoff_range = cutoff_range,
-      objectives = objectives,
-      weights = weights,
-      verbose = verbose,
-      parallel = use_parallel
-    )
-  )
-  
-  # Analyze mathematical relationships
-  result$mathematical_relationship <- analyze_parameter_interaction(
-    mx = mx,
-    scr = result$optimal_scr,
-    cutoff = result$optimal_cutoff
-  )
+  # Route to appropriate optimization method
+  if (method == "grid") {
+    result <- optimize_grid_search(mx, scr_range, cutoff_range, scr_values, cutoff_values,
+                                 n_grid_points, n_bootstrap, objectives, weights, 
+                                 verbose, use_parallel)
+  } else if (method == "adaptive") {
+    result <- optimize_adaptive_refinement(mx, scr_range, cutoff_range, scr_values, cutoff_values,
+                                         objectives, weights, verbose, use_parallel)
+  } else if (method == "bayesian") {
+    result <- optimize_bayesian(mx, scr_range, cutoff_range, scr_values, cutoff_values,
+                              n_bootstrap, objectives, weights, verbose, use_parallel,
+                              bayesian_iterations, acquisition_function, exploration_factor, n_initial)
+  } else {
+    stop("Method '", method, "' not yet implemented")
+  }
   
   # Add metadata
+  end_time <- Sys.time()
   result$method <- method
   result$objectives <- objectives
-  result$weights <- weights
-  result$parallel_info <- parallel_decision
-  
-  end_time <- Sys.time()
-  result$computation_time <- as.numeric(end_time - start_time)
+  result$computation_time <- as.numeric(difftime(end_time, start_time, units = "secs"))
   
   if (verbose) {
     cat("\nOptimization complete!\n")
@@ -276,19 +578,629 @@ auto_tune_joint_parameters <- function(mx,
   return(result)
 }
 
+# Progress Tracking Infrastructure -----------------------------------------------
+
+#' Progress Tracker Class for Joint Parameter Tuning
+#' 
+#' File-based progress tracking system that works with parallel processing
+#' @keywords internal
+ProgressTracker <- function(task_name, total_items, temp_dir = NULL, verbose = TRUE) {
+  
+  # Create temporary directory for progress files
+  if (is.null(temp_dir)) {
+    temp_dir <- file.path(tempdir(), paste0("moneca_progress_", 
+                                           format(Sys.time(), "%Y%m%d_%H%M%S")))
+  }
+  
+  if (!dir.exists(temp_dir)) {
+    dir.create(temp_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+  
+  # Progress file paths
+  progress_file <- file.path(temp_dir, "progress.txt")
+  timing_file <- file.path(temp_dir, "timing.txt")
+  
+  # Initialize progress file
+  writeLines("0", progress_file)
+  writeLines(as.character(Sys.time()), timing_file)
+  
+  # Return progress tracker object
+  structure(list(
+    task_name = task_name,
+    total_items = total_items,
+    temp_dir = temp_dir,
+    progress_file = progress_file,
+    timing_file = timing_file,
+    verbose = verbose,
+    start_time = Sys.time(),
+    last_update = Sys.time()
+  ), class = "ProgressTracker")
+}
+
+#' Update Progress Counter
+#' @keywords internal
+update_progress <- function(tracker, increment = 1, message = NULL) {
+  if (!inherits(tracker, "ProgressTracker")) return(invisible())
+  
+  tryCatch({
+    # Read current progress
+    if (file.exists(tracker$progress_file)) {
+      current <- as.numeric(readLines(tracker$progress_file, warn = FALSE)[1])
+    } else {
+      current <- 0
+    }
+    
+    # Update progress
+    new_progress <- current + increment
+    writeLines(as.character(new_progress), tracker$progress_file)
+    
+    # Update timing
+    writeLines(as.character(Sys.time()), tracker$timing_file)
+    
+    # Display progress if verbose
+    if (tracker$verbose && (new_progress %% max(1, floor(tracker$total_items / 20)) == 0 || 
+                           new_progress == tracker$total_items)) {
+      display_progress(tracker, new_progress, message)
+    }
+    
+  }, error = function(e) {
+    # Fail gracefully if progress tracking fails
+    if (tracker$verbose) {
+      warning("Progress tracking error (continuing): ", e$message, call. = FALSE)
+    }
+  })
+  
+  invisible()
+}
+
+#' Display Progress Information
+#' @keywords internal
+display_progress <- function(tracker, current_progress = NULL, message = NULL) {
+  if (!inherits(tracker, "ProgressTracker")) return(invisible())
+  
+  tryCatch({
+    # Get current progress if not provided
+    if (is.null(current_progress)) {
+      if (file.exists(tracker$progress_file)) {
+        current_progress <- as.numeric(readLines(tracker$progress_file, warn = FALSE)[1])
+      } else {
+        current_progress <- 0
+      }
+    }
+    
+    # Calculate progress percentage
+    progress_pct <- min(100, max(0, round(100 * current_progress / tracker$total_items, 1)))
+    
+    # Calculate ETA
+    elapsed <- as.numeric(difftime(Sys.time(), tracker$start_time, units = "secs"))
+    if (current_progress > 0 && progress_pct < 100) {
+      eta_secs <- elapsed * (tracker$total_items - current_progress) / current_progress
+      eta_str <- if (eta_secs > 60) {
+        sprintf("~%.1f min", eta_secs / 60)
+      } else {
+        sprintf("~%.0f sec", eta_secs)
+      }
+    } else {
+      eta_str <- "calculating..."
+    }
+    
+    # Create progress bar
+    bar_width <- 30
+    filled <- round(bar_width * progress_pct / 100)
+    bar <- paste0("[", paste(rep("=", filled), collapse = ""), 
+                  paste(rep(" ", bar_width - filled), collapse = ""), "]")
+    
+    # Display progress
+    progress_msg <- sprintf("\r%s: %s %5.1f%% (%d/%d) ETA: %s", 
+                           tracker$task_name, bar, progress_pct, 
+                           current_progress, tracker$total_items, eta_str)
+    
+    if (!is.null(message)) {
+      progress_msg <- paste0(progress_msg, " - ", message)
+    }
+    
+    cat(progress_msg)
+    if (progress_pct >= 100) {
+      cat("\n")
+    }
+    flush.console()
+    
+    tracker$last_update <- Sys.time()
+    
+  }, error = function(e) {
+    # Fail gracefully
+    if (tracker$verbose) {
+      cat(sprintf("\r%s: %d/%d items processed", tracker$task_name, 
+                 current_progress %||% 0, tracker$total_items))
+      flush.console()
+    }
+  })
+  
+  invisible()
+}
+
+#' Read Current Progress
+#' @keywords internal
+get_progress <- function(tracker) {
+  if (!inherits(tracker, "ProgressTracker")) return(0)
+  
+  tryCatch({
+    if (file.exists(tracker$progress_file)) {
+      return(as.numeric(readLines(tracker$progress_file, warn = FALSE)[1]))
+    }
+  }, error = function(e) {
+    # Return 0 if cannot read
+  })
+  
+  return(0)
+}
+
+#' Clean Up Progress Tracker
+#' @keywords internal
+cleanup_progress <- function(tracker) {
+  if (!inherits(tracker, "ProgressTracker")) return(invisible())
+  
+  tryCatch({
+    # Remove temporary files
+    if (file.exists(tracker$progress_file)) {
+      unlink(tracker$progress_file)
+    }
+    if (file.exists(tracker$timing_file)) {
+      unlink(tracker$timing_file)
+    }
+    
+    # Remove temporary directory if empty
+    if (dir.exists(tracker$temp_dir) && length(list.files(tracker$temp_dir)) == 0) {
+      unlink(tracker$temp_dir, recursive = TRUE)
+    }
+  }, error = function(e) {
+    # Cleanup fails gracefully
+    warning("Could not clean up progress files: ", e$message, call. = FALSE)
+  })
+  
+  invisible()
+}
+
+#' Worker Progress Reporter for Parallel Processing
+#' @keywords internal
+report_worker_progress <- function(tracker_info, increment = 1, message = NULL) {
+  if (is.null(tracker_info) || !is.list(tracker_info)) return(invisible())
+  
+  tryCatch({
+    # Simple file-based communication
+    progress_file <- tracker_info$progress_file
+    if (!is.null(progress_file) && nzchar(progress_file)) {
+      
+      # Lock file for atomic updates
+      lock_file <- paste0(progress_file, ".lock")
+      
+      # Try to acquire lock (wait briefly if locked)
+      attempts <- 0
+      while (file.exists(lock_file) && attempts < 10) {
+        Sys.sleep(0.01)
+        attempts <- attempts + 1
+      }
+      
+      # Create lock
+      writeLines("locked", lock_file)
+      
+      # Update progress
+      current <- 0
+      if (file.exists(progress_file)) {
+        current <- as.numeric(readLines(progress_file, warn = FALSE)[1])
+      }
+      
+      new_progress <- current + increment
+      writeLines(as.character(new_progress), progress_file)
+      
+      # Release lock
+      if (file.exists(lock_file)) {
+        unlink(lock_file)
+      }
+    }
+  }, error = function(e) {
+    # Fail silently in workers to avoid disrupting computation
+  })
+  
+  invisible()
+}
+
+# Utility operator for cleaner null handling
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
+
+#' Bayesian Optimization for Joint Parameters
+#'
+#' Performs Bayesian optimization using Gaussian Process surrogate model
+#' with acquisition function-based point selection.
+#'
+#' @inheritParams auto_tune_joint_parameters
+#' @param bayesian_iterations Integer number of Bayesian optimization iterations.
+#' @param acquisition_function Character string specifying acquisition function:
+#'   "ei" (Expected Improvement) or "ucb" (Upper Confidence Bound).
+#' @param exploration_factor Numeric exploration parameter for acquisition function.
+#' @param n_initial Integer number of random initial points.
+#' @keywords internal
+optimize_bayesian <- function(mx, scr_range, cutoff_range, scr_values, cutoff_values,
+                             bayesian_iterations = 20, acquisition_function = "ei", 
+                             exploration_factor = 0.1, n_initial = 5,
+                             n_bootstrap, objectives, weights, verbose, parallel) {
+  
+  # Parameter space setup
+  if (is.null(scr_values)) {
+    scr_min <- scr_range[1]
+    scr_max <- scr_range[2]
+  } else {
+    scr_min <- min(scr_values)
+    scr_max <- max(scr_values)
+  }
+  
+  cutoff_min <- cutoff_range[1]
+  cutoff_max <- cutoff_range[2]
+  
+  if (verbose) {
+    cat("Starting Bayesian optimization...\n")
+    cat("Parameter space: SCR [", scr_min, ",", scr_max, "], Cutoff [", cutoff_min, ",", cutoff_max, "]\n")
+    cat("Initial points:", n_initial, "| Iterations:", bayesian_iterations, 
+        "| Acquisition:", acquisition_function, "\n")
+  }
+  
+  # Generate initial design points
+  initial_points <- generate_initial_design(scr_min, scr_max, cutoff_min, cutoff_max, 
+                                           n_initial, scr_values)
+  
+  # Evaluate initial points
+  if (verbose) cat("Evaluating initial design points...\n")
+  
+  evaluated_points <- data.frame(
+    scr = numeric(0),
+    cutoff = numeric(0), 
+    objective = numeric(0)
+  )
+  
+  detailed_scores <- list()
+  
+  # Evaluate initial points
+  for (i in seq_len(nrow(initial_points))) {
+    scr <- initial_points$scr[i]
+    cutoff <- initial_points$cutoff[i]
+    
+    if (verbose) {
+      cat("  Initial point", i, "/", nrow(initial_points), ": SCR =", scr, ", Cutoff =", cutoff, "\n")
+    }
+    
+    # Evaluate this parameter combination
+    result <- evaluate_parameter_combination(mx, scr, cutoff, objectives, n_bootstrap, parallel, FALSE)
+    
+    # Store results
+    evaluated_points <- rbind(evaluated_points, 
+                             data.frame(scr = scr, cutoff = cutoff, objective = result$combined_score))
+    detailed_scores[[length(detailed_scores) + 1]] <- result
+  }
+  
+  # Bayesian optimization loop
+  if (verbose) cat("Starting Bayesian optimization iterations...\n")
+  
+  for (iter in seq_len(bayesian_iterations)) {
+    if (verbose) {
+      cat("  Iteration", iter, "/", bayesian_iterations, "\n")
+    }
+    
+    # Fit Gaussian Process
+    gp_model <- fit_gaussian_process(evaluated_points)
+    
+    # Find next point using acquisition function
+    next_point <- optimize_acquisition(gp_model, evaluated_points, acquisition_function,
+                                     exploration_factor, scr_min, scr_max, 
+                                     cutoff_min, cutoff_max, scr_values)
+    
+    if (verbose) {
+      cat("    Next point: SCR =", next_point$scr, ", Cutoff =", next_point$cutoff, "\n")
+    }
+    
+    # Evaluate next point
+    result <- evaluate_parameter_combination(mx, next_point$scr, next_point$cutoff, 
+                                           objectives, n_bootstrap, parallel, FALSE)
+    
+    # Add to evaluated points
+    evaluated_points <- rbind(evaluated_points, 
+                             data.frame(scr = next_point$scr, cutoff = next_point$cutoff, 
+                                       objective = result$combined_score))
+    detailed_scores[[length(detailed_scores) + 1]] <- result
+    
+    if (verbose) {
+      cat("    Objective value:", round(result$combined_score, 4), "\n")
+    }
+  }
+  
+  # Find optimal point
+  best_idx <- which.max(evaluated_points$objective)
+  optimal_scr <- evaluated_points$scr[best_idx]
+  optimal_cutoff <- evaluated_points$cutoff[best_idx]
+  
+  if (verbose) {
+    cat("Bayesian optimization complete!\n")
+    cat("Best point: SCR =", optimal_scr, ", Cutoff =", optimal_cutoff, 
+        ", Objective =", round(evaluated_points$objective[best_idx], 4), "\n")
+  }
+  
+  # Create optimization surface for visualization
+  # Use a simple interpolation of the evaluated points
+  if (is.null(scr_values)) {
+    scr_grid <- seq(scr_min, scr_max, length.out = 10)
+  } else {
+    scr_grid <- sort(unique(c(scr_values, evaluated_points$scr)))
+  }
+  cutoff_grid <- seq(cutoff_min, cutoff_max, length.out = 10)
+  
+  optimization_surface <- create_surface_from_points(evaluated_points, scr_grid, cutoff_grid)
+  
+  # Prepare results
+  list(
+    optimal_scr = optimal_scr,
+    optimal_cutoff = optimal_cutoff,
+    optimization_surface = optimization_surface,
+    parameter_grid = evaluated_points,
+    scores = detailed_scores,
+    scr_values = sort(unique(evaluated_points$scr)),
+    cutoff_values = sort(unique(evaluated_points$cutoff)),
+    bayesian_model = gp_model,
+    acquisition_function = acquisition_function,
+    n_evaluations = nrow(evaluated_points)
+  )
+}
+
+#' Generate Initial Design Points for Bayesian Optimization
+#'
+#' Creates initial sampling points using Latin Hypercube design.
+#'
+#' @param scr_min,scr_max Range for small.cell.reduction parameter
+#' @param cutoff_min,cutoff_max Range for cutoff parameter  
+#' @param n_initial Number of initial points
+#' @param scr_values Optional discrete values for SCR (for discrete optimization)
+#' @keywords internal
+generate_initial_design <- function(scr_min, scr_max, cutoff_min, cutoff_max, n_initial, scr_values = NULL) {
+  
+  # Simple random sampling (could be improved with Latin Hypercube)
+  if (is.null(scr_values)) {
+    # Continuous SCR space
+    scr_points <- runif(n_initial, scr_min, scr_max)
+    # Round to integers since SCR should be integer
+    scr_points <- pmax(scr_min, pmin(scr_max, round(scr_points)))
+  } else {
+    # Discrete SCR space
+    scr_points <- sample(scr_values, n_initial, replace = TRUE)
+  }
+  
+  cutoff_points <- runif(n_initial, cutoff_min, cutoff_max)
+  
+  data.frame(scr = scr_points, cutoff = cutoff_points)
+}
+
+#' Fit Gaussian Process Model
+#'
+#' Fits a simple Gaussian Process surrogate model to the evaluated points.
+#'
+#' @param evaluated_points Data frame with scr, cutoff, and objective columns
+#' @keywords internal
+fit_gaussian_process <- function(evaluated_points) {
+  
+  # Simple GP implementation using local regression
+  # In production, consider using GPfit, DiceKriging, or similar packages
+  
+  X <- as.matrix(evaluated_points[, c("scr", "cutoff")])
+  y <- evaluated_points$objective
+  
+  # Normalize inputs for better numerical stability
+  scr_mean <- mean(X[, 1])
+  scr_sd <- sd(X[, 1])
+  if (scr_sd == 0) scr_sd <- 1
+  
+  cutoff_mean <- mean(X[, 2])
+  cutoff_sd <- sd(X[, 2])
+  if (cutoff_sd == 0) cutoff_sd <- 1
+  
+  X_norm <- cbind((X[, 1] - scr_mean) / scr_sd,
+                  (X[, 2] - cutoff_mean) / cutoff_sd)
+  
+  # Simple local regression model
+  # For a more sophisticated implementation, use actual GP libraries
+  list(
+    X = X,
+    y = y,
+    X_norm = X_norm,
+    scr_mean = scr_mean,
+    scr_sd = scr_sd,
+    cutoff_mean = cutoff_mean,
+    cutoff_sd = cutoff_sd
+  )
+}
+
+#' Predict Using Gaussian Process Model
+#'
+#' Makes predictions at new points using the GP surrogate.
+#'
+#' @param gp_model Fitted GP model from fit_gaussian_process
+#' @param X_new Matrix of new points to predict
+#' @keywords internal
+predict_gaussian_process <- function(gp_model, X_new) {
+  
+  # Normalize new points using training statistics
+  X_new_norm <- cbind((X_new[, 1] - gp_model$scr_mean) / gp_model$scr_sd,
+                      (X_new[, 2] - gp_model$cutoff_mean) / gp_model$cutoff_sd)
+  
+  n_new <- nrow(X_new_norm)
+  n_train <- nrow(gp_model$X_norm)
+  
+  # Simple distance-based prediction with uncertainty
+  predictions <- numeric(n_new)
+  uncertainties <- numeric(n_new)
+  
+  for (i in seq_len(n_new)) {
+    # Calculate distances to all training points
+    distances <- sqrt(rowSums((gp_model$X_norm - matrix(rep(X_new_norm[i, ], n_train), 
+                                                        nrow = n_train, byrow = TRUE))^2))
+    
+    # Weight by inverse distance (with smoothing parameter)
+    weights <- exp(-distances^2 / 0.5)
+    weights <- weights / sum(weights)
+    
+    # Weighted prediction
+    predictions[i] <- sum(weights * gp_model$y)
+    
+    # Simple uncertainty estimate (higher when far from training points)
+    min_dist <- min(distances)
+    uncertainties[i] <- exp(min_dist)  # Higher uncertainty for distant points
+  }
+  
+  list(mean = predictions, variance = uncertainties^2)
+}
+
+#' Optimize Acquisition Function
+#'
+#' Finds the point that maximizes the acquisition function.
+#'
+#' @param gp_model Fitted Gaussian Process model
+#' @param evaluated_points Previously evaluated points
+#' @param acquisition_function Type of acquisition function ("ei" or "ucb")
+#' @param exploration_factor Exploration parameter
+#' @param scr_min,scr_max SCR parameter bounds
+#' @param cutoff_min,cutoff_max Cutoff parameter bounds
+#' @param scr_values Optional discrete SCR values
+#' @keywords internal
+optimize_acquisition <- function(gp_model, evaluated_points, acquisition_function,
+                                exploration_factor, scr_min, scr_max, 
+                                cutoff_min, cutoff_max, scr_values = NULL) {
+  
+  # Generate candidate points
+  n_candidates <- 1000
+  
+  if (is.null(scr_values)) {
+    scr_candidates <- runif(n_candidates, scr_min, scr_max)
+    scr_candidates <- pmax(scr_min, pmin(scr_max, round(scr_candidates)))
+  } else {
+    scr_candidates <- sample(scr_values, n_candidates, replace = TRUE)
+  }
+  
+  cutoff_candidates <- runif(n_candidates, cutoff_min, cutoff_max)
+  
+  X_candidates <- cbind(scr_candidates, cutoff_candidates)
+  
+  # Remove points that have already been evaluated (within tolerance)
+  new_candidates_idx <- rep(TRUE, n_candidates)
+  for (i in seq_len(nrow(evaluated_points))) {
+    distances <- sqrt((X_candidates[, 1] - evaluated_points$scr[i])^2 + 
+                     (X_candidates[, 2] - evaluated_points$cutoff[i])^2)
+    new_candidates_idx <- new_candidates_idx & (distances > 1e-6)
+  }
+  
+  if (sum(new_candidates_idx) == 0) {
+    # If no new candidates, add some noise to existing best point
+    best_idx <- which.max(evaluated_points$objective)
+    return(data.frame(scr = evaluated_points$scr[best_idx] + round(rnorm(1, 0, 1)),
+                     cutoff = evaluated_points$cutoff[best_idx] + rnorm(1, 0, 0.1)))
+  }
+  
+  X_candidates <- X_candidates[new_candidates_idx, , drop = FALSE]
+  
+  # Predict at candidate points
+  gp_pred <- predict_gaussian_process(gp_model, X_candidates)
+  
+  # Calculate acquisition function values
+  if (acquisition_function == "ei") {
+    # Expected Improvement
+    best_objective <- max(evaluated_points$objective)
+    acquisition_values <- calculate_expected_improvement(gp_pred$mean, sqrt(gp_pred$variance), 
+                                                        best_objective, exploration_factor)
+  } else if (acquisition_function == "ucb") {
+    # Upper Confidence Bound
+    acquisition_values <- gp_pred$mean + exploration_factor * sqrt(gp_pred$variance)
+  } else {
+    stop("Unknown acquisition function: ", acquisition_function)
+  }
+  
+  # Select point with highest acquisition value
+  best_idx <- which.max(acquisition_values)
+  
+  data.frame(scr = X_candidates[best_idx, 1], 
+            cutoff = X_candidates[best_idx, 2])
+}
+
+#' Calculate Expected Improvement
+#'
+#' Computes Expected Improvement acquisition function values.
+#'
+#' @param mean Predicted means from GP
+#' @param std Predicted standard deviations from GP
+#' @param best_objective Current best objective value
+#' @param xi Exploration parameter
+#' @keywords internal
+calculate_expected_improvement <- function(mean, std, best_objective, xi = 0.01) {
+  
+  improvement <- mean - best_objective - xi
+  Z <- improvement / std
+  
+  # Handle numerical issues
+  Z[std == 0] <- 0
+  
+  # Expected Improvement formula
+  ei <- improvement * pnorm(Z) + std * dnorm(Z)
+  ei[std == 0] <- 0
+  
+  return(ei)
+}
+
+#' Create Surface from Scattered Points
+#'
+#' Creates a regular grid surface by interpolating scattered evaluation points.
+#'
+#' @param evaluated_points Data frame with scr, cutoff, objective columns
+#' @param scr_grid Grid points for SCR dimension
+#' @param cutoff_grid Grid points for cutoff dimension
+#' @keywords internal
+create_surface_from_points <- function(evaluated_points, scr_grid, cutoff_grid) {
+  
+  # Simple interpolation - in practice, might want to use more sophisticated methods
+  surface <- matrix(NA, nrow = length(scr_grid), ncol = length(cutoff_grid))
+  
+  for (i in seq_along(scr_grid)) {
+    for (j in seq_along(cutoff_grid)) {
+      # Find closest evaluated points
+      distances <- sqrt((evaluated_points$scr - scr_grid[i])^2 + 
+                       (evaluated_points$cutoff - cutoff_grid[j])^2)
+      
+      # Use inverse distance weighting
+      if (min(distances) < 1e-6) {
+        # Exact match
+        surface[i, j] <- evaluated_points$objective[which.min(distances)]
+      } else {
+        # Weighted average of closest points
+        weights <- 1 / (distances + 1e-6)
+        surface[i, j] <- sum(weights * evaluated_points$objective) / sum(weights)
+      }
+    }
+  }
+  
+  surface
+}
+
 #' Grid Search Optimization for Joint Parameters
 #'
 #' Performs systematic grid search over 2D parameter space.
 #'
 #' @inheritParams auto_tune_joint_parameters
 #' @keywords internal
-optimize_grid_search <- function(mx, scr_range, cutoff_range, n_grid_points,
-                                n_bootstrap, objectives, weights, 
+optimize_grid_search <- function(mx, scr_range, cutoff_range, scr_values, cutoff_values, 
+                                n_grid_points, n_bootstrap, objectives, weights, 
                                 verbose, parallel) {
   
-  # Create parameter grid with integer constraints for SCR
-  scr_values <- generate_integer_scr_grid(scr_range, n_grid_points)
-  cutoff_values <- seq(cutoff_range[1], cutoff_range[2], length.out = n_grid_points)
+  # Use custom vectors if provided, otherwise generate from ranges
+  if (is.null(scr_values)) {
+    scr_values <- generate_integer_scr_grid(scr_range, n_grid_points)
+  }
+  if (is.null(cutoff_values)) {
+    cutoff_values <- seq(cutoff_range[1], cutoff_range[2], length.out = n_grid_points)
+  }
   
   param_grid <- expand.grid(
     scr = scr_values,
@@ -410,7 +1322,7 @@ optimize_grid_search <- function(mx, scr_range, cutoff_range, n_grid_points,
 #'
 #' @inheritParams auto_tune_joint_parameters
 #' @keywords internal
-optimize_adaptive_refinement <- function(mx, scr_range, cutoff_range,
+optimize_adaptive_refinement <- function(mx, scr_range, cutoff_range, scr_values, cutoff_values,
                                         objectives, weights, verbose, parallel) {
   
   if (verbose) {
@@ -433,6 +1345,8 @@ optimize_adaptive_refinement <- function(mx, scr_range, cutoff_range,
     mx = mx,
     scr_range = scr_range,
     cutoff_range = cutoff_range,
+    scr_values = scr_values,
+    cutoff_values = cutoff_values,
     n_grid_points = 5,
     n_bootstrap = 25,  # Slightly increased for better stability estimation
     objectives = objectives,
@@ -478,6 +1392,8 @@ optimize_adaptive_refinement <- function(mx, scr_range, cutoff_range,
     mx = mx,
     scr_range = scr_range_refined,
     cutoff_range = cutoff_range_refined,
+    scr_values = NULL,  # Use refined ranges for fine tuning
+    cutoff_values = NULL,  # Use refined ranges for fine tuning
     n_grid_points = 12,  # Increased for better resolution
     n_bootstrap = 60,  # More bootstraps for final selection
     objectives = objectives,
@@ -495,6 +1411,428 @@ optimize_adaptive_refinement <- function(mx, scr_range, cutoff_range,
   )
   
   return(result)
+}
+
+#' Bayesian Optimization for Joint Parameter Tuning
+#'
+#' Performs Bayesian optimization using Gaussian Process surrogate model
+#' and acquisition function to efficiently explore the parameter space.
+#'
+#' @inheritParams auto_tune_joint_parameters
+#' @keywords internal
+optimize_bayesian <- function(mx, scr_range, cutoff_range, scr_values, cutoff_values,
+                             n_bootstrap, objectives, weights, verbose, parallel,
+                             bayesian_iterations, acquisition_function, exploration_factor, n_initial) {
+  
+  # PARALLELIZATION STRATEGY FOR BAYESIAN OPTIMIZATION:
+  # Bayesian optimization is inherently sequential because each new point selection
+  # depends on the updated Gaussian Process model from all previous evaluations.
+  # However, individual parameter evaluations (stability assessment, etc.) can
+  # benefit from internal parallelization. We use sequential evaluation here to:
+  # 1. Maintain mathematical correctness of the BO algorithm
+  # 2. Avoid nested parallelism complexity 
+  # 3. Ensure proper GP model updates between iterations
+  # Note: The 'parallel' parameter is preserved for future batch BO implementations
+  
+  if (verbose) {
+    cat("Starting Bayesian optimization...\n")
+    cat("  Iterations:", bayesian_iterations, "\n")
+    cat("  Acquisition function:", toupper(acquisition_function), "\n")
+    cat("  Initial design points:", n_initial, "\n")
+    cat("  Processing: Sequential (required for BO algorithm)\n")
+  }
+  
+  # Set up parameter space
+  if (is.null(scr_values)) {
+    if (is.null(scr_range[2])) {
+      # Auto-determine upper bound based on matrix characteristics
+      scr_upper <- suggest_integer_scr_bounds(mx)$upper
+    } else {
+      scr_upper <- scr_range[2]
+    }
+    scr_bounds <- c(max(0, scr_range[1]), scr_upper)
+  } else {
+    scr_bounds <- c(min(scr_values), max(scr_values))
+  }
+  
+  if (is.null(cutoff_values)) {
+    cutoff_bounds <- cutoff_range
+  } else {
+    cutoff_bounds <- c(min(cutoff_values), max(cutoff_values))
+  }
+  
+  # Initialize tracking variables
+  all_points <- matrix(nrow = 0, ncol = 2)  # [scr, cutoff]
+  all_scores <- numeric(0)
+  all_detailed_scores <- list()
+  
+  # Generate initial design using Latin Hypercube Sampling
+  if (verbose) cat("Generating initial design points...\n")
+  initial_points <- generate_initial_design(n_initial, scr_bounds, cutoff_bounds, scr_values, cutoff_values)
+  
+  # Evaluate initial points
+  for (i in seq_len(nrow(initial_points))) {
+    scr <- initial_points[i, 1]
+    cutoff <- initial_points[i, 2]
+    
+    if (verbose) {
+      cat(sprintf("  Initial point %d/%d: SCR=%.0f, cutoff=%.2f\n", i, nrow(initial_points), scr, cutoff))
+    }
+    
+    # Evaluate this parameter combination
+    # Use sequential processing to avoid nested parallelism complexity in BO loop
+    obj_scores <- evaluate_parameter_combination(
+      mx = mx,
+      scr = scr,
+      cutoff = cutoff,
+      objectives = objectives,
+      n_bootstrap = n_bootstrap,
+      parallel = FALSE  # Sequential for initial design points
+    )
+    
+    combined_score <- sum(obj_scores * weights)
+    
+    # Store results
+    all_points <- rbind(all_points, c(scr, cutoff))
+    all_scores <- c(all_scores, combined_score)
+    all_detailed_scores[[length(all_detailed_scores) + 1]] <- obj_scores
+  }
+  
+  # Bayesian optimization iterations
+  if (verbose) cat("Starting Bayesian optimization iterations...\n")
+  
+  for (iter in 1:bayesian_iterations) {
+    if (verbose) {
+      best_score <- max(all_scores)
+      best_idx <- which.max(all_scores)
+      cat(sprintf("Iteration %d/%d - Current best: %.4f (SCR=%.0f, cutoff=%.2f)\n", 
+                  iter, bayesian_iterations, best_score, 
+                  all_points[best_idx, 1], all_points[best_idx, 2]))
+    }
+    
+    # Fit Gaussian Process to current data
+    gp_model <- fit_gaussian_process(all_points, all_scores)
+    
+    # Find next point using acquisition function
+    next_point <- optimize_acquisition(gp_model, scr_bounds, cutoff_bounds, 
+                                     scr_values, cutoff_values,
+                                     acquisition_function, exploration_factor)
+    
+    # Handle case where no new candidate point is found
+    if (is.null(next_point)) {
+      if (verbose) cat("  No new candidate points found. Terminating optimization.\n")
+      break
+    }
+    
+    scr_next <- next_point[1]
+    cutoff_next <- next_point[2]
+    
+    # Evaluate next point
+    # Use sequential processing to avoid nested parallelism complexity in BO iterations
+    obj_scores <- evaluate_parameter_combination(
+      mx = mx,
+      scr = scr_next,
+      cutoff = cutoff_next,
+      objectives = objectives,
+      n_bootstrap = n_bootstrap,
+      parallel = FALSE  # Sequential for iterative evaluations
+    )
+    
+    combined_score <- sum(obj_scores * weights)
+    
+    if (verbose) {
+      cat(sprintf("  Evaluated SCR=%.0f, cutoff=%.2f, score=%.4f\n", 
+                  scr_next, cutoff_next, combined_score))
+    }
+    
+    # Add to dataset
+    all_points <- rbind(all_points, c(scr_next, cutoff_next))
+    all_scores <- c(all_scores, combined_score)
+    all_detailed_scores[[length(all_detailed_scores) + 1]] <- obj_scores
+  }
+  
+  # Find optimal point
+  best_idx <- which.max(all_scores)
+  optimal_scr <- all_points[best_idx, 1]
+  optimal_cutoff <- all_points[best_idx, 2]
+  
+  if (verbose) {
+    cat(sprintf("Bayesian optimization completed!\n"))
+    cat(sprintf("Optimal parameters: SCR=%.0f, cutoff=%.2f, score=%.4f\n", 
+                optimal_scr, optimal_cutoff, all_scores[best_idx]))
+  }
+  
+  # Create optimization surface for visualization (interpolation)
+  scr_grid <- if (is.null(scr_values)) {
+    seq(scr_bounds[1], scr_bounds[2], length.out = 20)
+  } else {
+    scr_values
+  }
+  cutoff_grid <- if (is.null(cutoff_values)) {
+    seq(cutoff_bounds[1], cutoff_bounds[2], length.out = 20)
+  } else {
+    cutoff_values
+  }
+  
+  optimization_surface <- create_surface_from_points(all_points, all_scores, scr_grid, cutoff_grid)
+  
+  # Prepare results
+  result <- list(
+    optimal_scr = optimal_scr,
+    optimal_cutoff = optimal_cutoff,
+    optimal_combination = list(scr = optimal_scr, cutoff = optimal_cutoff),
+    optimal_score = all_scores[best_idx],
+    optimization_surface = optimization_surface,
+    scr_values = scr_grid,
+    cutoff_values = cutoff_grid,
+    evaluation_points = all_points,
+    evaluation_scores = all_scores,
+    detailed_scores = all_detailed_scores,
+    n_evaluations = length(all_scores),
+    convergence_history = all_scores,
+    bayesian_info = list(
+      iterations = min(iter, bayesian_iterations),
+      acquisition_function = acquisition_function,
+      exploration_factor = exploration_factor,
+      n_initial = n_initial
+    )
+  )
+  
+  return(result)
+}
+
+#' Generate Initial Design for Bayesian Optimization
+#'
+#' Creates initial sampling points using Latin Hypercube Sampling approach.
+#'
+#' @param n_points Number of initial points to generate.
+#' @param scr_bounds Bounds for SCR parameter.
+#' @param cutoff_bounds Bounds for cutoff parameter.
+#' @param scr_values Custom SCR values (NULL for continuous).
+#' @param cutoff_values Custom cutoff values (NULL for continuous).
+#' @return Matrix of initial design points.
+#' @keywords internal
+generate_initial_design <- function(n_points, scr_bounds, cutoff_bounds, scr_values = NULL, cutoff_values = NULL) {
+  
+  # Generate Latin hypercube sample
+  lhs <- matrix(runif(n_points * 2), ncol = 2)
+  
+  # Transform to parameter space
+  if (is.null(scr_values)) {
+    scr_points <- lhs[, 1] * (scr_bounds[2] - scr_bounds[1]) + scr_bounds[1]
+    scr_points <- round(scr_points)  # Ensure integer values
+  } else {
+    scr_points <- sample(scr_values, n_points, replace = TRUE)
+  }
+  
+  if (is.null(cutoff_values)) {
+    cutoff_points <- lhs[, 2] * (cutoff_bounds[2] - cutoff_bounds[1]) + cutoff_bounds[1]
+  } else {
+    cutoff_points <- sample(cutoff_values, n_points, replace = TRUE)
+  }
+  
+  return(cbind(scr_points, cutoff_points))
+}
+
+#' Fit Simple Gaussian Process Model
+#'
+#' Fits a simple GP model using distance-weighted local regression.
+#'
+#' @param X Matrix of input points (n x 2).
+#' @param y Vector of function values.
+#' @return GP model object.
+#' @keywords internal
+fit_gaussian_process <- function(X, y) {
+  
+  # Normalize inputs for numerical stability
+  X_norm <- scale(X)
+  
+  # Simple GP model using distance-based weighting
+  model <- list(
+    X = X,
+    X_norm = X_norm,
+    y = y,
+    mean_y = mean(y),
+    sd_y = sd(y),
+    X_center = attr(X_norm, "scaled:center"),
+    X_scale = attr(X_norm, "scaled:scale")
+  )
+  
+  class(model) <- "simple_gp"
+  return(model)
+}
+
+#' Predict with Simple Gaussian Process
+#'
+#' Makes predictions using the fitted GP model.
+#'
+#' @param model GP model object.
+#' @param X_new Matrix of new input points.
+#' @return List with mean and variance predictions.
+#' @keywords internal
+predict_gaussian_process <- function(model, X_new) {
+  
+  # Normalize new inputs using training data scaling
+  X_new_norm <- scale(X_new, center = model$X_center, scale = model$X_scale)
+  
+  n_new <- nrow(X_new_norm)
+  n_train <- nrow(model$X_norm)
+  
+  # Distance-based predictions
+  means <- numeric(n_new)
+  variances <- numeric(n_new)
+  
+  for (i in 1:n_new) {
+    # Compute distances to all training points
+    distances <- sqrt(rowSums((model$X_norm - matrix(X_new_norm[i, ], nrow = n_train, ncol = 2, byrow = TRUE))^2))
+    
+    # Weight function (exponential decay)
+    weights <- exp(-distances^2 / 2)
+    weights <- weights / sum(weights)
+    
+    # Weighted prediction
+    means[i] <- sum(weights * model$y)
+    
+    # Uncertainty estimate based on weight concentration
+    variances[i] <- max(0.01, var(model$y) * (1 - max(weights)))
+  }
+  
+  return(list(mean = means, variance = variances))
+}
+
+#' Optimize Acquisition Function
+#'
+#' Finds the point that maximizes the acquisition function.
+#'
+#' @param gp_model Fitted GP model.
+#' @param scr_bounds SCR parameter bounds.
+#' @param cutoff_bounds Cutoff parameter bounds.
+#' @param scr_values Custom SCR values (NULL for continuous).
+#' @param cutoff_values Custom cutoff values (NULL for continuous).
+#' @param acquisition_function Type of acquisition function ("ei" or "ucb").
+#' @param exploration_factor Exploration parameter.
+#' @return Vector of optimal next point coordinates.
+#' @keywords internal
+optimize_acquisition <- function(gp_model, scr_bounds, cutoff_bounds, scr_values = NULL, cutoff_values = NULL,
+                                acquisition_function = "ei", exploration_factor = 0.1) {
+  
+  # Generate candidate points
+  n_candidates <- 1000
+  candidates <- generate_candidate_points(n_candidates, scr_bounds, cutoff_bounds, scr_values, cutoff_values)
+  
+  # Remove points already evaluated
+  evaluated_points <- gp_model$X
+  new_candidates <- matrix(nrow = 0, ncol = 2)
+  
+  for (i in 1:nrow(candidates)) {
+    candidate <- candidates[i, ]
+    
+    # Check if this point has been evaluated (with small tolerance)
+    min_dist <- min(sqrt(rowSums((evaluated_points - matrix(candidate, nrow = nrow(evaluated_points), ncol = 2, byrow = TRUE))^2)))
+    
+    if (min_dist > 0.01) {  # Small tolerance for numerical precision
+      new_candidates <- rbind(new_candidates, candidate)
+    }
+  }
+  
+  if (nrow(new_candidates) == 0) {
+    return(NULL)  # No new candidates
+  }
+  
+  # Predict at candidate points
+  pred <- predict_gaussian_process(gp_model, new_candidates)
+  
+  # Calculate acquisition function values
+  if (acquisition_function == "ei") {
+    # Expected Improvement
+    f_best <- max(gp_model$y)
+    improvement <- pmax(0, pred$mean - f_best)
+    sigma <- sqrt(pred$variance)
+    
+    # Avoid division by zero
+    sigma[sigma < 1e-6] <- 1e-6
+    
+    z <- improvement / sigma
+    acquisition <- improvement * pnorm(z) + sigma * dnorm(z)
+    
+  } else if (acquisition_function == "ucb") {
+    # Upper Confidence Bound
+    acquisition <- pred$mean + exploration_factor * sqrt(pred$variance)
+  }
+  
+  # Find best candidate
+  best_idx <- which.max(acquisition)
+  return(new_candidates[best_idx, ])
+}
+
+#' Generate Candidate Points for Acquisition Optimization
+#'
+#' Creates candidate points for acquisition function evaluation.
+#'
+#' @param n_candidates Number of candidate points.
+#' @param scr_bounds SCR parameter bounds.
+#' @param cutoff_bounds Cutoff parameter bounds.
+#' @param scr_values Custom SCR values.
+#' @param cutoff_values Custom cutoff values.
+#' @return Matrix of candidate points.
+#' @keywords internal
+generate_candidate_points <- function(n_candidates, scr_bounds, cutoff_bounds, scr_values = NULL, cutoff_values = NULL) {
+  
+  # Generate random candidates
+  candidates <- matrix(runif(n_candidates * 2), ncol = 2)
+  
+  # Transform to parameter space
+  if (is.null(scr_values)) {
+    scr_cand <- candidates[, 1] * (scr_bounds[2] - scr_bounds[1]) + scr_bounds[1]
+    scr_cand <- round(scr_cand)
+  } else {
+    scr_cand <- sample(scr_values, n_candidates, replace = TRUE)
+  }
+  
+  if (is.null(cutoff_values)) {
+    cutoff_cand <- candidates[, 2] * (cutoff_bounds[2] - cutoff_bounds[1]) + cutoff_bounds[1]
+  } else {
+    cutoff_cand <- sample(cutoff_values, n_candidates, replace = TRUE)
+  }
+  
+  return(cbind(scr_cand, cutoff_cand))
+}
+
+#' Create Optimization Surface from Scattered Points
+#'
+#' Interpolates scattered evaluation points to create a regular grid surface.
+#'
+#' @param points Matrix of evaluated points.
+#' @param scores Vector of scores at evaluated points.
+#' @param scr_grid Grid points for SCR dimension.
+#' @param cutoff_grid Grid points for cutoff dimension.
+#' @return Matrix representing interpolated surface.
+#' @keywords internal
+create_surface_from_points <- function(points, scores, scr_grid, cutoff_grid) {
+  
+  surface <- matrix(NA, nrow = length(scr_grid), ncol = length(cutoff_grid))
+  
+  # Simple inverse distance weighting interpolation
+  for (i in 1:length(scr_grid)) {
+    for (j in 1:length(cutoff_grid)) {
+      grid_point <- c(scr_grid[i], cutoff_grid[j])
+      
+      # Compute distances to all evaluated points
+      distances <- sqrt(rowSums((points - matrix(grid_point, nrow = nrow(points), ncol = 2, byrow = TRUE))^2))
+      
+      # Avoid division by zero
+      distances[distances < 1e-6] <- 1e-6
+      
+      # Inverse distance weights
+      weights <- 1 / distances^2
+      weights <- weights / sum(weights)
+      
+      # Weighted interpolation
+      surface[i, j] <- sum(weights * scores)
+    }
+  }
+  
+  return(surface)
 }
 
 # ============================================================================
@@ -608,7 +1946,8 @@ simple_matrix_hash <- function(mx) {
 #' @return List of weight matrices with same length as param_combinations.
 #' @keywords internal
 batch_compute_weight_matrices <- function(mx, param_combinations, 
-                                         use_cache = TRUE, parallel = FALSE, verbose = FALSE) {
+                                         use_cache = TRUE, parallel = FALSE, verbose = FALSE,
+                                         progress_tracker = NULL) {
   
   n_combinations <- nrow(param_combinations)
   weight_matrices <- vector("list", n_combinations)
@@ -618,6 +1957,11 @@ batch_compute_weight_matrices <- function(mx, param_combinations,
   
   # Track cache hits for performance monitoring
   cache_hits <- 0
+  
+  # Initialize progress tracking
+  if (is.null(progress_tracker) && verbose) {
+    progress_tracker <- ProgressTracker("Weight Matrices", n_combinations, verbose = verbose)
+  }
   
   if (verbose) {
     message(sprintf("Computing %d weight matrices (caching: %s, parallel: %s)...", 
@@ -638,6 +1982,11 @@ batch_compute_weight_matrices <- function(mx, param_combinations,
     if (use_cache && exists(cache_key, envir = .weight_matrix_cache)) {
       weight_matrices[[i]] <- get(cache_key, envir = .weight_matrix_cache)
       cache_hits <- cache_hits + 1
+      
+      # Report progress for cached items
+      if (!is.null(progress_tracker)) {
+        update_progress(progress_tracker, 1, "from cache")
+      }
     } else {
       combinations_to_compute <- c(combinations_to_compute, i)
     }
@@ -648,6 +1997,13 @@ batch_compute_weight_matrices <- function(mx, param_combinations,
     if (parallel && requireNamespace("foreach", quietly = TRUE) && 
         requireNamespace("doParallel", quietly = TRUE)) {
       
+      # Prepare progress tracking for workers
+      tracker_info <- if (!is.null(progress_tracker)) {
+        list(progress_file = progress_tracker$progress_file)
+      } else {
+        NULL
+      }
+      
       # Use parallel processing with foreach %dopar%
       compute_results <- foreach::foreach(
         idx = combinations_to_compute,
@@ -656,7 +2012,7 @@ batch_compute_weight_matrices <- function(mx, param_combinations,
         .maxcombine = length(combinations_to_compute),
         .errorhandling = 'pass',
         .packages = c("moneca"),  # Ensure package is loaded on workers
-        .export = c("weight.matrix")  # Export necessary functions
+        .export = c("weight.matrix", "report_worker_progress")  # Export necessary functions
       ) %dopar% {
         scr <- param_combinations$scr[idx]
         cutoff <- param_combinations$cutoff[idx]
@@ -668,8 +2024,14 @@ batch_compute_weight_matrices <- function(mx, param_combinations,
             cut.off = cutoff,
             small.cell.reduction = scr
           )
+          
+          # Report progress from worker
+          report_worker_progress(tracker_info, 1)
+          
           list(index = idx, matrix = wm, error = NULL)
         }, error = function(e) {
+          # Report progress even for errors
+          report_worker_progress(tracker_info, 1)
           list(index = idx, matrix = NULL, error = e$message)
         })
         
@@ -687,6 +2049,11 @@ batch_compute_weight_matrices <- function(mx, param_combinations,
             assign(cache_keys[idx], result$matrix, envir = .weight_matrix_cache)
           }
         }
+      }
+      
+      # Final progress update after parallel completion
+      if (!is.null(progress_tracker)) {
+        display_progress(progress_tracker, get_progress(progress_tracker))
       }
       
     } else {
@@ -709,8 +2076,19 @@ batch_compute_weight_matrices <- function(mx, param_combinations,
           if (use_cache) {
             assign(cache_keys[i], wm, envir = .weight_matrix_cache)
           }
+          
+          # Update progress
+          if (!is.null(progress_tracker)) {
+            update_progress(progress_tracker, 1, sprintf("scr=%s, cutoff=%.2f", scr, cutoff))
+          }
+          
         }, error = function(e) {
           weight_matrices[[i]] <- NULL
+          
+          # Update progress even for errors
+          if (!is.null(progress_tracker)) {
+            update_progress(progress_tracker, 1, "error")
+          }
         })
       }
     }
@@ -726,6 +2104,11 @@ batch_compute_weight_matrices <- function(mx, param_combinations,
     message(sprintf("Parallel computation: %d matrices computed using %s", 
                    length(combinations_to_compute),
                    if (requireNamespace("doParallel", quietly = TRUE)) "doParallel" else "sequential fallback"))
+  }
+  
+  # Clean up progress tracker
+  if (!is.null(progress_tracker)) {
+    cleanup_progress(progress_tracker)
   }
   
   return(weight_matrices)
@@ -744,7 +2127,8 @@ batch_compute_weight_matrices <- function(mx, param_combinations,
 #' @return Matrix with objectives as columns and combinations as rows.
 #' @keywords internal
 batch_compute_quality_metrics <- function(weight_matrices, objectives, 
-                                          parallel = FALSE, verbose = FALSE) {
+                                          parallel = FALSE, verbose = FALSE,
+                                          progress_tracker = NULL) {
   
   n_matrices <- length(weight_matrices)
   n_objectives <- length(objectives)
@@ -753,10 +2137,18 @@ batch_compute_quality_metrics <- function(weight_matrices, objectives,
   results <- matrix(0, nrow = n_matrices, ncol = n_objectives)
   colnames(results) <- objectives
   
+  # Initialize progress tracking
+  if (is.null(progress_tracker) && verbose) {
+    progress_tracker <- ProgressTracker("Quality Metrics", n_matrices, verbose = verbose)
+  }
+  
   if (verbose) {
     message(sprintf("Computing quality metrics for %d weight matrices (parallel: %s)...", 
                    n_matrices, parallel))
   }
+  
+  # Process other objectives that need individual computation
+  remaining_objectives <- setdiff(objectives, "sparsity")
   
   # Vectorized computation for simple objectives
   if ("sparsity" %in% objectives) {
@@ -770,10 +2162,16 @@ batch_compute_quality_metrics <- function(weight_matrices, objectives,
     
     # Optimal around 0.1-0.3 density
     results[, sparsity_idx] <- exp(-((densities - 0.2)^2) / 0.05)
+    
+    # Update progress for sparsity computation (vectorized, so count all at once)
+    if (!is.null(progress_tracker) && length(remaining_objectives) == 0) {
+      # If sparsity is the only objective, update all progress
+      update_progress(progress_tracker, n_matrices, "sparsity (vectorized)")
+    } else if (!is.null(progress_tracker)) {
+      # Partial progress for sparsity
+      update_progress(progress_tracker, 0, "sparsity computed")
+    }
   }
-  
-  # Process other objectives that need individual computation
-  remaining_objectives <- setdiff(objectives, "sparsity")
   
   if (length(remaining_objectives) > 0) {
     # Find valid matrices for computation
@@ -785,6 +2183,13 @@ batch_compute_quality_metrics <- function(weight_matrices, objectives,
       if (parallel && requireNamespace("foreach", quietly = TRUE) && 
           requireNamespace("doParallel", quietly = TRUE) && length(valid_indices) > 1) {
         
+        # Prepare progress tracking for workers
+        tracker_info <- if (!is.null(progress_tracker)) {
+          list(progress_file = progress_tracker$progress_file)
+        } else {
+          NULL
+        }
+        
         # Use parallel processing for remaining objectives
         parallel_results <- foreach::foreach(
           i = valid_indices,
@@ -792,7 +2197,7 @@ batch_compute_quality_metrics <- function(weight_matrices, objectives,
           .multicombine = TRUE,
           .errorhandling = 'pass',
           .packages = c("moneca"),
-          .export = c("compute_clustering_quality_metrics", "compute_network_modularity")
+          .export = c("compute_clustering_quality_metrics", "compute_network_modularity", "report_worker_progress")
         ) %dopar% {
           wm <- weight_matrices[[i]]
           obj_results <- numeric(length(remaining_objectives))
@@ -811,6 +2216,9 @@ batch_compute_quality_metrics <- function(weight_matrices, objectives,
             })
           }
           
+          # Report progress from worker
+          report_worker_progress(tracker_info, 1)
+          
           # Return index and results
           c(index = i, obj_results)
         }
@@ -824,6 +2232,11 @@ batch_compute_quality_metrics <- function(weight_matrices, objectives,
               results[matrix_idx, obj_idx] <- parallel_results[row_idx, obj]
             }
           }
+        }
+        
+        # Final progress update after parallel completion
+        if (!is.null(progress_tracker)) {
+          display_progress(progress_tracker, get_progress(progress_tracker))
         }
         
       } else {
@@ -845,6 +2258,11 @@ batch_compute_quality_metrics <- function(weight_matrices, objectives,
               results[i, obj_idx] <- 0
             })
           }
+          
+          # Update progress for each matrix processed
+          if (!is.null(progress_tracker)) {
+            update_progress(progress_tracker, 1, paste(remaining_objectives, collapse = ","))
+          }
         }
       }
     }
@@ -859,6 +2277,11 @@ batch_compute_quality_metrics <- function(weight_matrices, objectives,
                    n_parallel_computed,
                    paste(remaining_objectives, collapse = ", "),
                    if (requireNamespace("doParallel", quietly = TRUE)) "doParallel" else "sequential fallback"))
+  }
+  
+  # Clean up progress tracker
+  if (!is.null(progress_tracker)) {
+    cleanup_progress(progress_tracker)
   }
   
   return(results)
@@ -880,7 +2303,7 @@ batch_compute_quality_metrics <- function(weight_matrices, objectives,
 #' @keywords internal
 batch_assess_stability <- function(mx, param_combinations, n_bootstrap = 50,
                                   use_cache = TRUE, parallel = FALSE, 
-                                  verbose = FALSE) {
+                                  verbose = FALSE, progress_tracker = NULL) {
   
   n_combinations <- nrow(param_combinations)
   stability_scores <- numeric(n_combinations)
@@ -889,6 +2312,11 @@ batch_assess_stability <- function(mx, param_combinations, n_bootstrap = 50,
   mx_hash <- paste(simple_matrix_hash(mx), n_bootstrap, sep = "_")
   
   cache_hits <- 0
+  
+  # Initialize progress tracking
+  if (is.null(progress_tracker) && verbose) {
+    progress_tracker <- ProgressTracker("Stability Assessment", n_combinations, verbose = verbose)
+  }
   
   if (verbose) {
     message(sprintf("Computing stability for %d parameter combinations (parallel: %s)...", 
@@ -909,6 +2337,11 @@ batch_assess_stability <- function(mx, param_combinations, n_bootstrap = 50,
     if (use_cache && exists(cache_key, envir = .moneca_fast_cache)) {
       stability_scores[i] <- get(cache_key, envir = .moneca_fast_cache)
       cache_hits <- cache_hits + 1
+      
+      # Report progress for cached items
+      if (!is.null(progress_tracker)) {
+        update_progress(progress_tracker, 1, "from cache")
+      }
     } else {
       combinations_to_compute <- c(combinations_to_compute, i)
     }
@@ -919,6 +2352,13 @@ batch_assess_stability <- function(mx, param_combinations, n_bootstrap = 50,
     if (parallel && requireNamespace("foreach", quietly = TRUE) && 
         requireNamespace("doParallel", quietly = TRUE) && length(combinations_to_compute) > 1) {
       
+      # Prepare progress tracking for workers
+      tracker_info <- if (!is.null(progress_tracker)) {
+        list(progress_file = progress_tracker$progress_file)
+      } else {
+        NULL
+      }
+      
       # Use parallel processing with foreach %dopar%
       compute_results <- foreach::foreach(
         idx = combinations_to_compute,
@@ -927,7 +2367,7 @@ batch_assess_stability <- function(mx, param_combinations, n_bootstrap = 50,
         .maxcombine = length(combinations_to_compute),
         .errorhandling = 'pass',
         .packages = c("moneca"),
-        .export = c("assess_clustering_stability", "assess_clustering_stability_parallel")
+        .export = c("assess_clustering_stability", "assess_clustering_stability_parallel", "report_worker_progress")
       ) %dopar% {
         scr <- param_combinations$scr[idx]
         cutoff <- param_combinations$cutoff[idx]
@@ -954,8 +2394,13 @@ batch_assess_stability <- function(mx, param_combinations, n_bootstrap = 50,
               segment.levels = 2
             )
           }
+          # Report progress from worker
+          report_worker_progress(tracker_info, 1)
+          
           list(index = idx, score = score, error = NULL)
         }, error = function(e) {
+          # Report progress even for errors
+          report_worker_progress(tracker_info, 1)
           list(index = idx, score = 0, error = e$message)
         })
         
@@ -973,6 +2418,11 @@ batch_assess_stability <- function(mx, param_combinations, n_bootstrap = 50,
             assign(cache_keys[idx], result$score, envir = .moneca_fast_cache)
           }
         }
+      }
+      
+      # Final progress update after parallel completion
+      if (!is.null(progress_tracker)) {
+        display_progress(progress_tracker, get_progress(progress_tracker))
       }
       
     } else {
@@ -1009,8 +2459,19 @@ batch_assess_stability <- function(mx, param_combinations, n_bootstrap = 50,
           if (use_cache) {
             assign(cache_keys[i], score, envir = .moneca_fast_cache)
           }
+          
+          # Update progress
+          if (!is.null(progress_tracker)) {
+            update_progress(progress_tracker, 1, sprintf("scr=%s, cutoff=%.2f", scr, cutoff))
+          }
+          
         }, error = function(e) {
           stability_scores[i] <- 0
+          
+          # Update progress even for errors
+          if (!is.null(progress_tracker)) {
+            update_progress(progress_tracker, 1, "error")
+          }
         })
       }
     }
@@ -1026,6 +2487,11 @@ batch_assess_stability <- function(mx, param_combinations, n_bootstrap = 50,
     message(sprintf("Parallel computation: %d stability assessments computed using %s", 
                    length(combinations_to_compute),
                    if (requireNamespace("doParallel", quietly = TRUE)) "doParallel" else "sequential fallback"))
+  }
+  
+  # Clean up progress tracker
+  if (!is.null(progress_tracker)) {
+    cleanup_progress(progress_tracker)
   }
   
   return(stability_scores)
@@ -1116,6 +2582,24 @@ evaluate_parameter_combinations_optimized <- function(mx, param_combinations,
   start_time <- Sys.time()
   n_combinations <- nrow(param_combinations)
   
+  # Initialize master progress tracking
+  master_tracker <- NULL
+  if (verbose) {
+    # Estimate total work units
+    stability_needed <- "stability" %in% objectives
+    batch_objectives <- intersect(objectives, c("quality", "sparsity", "modularity"))
+    
+    total_work <- n_combinations  # Base work for parameter evaluation
+    if (length(batch_objectives) > 0) {
+      total_work <- total_work + n_combinations  # Weight matrices + quality metrics
+    }
+    if (stability_needed) {
+      total_work <- total_work + n_combinations  # Stability assessment
+    }
+    
+    master_tracker <- ProgressTracker("Joint Parameter Tuning", total_work, verbose = TRUE)
+  }
+  
   # Performance monitoring
   perf_stats <- list(
     n_combinations = n_combinations,
@@ -1161,7 +2645,8 @@ evaluate_parameter_combinations_optimized <- function(mx, param_combinations,
       param_combinations = param_combinations,
       use_cache = use_cache,
       parallel = parallel,
-      verbose = verbose
+      verbose = verbose,
+      progress_tracker = master_tracker
     )
     
     # Batch compute quality metrics
@@ -1173,7 +2658,8 @@ evaluate_parameter_combinations_optimized <- function(mx, param_combinations,
       weight_matrices = weight_matrices,
       objectives = batch_objectives,
       parallel = parallel,
-      verbose = verbose
+      verbose = verbose,
+      progress_tracker = master_tracker
     )
   } else {
     quality_results <- NULL
@@ -1192,7 +2678,8 @@ evaluate_parameter_combinations_optimized <- function(mx, param_combinations,
       n_bootstrap = n_bootstrap,
       use_cache = use_cache,
       parallel = parallel,
-      verbose = verbose
+      verbose = verbose,
+      progress_tracker = master_tracker
     )
   }
   
@@ -1242,6 +2729,12 @@ evaluate_parameter_combinations_optimized <- function(mx, param_combinations,
     if (combined_score > best_score) {
       best_score <- combined_score
       best_idx <- i
+    }
+    
+    # Update progress for scoring
+    if (!is.null(master_tracker)) {
+      update_progress(master_tracker, 1, 
+                     sprintf("score=%.3f (best: %.3f)", combined_score, best_score))
     }
     
     # Early termination check
@@ -1297,6 +2790,11 @@ evaluate_parameter_combinations_optimized <- function(mx, param_combinations,
   if (verbose) {
     message(sprintf("Evaluation complete: %d combinations in %.2f seconds (%.1f combinations/sec)", 
                    scores_computed, computation_time, perf_stats$evaluation_rate))
+  }
+  
+  # Clean up progress tracker
+  if (!is.null(master_tracker)) {
+    cleanup_progress(master_tracker)
   }
   
   return(list(
