@@ -9,7 +9,8 @@ batch_compute_weight_matrices(
   param_combinations,
   use_cache = TRUE,
   parallel = FALSE,
-  verbose = FALSE
+  verbose = FALSE,
+  progress_tracker = NULL
 )
 }
 \arguments{

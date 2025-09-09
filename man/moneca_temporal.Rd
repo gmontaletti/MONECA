@@ -52,7 +52,9 @@ each window:
 for matching. Default is 0.5.}
 
 \item{parallel}{Logical indicating whether to use parallel processing for windows.
-Default is FALSE.}
+When TRUE, windows are processed in parallel using multiple CPU cores, which can
+significantly speed up analysis for large datasets. Uses mclapply on Unix/Mac
+and parLapply on Windows. Default is FALSE.}
 
 \item{verbose}{Logical indicating whether to show progress messages. Default is TRUE.}
 
@@ -96,12 +98,22 @@ months_data <- lapply(1:12, function(m) {
   generate_mobility_data(n_classes = 6, seed = m * 100)
 })
 
-# Run temporal analysis with 3-month moving window
+# Run temporal analysis with 3-month moving window (sequential)
 temporal_result <- moneca_temporal(
   matrix_list = months_data,
   window_size = 3,
   segment.levels = 3,
   stability_method = "hungarian",
+  verbose = TRUE
+)
+
+# Run with parallel processing for faster execution
+temporal_result_parallel <- moneca_temporal(
+  matrix_list = months_data,
+  window_size = 3,
+  segment.levels = 3,
+  stability_method = "hungarian",
+  parallel = TRUE,  # Enable parallel processing
   verbose = TRUE
 )
 

@@ -3,11 +3,6 @@
 \name{temporal_stability_analysis}
 \alias{temporal_stability_analysis}
 \title{Temporal Stability Analysis for MONECA Clustering}
-\description{
-Analyzes the stability and evolution of segments across time periods,
-providing comprehensive metrics on segment persistence, node volatility,
-and structural changes in the mobility network.
-}
 \usage{
 temporal_stability_analysis(
   temporal_result,
@@ -27,6 +22,25 @@ temporal_stability_analysis(
 \item{compute_node_metrics}{Logical indicating whether to compute detailed node-level metrics. Default is TRUE.}
 
 \item{verbose}{Logical indicating whether to show progress messages. Default is TRUE.}
+}
+\value{
+An object of class "temporal_stability" containing:
+  \describe{
+    \item{stability_scores}{Data frame with per-segment and overall stability metrics}
+    \item{node_trajectories}{Matrix showing the path of each node through segments}
+    \item{change_points}{Vector of window indices with significant restructuring}
+    \item{stable_core}{Character vector of nodes with consistent segment membership}
+    \item{volatile_nodes}{Character vector of frequently changing nodes}
+    \item{segment_lifetimes}{Data frame with segment appearance and persistence}
+    \item{transition_summary}{Summary statistics of the transition matrix}
+    \item{volatility_scores}{Per-node volatility scores}
+    \item{parameters}{Analysis parameters used}
+  }
+}
+\description{
+Analyzes the stability and evolution of segments across time periods,
+providing comprehensive metrics on segment persistence, node volatility,
+and structural changes in the mobility network.
 }
 \details{
 The function computes several types of stability metrics:
@@ -51,20 +65,6 @@ The function computes several types of stability metrics:
   \item \strong{Overall stability}: Weighted average of segment stabilities
   \item \strong{Fragmentation index}: Rate of segment splits and merges
   \item \strong{Change points}: Windows with above-average restructuring
-}
-}
-\value{
-An object of class "temporal_stability" containing:
-\describe{
-\item{stability_scores}{Data frame with per-segment and overall stability metrics}
-\item{node_trajectories}{Matrix showing the path of each node through segments}
-\item{change_points}{Vector of window indices with significant restructuring}
-\item{stable_core}{Character vector of nodes with consistent segment membership}
-\item{volatile_nodes}{Character vector of frequently changing nodes}
-\item{segment_lifetimes}{Data frame with segment appearance and persistence}
-\item{transition_summary}{Summary statistics of the transition matrix}
-\item{volatility_scores}{Per-node volatility scores}
-\item{parameters}{Analysis parameters used}
 }
 }
 \examples{
@@ -94,6 +94,7 @@ print(stability)
 stable_nodes <- stability$stable_core
 volatile_nodes <- stability$volatile_nodes
 }
+
 }
 \seealso{
 \code{\link{moneca_temporal}} for temporal clustering,

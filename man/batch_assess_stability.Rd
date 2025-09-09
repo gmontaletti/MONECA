@@ -10,7 +10,8 @@ batch_assess_stability(
   n_bootstrap = 50,
   use_cache = TRUE,
   parallel = FALSE,
-  verbose = FALSE
+  verbose = FALSE,
+  progress_tracker = NULL
 )
 }
 \arguments{

@@ -8,7 +8,8 @@ batch_compute_quality_metrics(
   weight_matrices,
   objectives,
   parallel = FALSE,
-  verbose = FALSE
+  verbose = FALSE,
+  progress_tracker = NULL
 )
 }
 \arguments{

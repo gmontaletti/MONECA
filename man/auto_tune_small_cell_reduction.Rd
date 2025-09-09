@@ -16,7 +16,7 @@ auto_tune_small_cell_reduction(
   seed = NULL,
   verbose = FALSE,
   use_cache = TRUE,
-  parallel_cores = NULL,
+  parallel = "auto",
   early_stopping = TRUE,
   pareto_objectives = c("quality", "performance"),
   cv_folds = 5,
@@ -62,8 +62,9 @@ Default is FALSE.}
 \item{use_cache}{Logical indicating whether to use caching for repeated computations.
 Default is TRUE.}
 
-\item{parallel_cores}{Integer number of cores for parallel processing. Default is NULL
-(auto-detect).}
+\item{parallel}{Character or logical indicating parallel processing preference.
+Can be "auto" (default, intelligent switching), TRUE/FALSE (force parallel/sequential),
+or "parallel"/"sequential" for explicit control.}
 
 \item{early_stopping}{Logical indicating whether to use early stopping for
 candidate screening. Default is TRUE.}
