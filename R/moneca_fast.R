@@ -13,7 +13,8 @@
 #' @param delete.upper.tri Logical indicating whether to use only lower triangle. Default is TRUE.
 #' @param small.cell.reduction Numeric value to handle small cell counts. Default is 0.
 #' @param use.sparse Logical indicating whether to use sparse matrices for large data. Default is FALSE.
-#' @param min.density Minimum edge density to continue processing. Default is 0.01.
+#' @param min.density Minimum strength-based density to continue processing. 
+#'   Calculated as mean(strength)/max(strength). Default is 0.01.
 #' @param max.clique.size Maximum size of cliques to consider (NULL for no limit). Default is NULL.
 #' @param progress Logical indicating whether to show progress bars. Default is TRUE.
 #' 
@@ -87,9 +88,16 @@ moneca_fast <- function(mx = mx,
   # Optimized segment finding
   find.segments.fast <- function(mat, graph, cut.off = 1, mode = "symmetric", delete.upper.tri = TRUE, progress = TRUE) {
     
-    # Early stopping if graph is too sparse
-    density <- igraph::edge_density(graph)
-    if (density < min.density) {
+    # Early stopping using strength-based density
+    strengths <- igraph::strength(graph, mode = "all")
+    if (length(strengths) > 0 && any(strengths > 0)) {
+      # Use relative strength: mean relative to max observed
+      strength_density <- mean(strengths) / max(strengths)
+    } else {
+      strength_density <- 0
+    }
+    
+    if (strength_density < min.density) {
       n <- nrow(mat)
       out <- list(
         membership = as.factor(1:n),
@@ -265,8 +273,15 @@ moneca_fast <- function(mx = mx,
       diag = FALSE
     )
     
-    # Early stopping based on edge density
-    if (igraph::edge_density(gra.1ii) < min.density) {
+    # Early stopping based on strength density
+    strengths <- igraph::strength(gra.1ii, mode = "all")
+    if (length(strengths) > 0 && any(strengths > 0)) {
+      strength_density <- mean(strengths) / max(strengths)
+    } else {
+      strength_density <- 0
+    }
+    
+    if (strength_density < min.density) {
       n <- nrow(mx.1i)
       return(list(
         membership = as.factor(1:n),

@@ -70,16 +70,26 @@ moneca_fast_fixed <- function(mx = mx,
   # OPTIMIZED segment finding - key fix is here
   find.segments.fast <- function(mat, graph, cut.off = 1, mode = "symmetric", delete.upper.tri = TRUE, progress = TRUE) {
     
-    # Early stopping if graph is too sparse
-    density <- igraph::edge_density(graph)
-    if (density < min.density) {
+    # Early stopping using strength-based density
+    strengths <- igraph::strength(graph, mode = "all")
+    if (length(strengths) > 0 && any(strengths > 0)) {
+      # Use relative strength: mean relative to max observed
+      strength_density <- mean(strengths) / max(strengths)
+    } else {
+      strength_density <- 0
+    }
+    
+    if (strength_density < min.density) {
       n <- nrow(mat)
       return(list(membership = as.factor(1:n), cliques = as.list(1:n)))
     }
     
+    # Keep edge density for clique strategy decision
+    edge_density <- igraph::edge_density(graph)
+    
     # CRITICAL FIX: For high-density graphs, use a different strategy
     # Instead of finding all maximal cliques (exponential), use a greedy approach
-    if (density > 0.8) {
+    if (edge_density > 0.8) {
       # Use the original moneca algorithm approach for dense graphs
       # This processes edges one by one without pre-computing all cliques
       return(find.segments.greedy(mat, cut.off, mode, delete.upper.tri, progress))
@@ -88,7 +98,7 @@ moneca_fast_fixed <- function(mx = mx,
     # For moderate density, use maximal cliques with size limit
     if (is.null(max.clique.size)) {
       # Limit clique size for dense graphs to prevent explosion
-      if (density > 0.5) {
+      if (edge_density > 0.5) {
         max.clique.size <- min(10, ceiling(sqrt(vcount(graph))))
       }
       cliques <- moneca_max_cliques(graph, min = 2, max = max.clique.size)
@@ -339,7 +349,15 @@ moneca_fast_fixed <- function(mx = mx,
       diag = FALSE
     )
     
-    if (igraph::edge_density(gra.1ii) < min.density) {
+    # Check strength-based density
+    strengths <- igraph::strength(gra.1ii, mode = "all")
+    if (length(strengths) > 0 && any(strengths > 0)) {
+      strength_density <- mean(strengths) / max(strengths)
+    } else {
+      strength_density <- 0
+    }
+    
+    if (strength_density < min.density) {
       n <- nrow(mx.1i)
       return(list(membership = as.factor(1:n), cliques = as.list(1:n)))
     }

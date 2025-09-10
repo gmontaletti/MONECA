@@ -38,7 +38,8 @@ a significant tie. Default is 1.}
 
 \item{use.sparse}{Logical indicating whether to use sparse matrices for large data. Default is FALSE.}
 
-\item{min.density}{Minimum edge density to continue processing. Default is 0.01.}
+\item{min.density}{Minimum strength-based density to continue processing. 
+Calculated as mean(strength)/max(strength). Default is 0.01.}
 
 \item{max.clique.size}{Maximum size of cliques to consider (NULL for no limit). Default is NULL.}
 
