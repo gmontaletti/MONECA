@@ -1,3 +1,9 @@
+# moneca 0.8.1
+
+## Bug Fixes
+
+* **Fixed `calculate_gini()` Gini coefficient calculation**: The function now correctly includes zero values in the inequality calculation, aligning with the standard mathematical definition and documented behavior. Previously, the function incorrectly filtered out zeros before calculation, which led to underestimating inequality in distributions with isolates or highly centralized networks (e.g., star networks). This fix improves the accuracy of network structure metrics in cutoff sensitivity analysis.
+
 # moneca 0.7.0
 
 ## Major New Features

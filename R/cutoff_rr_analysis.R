@@ -198,17 +198,17 @@ calculate_gini <- function(strengths) {
   if (length(strengths) == 0 || all(strengths == 0)) {
     return(0)
   }
-  
-  # Remove zeros and sort
-  x <- sort(strengths[strengths > 0])
+
+  # Sort all values (including zeros)
+  x <- sort(strengths)
   n <- length(x)
-  
+
   if (n <= 1) return(0)
-  
-  # Calculate Gini using the formula
+
+  # Calculate Gini using standard formula
   index <- 1:n
   gini <- 2 * sum(index * x) / (n * sum(x)) - (n + 1) / n
-  
+
   return(gini)
 }
 
