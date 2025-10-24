@@ -2600,16 +2600,21 @@ generate_segment_plot <- function(segment_matrix, enhanced_membership,
 #' Generate Segment Membership Dataframe from MONECA Results
 #'
 #' Creates a dataframe showing segment membership for each row of the original mobility matrix
-#' across all segmentation levels.
+#' across all segmentation levels with positional code format.
 #'
 #' @param moneca_results A moneca object returned by \code{\link{moneca}} or \code{moneca_fast}.
+#' @param names Logical indicating whether to generate descriptive labels for each level 
+#'   (default TRUE). When TRUE, creates additional columns with segment labels showing 
+#'   the representative node name and count of other members.
 #' @return A dataframe with:
 #'   \itemize{
 #'     \item name: The name of the row from the original matrix
 #'     \item index: The index of the row in the original matrix  
 #'     \item level_X: For each segmentation level X (excluding level 1), the segment
-#'       assignment. If a row is not assigned to any segment at a level, it shows
-#'       the previous level's assignment or the original index.
+#'       assignment using progressive numbering (001, 002, etc.)
+#'     \item name_level_X: (when names=TRUE) Descriptive labels for each level showing
+#'       the representative node and count of other members in format "NodeName (+N)"
+#'     \item id_full: Positional code in format "xxx.xxx.xxx" representing hierarchical position
 #'   }
 #' @export
 #' @examples
@@ -2622,7 +2627,7 @@ generate_segment_plot <- function(segment_matrix, enhanced_membership,
 #' # Generate membership dataframe
 #' membership_df <- segment.membership.dataframe(seg)
 #' print(membership_df)
-segment.membership.dataframe <- function(moneca_results) {
+segment.membership.dataframe <- function(moneca_results, names = TRUE) {
   # Validate input
   if (!inherits(moneca_results, "moneca")) {
     stop("Input must be a moneca object from moneca() or moneca_fast()")
@@ -2633,6 +2638,24 @@ segment.membership.dataframe <- function(moneca_results) {
   n_rows <- nrow(original_matrix) - 1  # Exclude sum row
   row_names <- rownames(original_matrix)[1:n_rows]
   
+  # Determine digit width based on maximum possible entities
+  # Consider max across all levels
+  max_entities <- n_rows  # Maximum entities will be at most n_rows
+  for (level_segments in moneca_results$segment.list) {
+    n_segments <- length(level_segments)
+    # Count isolated nodes (those not in any segment)
+    all_in_segments <- unlist(level_segments)
+    n_isolated <- n_rows - length(unique(all_in_segments))
+    max_entities <- max(max_entities, n_segments + n_isolated)
+  }
+  
+  # Determine format width (3 digits or 4 if > 999)
+  if (max_entities > 999) {
+    format_width <- 4
+  } else {
+    format_width <- 3
+  }
+  
   # Initialize dataframe
   df <- data.frame(
     name = row_names,
@@ -2640,53 +2663,163 @@ segment.membership.dataframe <- function(moneca_results) {
     stringsAsFactors = FALSE
   )
   
+  # Initialize positional code matrix to track codes across levels
+  # Start with level 1 where each node is its own entity
+  positional_codes <- matrix(NA, nrow = n_rows, ncol = 0)
+  
+  # Level 1: each node gets its own number
+  level_1_codes <- sprintf(paste0("%0", format_width, "d"), 1:n_rows)
+  positional_codes <- cbind(positional_codes, level_1_codes)
+  
   # Get segment list
   segment_list <- moneca_results$segment.list
   n_levels <- length(segment_list)
   
-  # Skip first level (which is just individual indices)
-  if (n_levels > 1) {
-    # Process each level starting from level 2
-    for (level in 2:n_levels) {
-      # Initialize column with previous assignment or index
-      if (level == 2) {
-        # For level 2, default is the index with l2. prefix
-        level_assignment <- paste0("l2.", 1:n_rows)
-      } else {
-        # For higher levels, default is the previous level's assignment
-        # Extract the numeric part after the prefix
-        prev_vals <- sub("^l[0-9]+\\.", "", df[[paste0("level_", level - 1)]])
-        level_assignment <- paste0("l", level, ".", prev_vals)
+  # Initialize entity assignments - Level 1: each node is its own entity
+  previous_entity_assignment <- 1:n_rows
+  
+  # Process each level starting from level 1
+  for (level in 1:n_levels) {
+    # Get segments for this level
+    segments_at_level <- segment_list[[level]]
+    
+    # Create entity assignment vector
+    entity_assignment <- character(n_rows)
+    entity_number <- integer(n_rows)
+    
+    # Initialize name column if names is TRUE
+    if (names) {
+      name_assignment <- character(n_rows)
+    }
+    
+    if (level == 1) {
+      # Level 1: each node is its own entity (base case)
+      for (i in 1:n_rows) {
+        entity_number[i] <- i
+        entity_assignment[i] <- sprintf(paste0("%0", format_width, "d"), i)
+        if (names) {
+          name_assignment[i] <- paste0(row_names[i], " (+0)")
+        }
+      }
+    } else {
+      # Level > 1: Implement hierarchically-aware algorithm
+      new_entity_assignment <- integer(n_rows)
+      assigned_nodes <- logical(n_rows)
+      entity_counter <- 0
+      
+      
+      # Step 1: Process explicit groups in current level
+      for (segment_members in segments_at_level) {
+        if (length(segment_members) > 0) {
+          entity_counter <- entity_counter + 1
+          new_entity_assignment[segment_members] <- entity_counter
+          assigned_nodes[segment_members] <- TRUE
+        }
       }
       
-      # Get segments for this level
-      segments_at_level <- segment_list[[level]]
+      # Step 2: For unassigned nodes, preserve previous groupings
+      unassigned_nodes <- which(!assigned_nodes)
       
-      # Assign segment numbers to rows that belong to segments
-      for (seg_num in seq_along(segments_at_level)) {
-        segment_members <- segments_at_level[[seg_num]]
-        # Update assignment for members of this segment with lx. prefix
-        level_assignment[segment_members] <- paste0("l", level, ".", seg_num)
+      if (length(unassigned_nodes) > 0) {
+        # Group unassigned nodes by their previous entity assignment
+        previous_groups <- split(unassigned_nodes, previous_entity_assignment[unassigned_nodes])
+        
+        # Each previous group becomes a new entity
+        for (group in previous_groups) {
+          entity_counter <- entity_counter + 1
+          new_entity_assignment[group] <- entity_counter
+        }
       }
       
-      # Add to dataframe as character
-      df[[paste0("level_", level)]] <- as.character(level_assignment)
+      # Convert to character format and create descriptive labels
+      for (entity_num in 1:entity_counter) {
+        # Find all nodes with this entity number
+        entity_nodes <- which(new_entity_assignment == entity_num)
+        
+        # Assign formatted entity string
+        entity_assignment[entity_nodes] <- sprintf(paste0("%0", format_width, "d"), entity_num)
+        entity_number[entity_nodes] <- entity_num
+        
+        # Generate descriptive label if names is TRUE
+        if (names && length(entity_nodes) > 0) {
+          # Select representative based on node strength (network centrality)
+          if (length(entity_nodes) == 1) {
+            # Single node - use it as representative
+            representative_idx <- entity_nodes[1]
+          } else {
+            # Multiple nodes - select the one with highest strength
+            # Always use level 1 (original) matrix for strength calculation
+            # since higher levels have aggregated matrices where indices don't match
+            tryCatch({
+              # Get the original matrix (level 1)
+              original_matrix <- moneca_results$mat.list[[1]]
+              if (!is.null(original_matrix)) {
+                # Calculate weight matrix using the same function MONECA uses
+                weight_matrix <- weight.matrix(original_matrix, small.cell.reduction = 0)
+                
+                # Calculate node strengths (sum of edge weights) - exclude sum row/col
+                weight_matrix_clean <- weight_matrix[1:(nrow(weight_matrix)-1), 1:(ncol(weight_matrix)-1)]
+                node_strengths <- rowSums(weight_matrix_clean, na.rm = TRUE)
+                
+                # Get strengths for nodes in this entity
+                entity_strengths <- node_strengths[entity_nodes]
+                
+                # Find node with maximum strength
+                max_strength_idx <- which.max(entity_strengths)
+                representative_idx <- entity_nodes[max_strength_idx]
+              } else {
+                # Fallback: use first node if matrix unavailable
+                representative_idx <- entity_nodes[1]
+              }
+            }, error = function(e) {
+              # Fallback on any error: use first node
+              representative_idx <- entity_nodes[1]
+            })
+          }
+          
+          representative_name <- row_names[representative_idx]
+          
+          # Count other members
+          n_others <- length(entity_nodes) - 1
+          
+          # Create label
+          if (n_others > 0) {
+            label <- paste0(representative_name, " (+", n_others, ")")
+          } else {
+            label <- paste0(representative_name, " (+0)")
+          }
+          
+          # Assign the same label to all members of this entity
+          name_assignment[entity_nodes] <- label
+        }
+      }
+      
+      # Update previous assignment for next iteration
+      previous_entity_assignment <- new_entity_assignment
+    }
+    
+    # Store positional codes for this level
+    if (level == 1) {
+      # Level 1 is already stored, update if needed
+      positional_codes[, 1] <- entity_assignment
+    } else {
+      positional_codes <- cbind(positional_codes, entity_assignment)
+    }
+    
+    # Add level column to dataframe (skip level 1 as it's just individual nodes)
+    if (level > 1) {
+      df[[paste0("level_", level)]] <- entity_assignment
+      
+      # Add name column if names is TRUE
+      if (names) {
+        df[[paste0("name_level_", level)]] <- name_assignment
+      }
     }
   }
   
-  # Create the final column with concatenated id and all levels
-  # Start with the index
-  id_col <- paste0("id_", df$index)
-  
-  # Add all level columns if they exist
-  level_cols <- grep("^level_[0-9]+$", names(df), value = TRUE)
-  if (length(level_cols) > 0) {
-    for (col in level_cols) {
-      id_col <- paste0(id_col, "_", df[[col]])
-    }
-  }
-  
-  df$id_full <- id_col
+  # Create id_full with positional code format xxx.xxx.xxx (reversed: level3.level2.level1)
+  id_full <- apply(positional_codes, 1, function(x) paste(rev(x), collapse = "."))
+  df$id_full <- id_full
   
   return(df)
 }

@@ -4,10 +4,14 @@
 \alias{segment.membership.dataframe}
 \title{Generate Segment Membership Dataframe from MONECA Results}
 \usage{
-segment.membership.dataframe(moneca_results)
+segment.membership.dataframe(moneca_results, names = TRUE)
 }
 \arguments{
 \item{moneca_results}{A moneca object returned by \code{\link{moneca}} or \code{moneca_fast}.}
+
+\item{names}{Logical indicating whether to generate descriptive labels for each level 
+(default TRUE). When TRUE, creates additional columns with segment labels showing 
+the representative node name and count of other members.}
 }
 \value{
 A dataframe with:
@@ -15,13 +19,15 @@ A dataframe with:
     \item name: The name of the row from the original matrix
     \item index: The index of the row in the original matrix  
     \item level_X: For each segmentation level X (excluding level 1), the segment
-      assignment. If a row is not assigned to any segment at a level, it shows
-      the previous level's assignment or the original index.
+      assignment using progressive numbering (001, 002, etc.)
+    \item name_level_X: (when names=TRUE) Descriptive labels for each level showing
+      the representative node and count of other members in format "NodeName (+N)"
+    \item id_full: Positional code in format "xxx.xxx.xxx" representing hierarchical position
   }
 }
 \description{
 Creates a dataframe showing segment membership for each row of the original mobility matrix
-across all segmentation levels.
+across all segmentation levels with positional code format.
 }
 \examples{
 # Generate example data

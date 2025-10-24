@@ -13,7 +13,10 @@
       "mcp__cran__search_packages",
       "mcp__cran__get_package_info",
       "Bash(tar:*)",
-      "mcp__sequential-thinking__sequentialthinking"
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(Rscript:*)",
+      "Bash(awk:*)",
+      "Bash(git commit:*)"
     ]
   },
   "enableAllProjectMcpServers": false
