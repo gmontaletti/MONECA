@@ -1,0 +1,179 @@
+url: https://gmontaletti.github.io/MONECA/
+
+template:
+  bootstrap: 5
+  bslib:
+    primary: "#0054AD"
+    base_font: {google: "Roboto"}
+
+development:
+  mode: auto
+
+home:
+  links:
+  - text: Browse source code
+    href: https://github.com/gmontaletti/MONECA
+
+reference:
+  - title: "Core Clustering Functions"
+    desc: "Main functions for MONECA clustering analysis"
+    contents:
+      - moneca
+      - moneca_fast
+      - moneca_fast_fixed
+      - moneca_parallel
+      - weight.matrix
+      - weight.matrix.parallel
+      - find.segments
+      - find.segments.parallel
+
+  - title: "Segment Analysis"
+    desc: "Functions for analyzing and extracting segment information"
+    contents:
+      - segment.membership
+      - segment.membership.dataframe
+      - segment.membership.enhanced
+      - segment.quality
+      - segment.matrix.parallel
+      - force.segments
+      - segment.colors
+      - segment.edges
+
+  - title: "Auto-Tuning and Optimization"
+    desc: "Automatic parameter optimization and tuning functions"
+    contents:
+      - auto_tune_small_cell_reduction
+      - auto_tune_small_cell_reduction_enhanced
+      - auto_tune_joint_parameters
+      - assess_clustering_stability
+      - assess_clustering_stability_parallel
+      - compute_tuning_metrics
+      - evaluate_performance_trade_offs
+      - generate_candidate_values
+      - suggest_parameter_ranges
+
+  - title: "Cutoff and Sensitivity Analysis"
+    desc: "Functions for cutoff selection and sensitivity analysis"
+    contents:
+      - cutoff_sensitivity_analysis
+      - evaluate_cutoff_strength
+      - find_optimal_cutoff
+      - analyze_rr_distribution
+      - analyze_parameter_interaction
+      - calculate_strength_density
+
+  - title: "Temporal Analysis"
+    desc: "Functions for temporal clustering and stability analysis"
+    contents:
+      - moneca_temporal
+      - temporal_stability_analysis
+      - aggregate_mobility_window
+      - match_segments_across_time
+      - export_node_trajectories
+
+  - title: "Visualization Functions"
+    desc: "Modern plotting functions using ggraph"
+    contents:
+      - plot_moneca_ggraph
+      - plot_ego_ggraph
+      - plot_stair_ggraph
+      - plot_moneca_dendrogram
+      - plot_segment_quality
+      - plot_temporal_segments
+      - plot_temporal_stability
+      - plot_cutoff_analysis
+      - plot_cutoff_interactive
+      - plot_rr_distribution
+      - plot_strength_comparison
+      - plot_tuning_results
+      - plot_optimization_surface
+      - plot_elbow_curve
+
+  - title: "Legacy Visualization"
+    desc: "Original plotting functions (backward compatibility)"
+    contents:
+      - moneca.plot
+      - gg.moneca
+      - ego.plot
+      - stair.plot
+      - layout.matrix
+
+  - title: "Data Generation"
+    desc: "Functions for generating synthetic mobility data"
+    contents:
+      - generate_mobility_data
+      - generate_example_datasets
+
+  - title: "Parallel Processing"
+    desc: "Functions for parallel computation and diagnostics"
+    contents:
+      - should_use_parallel
+      - get_optimal_cores
+      - benchmark_parallel_performance
+      - diagnose_parallel_execution
+      - detect_system_resources
+      - monitor_system_resources
+
+  - title: "Utility Functions"
+    desc: "Helper functions and internal utilities"
+    contents:
+      - first.level.summary
+      - vertex.mobility
+      - test_igraph_compatibility
+      - analyze_package_dependencies
+      - validate_description_dependencies
+      - generate_dependency_report
+      - generate_temporal_report
+      - clear_evaluation_caches
+      - get_cache_stats
+      - compute_clustering_quality_metrics
+      - mobility_data_examples
+      - modern_plotting
+      - parameter_sensitivity_plot
+      - performance_quality_tradeoff_plot
+
+  - title: "S3 Methods"
+    desc: "Print and summary methods for moneca objects"
+    contents:
+      - moneca-package
+      - print.moneca
+      - print.first_level_summary
+      - print.cutoff_sensitivity
+      - print.optimal_cutoff
+      - print.rr_distribution
+      - print.parameter_interaction
+      - print.temporal_stability
+      - print.moneca_tuning
+      - print.moneca_tuning_enhanced
+      - print.moneca_joint_tuning
+      - print.moneca_temporal
+      - print.moneca_parallel_benchmark
+      - print.moneca_parallel_diagnostic
+      - print.moneca_system_resources
+      - print.moneca_resource_monitor
+
+articles:
+  - title: "Getting Started"
+    desc: "Introduction and basic usage of moneca"
+    navbar: ~
+    contents:
+      - moneca-introduction
+
+  - title: "Advanced Topics"
+    desc: "Advanced features and optimization techniques"
+    contents:
+      - auto-tuning-guide
+      - parameter-calibration
+
+  - title: "Performance and Benchmarks"
+    desc: "Performance comparisons and optimizations"
+    contents:
+      - algorithm-comparison
+      - moneca-statistics
+
+news:
+  releases:
+  - text: "Version 0.8"
+    href: https://gmontaletti.github.io/MONECA/news/index.html#moneca-08
+  - text: "Version 0.7"
+    href: https://gmontaletti.github.io/MONECA/news/index.html#moneca-07
