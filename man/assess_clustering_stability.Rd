@@ -8,7 +8,7 @@ assess_clustering_stability(
   mx,
   small.cell.reduction,
   cut.off = 1,
-  n_bootstrap = 100,
+  n_bootstrap = 50,
   sample_fraction = 0.8,
   segment.levels = 3
 )
@@ -20,9 +20,9 @@ assess_clustering_stability(
 
 \item{cut.off}{Edge weight threshold for network construction. Default is 1.}
 
-\item{n_bootstrap}{Number of bootstrap samples to generate. Default is 100.}
+\item{n_bootstrap}{Number of bootstrap samples to generate. Default is 50.}
 
-\item{sample_fraction}{Fraction of data to use in each bootstrap sample. 
+\item{sample_fraction}{Fraction of data to use in each bootstrap sample.
 Default is 0.8.}
 
 \item{segment.levels}{Number of hierarchical levels for clustering. Default is 3.}
@@ -32,8 +32,8 @@ Numeric stability score between 0 and 1, where higher values
   indicate more stable clustering results.
 }
 \description{
-Evaluates the stability of MONECA clustering results for a given 
-small.cell.reduction parameter using bootstrap resampling. More stable 
+Evaluates the stability of MONECA clustering results for a given
+small.cell.reduction parameter using bootstrap resampling. More stable
 parameters produce consistent clustering across data subsamples.
 }
 \details{
@@ -53,14 +53,19 @@ The stability score combines multiple measures including:
 # Generate sample data
 mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
 
-# Assess stability for different parameters
-stability_0 <- assess_clustering_stability(mobility_data, 
+# Assess stability for different parameters (uses default n_bootstrap = 50)
+stability_0 <- assess_clustering_stability(mobility_data,
                                           small.cell.reduction = 0)
-stability_5 <- assess_clustering_stability(mobility_data, 
+stability_5 <- assess_clustering_stability(mobility_data,
                                           small.cell.reduction = 5)
 
 cat("Stability with parameter 0:", stability_0, "\n")
 cat("Stability with parameter 5:", stability_5, "\n")
+
+# For more thorough assessment, increase n_bootstrap
+stability_thorough <- assess_clustering_stability(mobility_data,
+                                                  small.cell.reduction = 2,
+                                                  n_bootstrap = 100)
 }
 
 }

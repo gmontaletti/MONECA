@@ -7,8 +7,8 @@
 auto_tune_small_cell_reduction(
   mx,
   cut.off = 1,
-  method = "stability",
-  n_trials = 10,
+  method = "quality",
+  n_trials = 5,
   candidate_values = NULL,
   performance_weight = 0.3,
   min_density = 0.01,
@@ -32,15 +32,16 @@ Default is 1.}
 
 \item{method}{Character string specifying tuning strategy. Options are:
 \itemize{
-  \item "stability" (default): Bootstrap-based stability assessment
-  \item "quality": Clustering quality optimization using silhouette and modularity
+  \item "quality" (default, RECOMMENDED): Fast clustering quality optimization (10x faster than stability)
+  \item "stability": Bootstrap-based stability assessment (more thorough but slower)
   \item "performance": Balance between quality and computational efficiency
   \item "pareto": Multi-objective optimization with Pareto frontier analysis
   \item "cross_validation": Cross-validation based parameter selection
   \item "bayesian": Bayesian optimization (requires GPfit package)
 }}
 
-\item{n_trials}{Integer number of trials for stability assessment or CV folds. Default is 10.}
+\item{n_trials}{Integer number of trials for stability assessment or CV folds.
+Default is 5. Increase to 10-20 for more thorough assessment at cost of speed.}
 
 \item{candidate_values}{Numeric vector of candidate values to test. If NULL,
 values are generated automatically using data-driven methods.}
@@ -118,22 +119,27 @@ matrix sparsity analysis, and network density targets unless explicitly provided
 # Generate sample mobility data
 mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
 
-# Stability-based tuning (recommended)
+# Quality-based tuning (default, fast and recommended)
 tuning_result <- auto_tune_small_cell_reduction(
-  mx = mobility_data, 
-  method = "stability",
-  n_trials = 15,
+  mx = mobility_data,
   verbose = TRUE
 )
 
 # Use optimal parameter in moneca analysis
-segments <- moneca(mobility_data, 
+segments <- moneca(mobility_data,
                   small.cell.reduction = tuning_result$optimal_value)
 
-# Quality-based tuning with custom candidates
-quality_result <- auto_tune_small_cell_reduction(
+# Stability-based tuning (slower but more thorough)
+stability_result <- auto_tune_small_cell_reduction(
   mx = mobility_data,
-  method = "quality", 
+  method = "stability",
+  n_trials = 10,
+  verbose = TRUE
+)
+
+# Quality-based tuning with custom candidates
+custom_result <- auto_tune_small_cell_reduction(
+  mx = mobility_data,
   candidate_values = c(0, 1, 2, 5, 10, 20),
   verbose = TRUE
 )

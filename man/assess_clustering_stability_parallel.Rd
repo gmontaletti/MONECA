@@ -8,7 +8,7 @@ assess_clustering_stability_parallel(
   mx,
   small.cell.reduction,
   cut.off = 1,
-  n_bootstrap = 100,
+  n_bootstrap = 50,
   sample_fraction = 0.8,
   segment.levels = 3,
   n_cores = NULL,
@@ -24,9 +24,9 @@ assess_clustering_stability_parallel(
 
 \item{cut.off}{Edge weight threshold for network construction. Default is 1.}
 
-\item{n_bootstrap}{Number of bootstrap samples to generate. Default is 100.}
+\item{n_bootstrap}{Number of bootstrap samples to generate. Default is 50.}
 
-\item{sample_fraction}{Fraction of data to use in each bootstrap sample. 
+\item{sample_fraction}{Fraction of data to use in each bootstrap sample.
 Default is 0.8.}
 
 \item{segment.levels}{Number of hierarchical levels for clustering. Default is 3.}
@@ -65,20 +65,26 @@ Performance improvements:
 # Generate sample data
 mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
 
-# Parallel stability assessment (auto-detect cores)
+# Parallel stability assessment (auto-detect cores, default n_bootstrap = 50)
 stability_parallel <- assess_clustering_stability_parallel(
-  mobility_data, 
+  mobility_data,
   small.cell.reduction = 5,
-  n_bootstrap = 100,
   parallel = TRUE
 )
 
 # Sequential for comparison
 stability_seq <- assess_clustering_stability_parallel(
   mobility_data,
-  small.cell.reduction = 5, 
-  n_bootstrap = 100,
+  small.cell.reduction = 5,
   parallel = FALSE
+)
+
+# For more thorough assessment, increase n_bootstrap
+stability_thorough <- assess_clustering_stability_parallel(
+  mobility_data,
+  small.cell.reduction = 5,
+  n_bootstrap = 100,
+  parallel = TRUE
 )
 }
 

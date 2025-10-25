@@ -25,14 +25,15 @@ NULL
 #'   Default is 1.
 #' @param method Character string specifying tuning strategy. Options are:
 #'   \itemize{
-#'     \item "stability" (default): Bootstrap-based stability assessment
-#'     \item "quality": Clustering quality optimization using silhouette and modularity
+#'     \item "quality" (default, RECOMMENDED): Fast clustering quality optimization (10x faster than stability)
+#'     \item "stability": Bootstrap-based stability assessment (more thorough but slower)
 #'     \item "performance": Balance between quality and computational efficiency
 #'     \item "pareto": Multi-objective optimization with Pareto frontier analysis
 #'     \item "cross_validation": Cross-validation based parameter selection
 #'     \item "bayesian": Bayesian optimization (requires GPfit package)
 #'   }
-#' @param n_trials Integer number of trials for stability assessment or CV folds. Default is 10.
+#' @param n_trials Integer number of trials for stability assessment or CV folds.
+#'   Default is 5. Increase to 10-20 for more thorough assessment at cost of speed.
 #' @param candidate_values Numeric vector of candidate values to test. If NULL,
 #'   values are generated automatically using data-driven methods.
 #' @param performance_weight Numeric weight (0-1) for performance vs quality 
@@ -89,27 +90,32 @@ NULL
 #' \dontrun{
 #' # Generate sample mobility data
 #' mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
-#' 
-#' # Stability-based tuning (recommended)
+#'
+#' # Quality-based tuning (default, fast and recommended)
 #' tuning_result <- auto_tune_small_cell_reduction(
-#'   mx = mobility_data, 
-#'   method = "stability",
-#'   n_trials = 15,
+#'   mx = mobility_data,
 #'   verbose = TRUE
 #' )
-#' 
+#'
 #' # Use optimal parameter in moneca analysis
-#' segments <- moneca(mobility_data, 
+#' segments <- moneca(mobility_data,
 #'                   small.cell.reduction = tuning_result$optimal_value)
-#' 
-#' # Quality-based tuning with custom candidates
-#' quality_result <- auto_tune_small_cell_reduction(
+#'
+#' # Stability-based tuning (slower but more thorough)
+#' stability_result <- auto_tune_small_cell_reduction(
 #'   mx = mobility_data,
-#'   method = "quality", 
+#'   method = "stability",
+#'   n_trials = 10,
+#'   verbose = TRUE
+#' )
+#'
+#' # Quality-based tuning with custom candidates
+#' custom_result <- auto_tune_small_cell_reduction(
+#'   mx = mobility_data,
 #'   candidate_values = c(0, 1, 2, 5, 10, 20),
 #'   verbose = TRUE
 #' )
-#' 
+#'
 #' # Performance-aware tuning
 #' performance_result <- auto_tune_small_cell_reduction(
 #'   mx = mobility_data,
@@ -128,8 +134,8 @@ NULL
 #' @export
 auto_tune_small_cell_reduction <- function(mx,
                                          cut.off = 1,
-                                         method = "stability", 
-                                         n_trials = 10,
+                                         method = "quality",
+                                         n_trials = 5,
                                          candidate_values = NULL,
                                          performance_weight = 0.3,
                                          min_density = 0.01,
@@ -186,6 +192,12 @@ auto_tune_small_cell_reduction <- function(mx,
     cat("Matrix size:", nrow(mx), "x", ncol(mx), "\n")
     cat("Parallel processing:", if (use_parallel) paste("YES (", n_cores, "cores)") else "NO", "\n")
   }
+
+  # Add helpful message for users using stability method with old defaults
+  if (method == "stability" && n_trials >= 10 && !is.null(match.call()$method)) {
+    message("Note: 'stability' method with n_trials >= 10 is slower but more thorough.")
+    message("For faster tuning (~5-10x speedup), consider: method = 'quality', n_trials = 5")
+  }
   
   # Generate candidate values if not provided
   if (is.null(candidate_values)) {
@@ -223,7 +235,10 @@ auto_tune_small_cell_reduction <- function(mx,
   } else {
     list(use_parallel = FALSE, cluster = NULL)
   }
-  
+
+  # Initialize weight matrix cache if caching enabled
+  weight_matrix_cache <- if (use_cache) new.env(hash = TRUE) else NULL
+
   results <- list()
   stability_scores <- numeric(length(candidate_values))
   quality_metrics <- list()
@@ -235,8 +250,12 @@ auto_tune_small_cell_reduction <- function(mx,
   
   # VECTORIZED CANDIDATE EVALUATION - Major Performance Optimization
   # Replace sequential loop with batch processing and vectorized operations
+
+  # Initialize progress tracking for candidate evaluation
+  pb <- NULL
   if (verbose) {
-    cat("Evaluating", length(candidate_values), "candidates using optimized batch processing...\n")
+    cat("\nEvaluating", length(candidate_values), "candidates using optimized batch processing...\n")
+    pb <- txtProgressBar(min = 0, max = length(candidate_values), style = 3)
   }
   
   # Define vectorized evaluation function
@@ -247,91 +266,103 @@ auto_tune_small_cell_reduction <- function(mx,
     for (idx in seq_along(candidate_indices)) {
       i <- candidate_indices[idx]
       candidate <- candidate_values[i]
-      
-      if (verbose && (idx %% 5 == 0 || idx == length(candidate_indices))) {
-        cat("\rProcessed", idx, "of", length(candidate_indices), "candidates    ")
-        flush.console()
+
+      # Update progress bar
+      if (!is.null(pb)) {
+        setTxtProgressBar(pb, i)
       }
-      
+
       result <- tryCatch({
-        # Compute weight matrix for this candidate
-        weight_matrix <- weight.matrix(
-          mx = mx, 
-          cut.off = cut.off, 
-          small.cell.reduction = candidate
-        )
-        
+        # Compute or retrieve weight matrix with caching
+        cache_key <- paste0("wm_", candidate, "_", cut.off)
+        weight_matrix <- if (use_cache && !is.null(weight_matrix_cache) &&
+                             exists(cache_key, envir = weight_matrix_cache)) {
+          # Retrieve from cache
+          get(cache_key, envir = weight_matrix_cache)
+        } else {
+          # Compute and cache
+          wm <- weight.matrix(
+            mx = mx,
+            cut.off = cut.off,
+            small.cell.reduction = candidate
+          )
+          if (use_cache && !is.null(weight_matrix_cache)) {
+            assign(cache_key, wm, envir = weight_matrix_cache)
+          }
+          wm
+        }
+
         # Check for valid network
         if (all(is.na(weight_matrix)) || sum(!is.na(weight_matrix)) == 0) {
-          return(list(
+          list(
             stability_score = 0,
             quality_metrics = list(silhouette = 0, modularity = 0, overall = 0),
             performance_metrics = list(time = NA, density = 0, valid = FALSE),
             network_properties = list(density = 0, components = 0, edges = 0)
-          ))
-        }
-        
-        # Stability assessment (vectorized when possible)
-        stability_score <- 0
-        if (method == "stability") {
-          if (use_parallel) {
-            stability_score <- assess_clustering_stability_parallel(
-              mx = mx, 
-              small.cell.reduction = candidate,
-              cut.off = cut.off,
-              n_bootstrap = n_trials,
-              parallel = TRUE,
-              n_cores = n_cores,
-              verbose = FALSE
-            )
-          } else {
-            stability_score <- assess_clustering_stability(
-              mx = mx, 
-              small.cell.reduction = candidate,
-              cut.off = cut.off,
-              n_bootstrap = n_trials
-            )
+          )
+        } else {
+          # Stability assessment (vectorized when possible)
+          stability_score <- 0
+          if (method == "stability") {
+            if (use_parallel) {
+              stability_score <- assess_clustering_stability_parallel(
+                mx = mx,
+                small.cell.reduction = candidate,
+                cut.off = cut.off,
+                n_bootstrap = n_trials,
+                parallel = TRUE,
+                n_cores = n_cores,
+                verbose = FALSE
+              )
+            } else {
+              stability_score <- assess_clustering_stability(
+                mx = mx,
+                small.cell.reduction = candidate,
+                cut.off = cut.off,
+                n_bootstrap = n_trials
+              )
+            }
           }
+
+          # Quality metrics computation (optimized)
+          quality_metrics_result <- compute_clustering_quality_metrics(
+            weight_matrix = weight_matrix
+          )
+
+          # Performance metrics (streamlined)
+          performance_start <- Sys.time()
+          test_segments <- tryCatch({
+            moneca_fast(mx, segment.levels = 2, cut.off = cut.off,
+                       small.cell.reduction = candidate, progress = FALSE)
+          }, error = function(e) NULL)
+          performance_end <- Sys.time()
+
+          performance_time <- as.numeric(performance_end - performance_start)
+
+          performance_result <- list(
+            time = performance_time,
+            density = sum(!is.na(weight_matrix)) / length(weight_matrix),
+            valid = !is.null(test_segments)
+          )
+
+          # Network properties (cached computation)
+          network_props <- compute_network_properties(weight_matrix)
+
+          list(
+            stability_score = stability_score,
+            quality_metrics = quality_metrics_result,
+            performance_metrics = performance_result,
+            network_properties = network_props
+          )
         }
-        
-        # Quality metrics computation (optimized)
-        quality_metrics_result <- compute_clustering_quality_metrics(
-          weight_matrix = weight_matrix
-        )
-        
-        # Performance metrics (streamlined)
-        performance_start <- Sys.time()
-        test_segments <- tryCatch({
-          moneca_fast(mx, segment.levels = 2, cut.off = cut.off, 
-                     small.cell.reduction = candidate, progress = FALSE)
-        }, error = function(e) NULL)
-        performance_end <- Sys.time()
-        
-        performance_time <- as.numeric(performance_end - performance_start)
-        
-        performance_result <- list(
-          time = performance_time,
-          density = sum(!is.na(weight_matrix)) / length(weight_matrix),
-          valid = !is.null(test_segments)
-        )
-        
-        # Network properties (cached computation)
-        network_props <- compute_network_properties(weight_matrix)
-        
-        return(list(
-          stability_score = stability_score,
-          quality_metrics = quality_metrics_result,
-          performance_metrics = performance_result,
-          network_properties = network_props
-        ))
-        
+
       }, error = function(e) {
-        return(list(
+        list(
           stability_score = 0,
           quality_metrics = list(silhouette = 0, modularity = 0, overall = 0),
           performance_metrics = list(time = NA, density = 0, valid = FALSE),
           network_properties = list(density = 0, components = 0, edges = 0)
-        ))
+        )
       })
       
       results[[idx]] <- result
@@ -351,12 +382,13 @@ auto_tune_small_cell_reduction <- function(mx,
     if (verbose) cat("\nUsing parallel evaluation with", length(candidate_chunks), "worker processes...\n")
     
     # Export necessary objects to cluster workers
-    parallel::clusterExport(parallel_setup$cluster, 
-                          c("mx", "candidate_values", "cut.off", "method", "n_trials", 
-                            "weight.matrix", "assess_clustering_stability", 
+    parallel::clusterExport(parallel_setup$cluster,
+                          c("mx", "candidate_values", "cut.off", "method", "n_trials",
+                            "weight.matrix", "assess_clustering_stability",
                             "assess_clustering_stability_parallel",
                             "compute_clustering_quality_metrics", "moneca_fast",
-                            "compute_network_properties"),
+                            "compute_network_properties",
+                            "use_cache", "weight_matrix_cache"),
                           envir = environment())
     
     # Execute parallel evaluation
@@ -378,15 +410,24 @@ auto_tune_small_cell_reduction <- function(mx,
   quality_metrics <- lapply(all_results, function(x) x$quality_metrics)
   performance_metrics <- lapply(all_results, function(x) x$performance_metrics)
   network_properties <- lapply(all_results, function(x) x$network_properties)
-  
+
+  # Close progress bar and show completion message
+  if (!is.null(pb)) {
+    close(pb)
+  }
+
   if (verbose) {
-    cat("\nBatch evaluation completed. Results summary:\n")
-    cat("- Valid results:", sum(vapply(performance_metrics, function(x) x$valid, logical(1))), 
+    cat("\n\n")  # Add spacing after progress bar
+    cat("Batch evaluation completed\n")
+    cat("- Valid results:", sum(vapply(performance_metrics, function(x) x$valid, logical(1))),
         "of", length(candidate_values), "\n")
     if (method == "stability") {
       cat("- Mean stability score:", round(mean(stability_scores, na.rm = TRUE), 3), "\n")
     }
     cat("- Mean quality score:", round(mean(vapply(quality_metrics, function(x) x$overall, numeric(1)), na.rm = TRUE), 3), "\n")
+    if (use_cache && !is.null(weight_matrix_cache)) {
+      cat("- Weight matrices cached:", length(ls(envir = weight_matrix_cache)), "\n")
+    }
   }
   
   # Select optimal parameter based on method
@@ -612,15 +653,15 @@ generate_candidate_values <- function(mx,
 
 #' Assess Clustering Stability Using Bootstrap Resampling
 #'
-#' Evaluates the stability of MONECA clustering results for a given 
-#' small.cell.reduction parameter using bootstrap resampling. More stable 
+#' Evaluates the stability of MONECA clustering results for a given
+#' small.cell.reduction parameter using bootstrap resampling. More stable
 #' parameters produce consistent clustering across data subsamples.
 #'
 #' @param mx Mobility matrix for analysis.
 #' @param small.cell.reduction Small cell reduction parameter to test.
 #' @param cut.off Edge weight threshold for network construction. Default is 1.
-#' @param n_bootstrap Number of bootstrap samples to generate. Default is 100.
-#' @param sample_fraction Fraction of data to use in each bootstrap sample. 
+#' @param n_bootstrap Number of bootstrap samples to generate. Default is 50.
+#' @param sample_fraction Fraction of data to use in each bootstrap sample.
 #'   Default is 0.8.
 #' @param segment.levels Number of hierarchical levels for clustering. Default is 3.
 #'
@@ -643,23 +684,28 @@ generate_candidate_values <- function(mx,
 #' \dontrun{
 #' # Generate sample data
 #' mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
-#' 
-#' # Assess stability for different parameters
-#' stability_0 <- assess_clustering_stability(mobility_data, 
+#'
+#' # Assess stability for different parameters (uses default n_bootstrap = 50)
+#' stability_0 <- assess_clustering_stability(mobility_data,
 #'                                           small.cell.reduction = 0)
-#' stability_5 <- assess_clustering_stability(mobility_data, 
+#' stability_5 <- assess_clustering_stability(mobility_data,
 #'                                           small.cell.reduction = 5)
-#' 
+#'
 #' cat("Stability with parameter 0:", stability_0, "\n")
 #' cat("Stability with parameter 5:", stability_5, "\n")
+#'
+#' # For more thorough assessment, increase n_bootstrap
+#' stability_thorough <- assess_clustering_stability(mobility_data,
+#'                                                   small.cell.reduction = 2,
+#'                                                   n_bootstrap = 100)
 #' }
 #'
 #' @seealso \code{\link{auto_tune_small_cell_reduction}}, \code{\link{moneca}}
 #' @export
-assess_clustering_stability <- function(mx, 
+assess_clustering_stability <- function(mx,
                                       small.cell.reduction,
                                       cut.off = 1,
-                                      n_bootstrap = 100,
+                                      n_bootstrap = 50,
                                       sample_fraction = 0.8,
                                       segment.levels = 3) {
   
@@ -715,8 +761,8 @@ assess_clustering_stability <- function(mx,
 #' @param mx Mobility matrix for analysis.
 #' @param small.cell.reduction Small cell reduction parameter to test.
 #' @param cut.off Edge weight threshold for network construction. Default is 1.
-#' @param n_bootstrap Number of bootstrap samples to generate. Default is 100.
-#' @param sample_fraction Fraction of data to use in each bootstrap sample. 
+#' @param n_bootstrap Number of bootstrap samples to generate. Default is 50.
+#' @param sample_fraction Fraction of data to use in each bootstrap sample.
 #'   Default is 0.8.
 #' @param segment.levels Number of hierarchical levels for clustering. Default is 3.
 #' @param n_cores Number of CPU cores to use. NULL (default) uses all available cores - 1.
@@ -743,30 +789,36 @@ assess_clustering_stability <- function(mx,
 #' \dontrun{
 #' # Generate sample data
 #' mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
-#' 
-#' # Parallel stability assessment (auto-detect cores)
+#'
+#' # Parallel stability assessment (auto-detect cores, default n_bootstrap = 50)
 #' stability_parallel <- assess_clustering_stability_parallel(
-#'   mobility_data, 
+#'   mobility_data,
 #'   small.cell.reduction = 5,
-#'   n_bootstrap = 100,
 #'   parallel = TRUE
 #' )
-#' 
+#'
 #' # Sequential for comparison
 #' stability_seq <- assess_clustering_stability_parallel(
 #'   mobility_data,
-#'   small.cell.reduction = 5, 
-#'   n_bootstrap = 100,
+#'   small.cell.reduction = 5,
 #'   parallel = FALSE
+#' )
+#'
+#' # For more thorough assessment, increase n_bootstrap
+#' stability_thorough <- assess_clustering_stability_parallel(
+#'   mobility_data,
+#'   small.cell.reduction = 5,
+#'   n_bootstrap = 100,
+#'   parallel = TRUE
 #' )
 #' }
 #'
 #' @seealso \code{\link{assess_clustering_stability}}, \code{\link{auto_tune_small_cell_reduction}}
 #' @export
-assess_clustering_stability_parallel <- function(mx, 
+assess_clustering_stability_parallel <- function(mx,
                                                 small.cell.reduction,
                                                 cut.off = 1,
-                                                n_bootstrap = 100,
+                                                n_bootstrap = 50,
                                                 sample_fraction = 0.8,
                                                 segment.levels = 3,
                                                 n_cores = NULL,
@@ -1392,18 +1444,27 @@ estimate_components <- function(adj_matrix) {
       # Vectorized breadth-first search using matrix operations
       current_component <- logical(n)
       current_component[i] <- TRUE
-      
+
       # Iterative expansion using matrix multiplication
+      # Safety mechanism: prevent infinite loops
+      iteration_count <- 0
       repeat {
+        iteration_count <- iteration_count + 1
+        if (iteration_count > n) {
+          warning("estimate_components: Maximum iterations reached, stopping to prevent infinite loop")
+          break
+        }
+
         # Find all neighbors of current component nodes
         new_nodes <- colSums(adj_symmetric[current_component, , drop = FALSE]) > 0
-        
-        # Remove already visited nodes
-        new_nodes <- new_nodes & !visited
-        
+
+        # Remove already visited nodes AND nodes already in current component
+        # Fix for infinite loop bug: must exclude nodes already in current_component
+        new_nodes <- new_nodes & !visited & !current_component
+
         # If no new nodes found, component is complete
         if (!any(new_nodes)) break
-        
+
         # Add new nodes to component
         current_component <- current_component | new_nodes
       }
