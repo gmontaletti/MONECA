@@ -5,3 +5,8 @@
 /Meta/
 .claude/
 docs
+vignettes/*_files/
+vignettes/*.html
+tests/testthat/*.pdf
+*.pdf
+.claude/settings.local.json
