@@ -20,6 +20,13 @@ knitr::opts_chunk$set(
 )
 library(moneca)
 library(ggplot2)
+
+# Generate example mobility data for use throughout vignette
+set.seed(123)
+mobility_data <- generate_mobility_data(n_classes = 6,
+                                       immobility_strength = 0.75,
+                                       class_clustering = 0.7,
+                                       seed = 123)
 ```
 
 # Joint Parameter Calibration in MONECA

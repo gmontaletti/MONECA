@@ -84,7 +84,8 @@ underlying organization of social mobility.
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/gmontaletti/moneca}
+  \item \url{https://gmontaletti.github.io/MONECA/}
+  \item \url{https://github.com/gmontaletti/MONECA}
 }
 
 }
