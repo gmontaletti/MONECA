@@ -89,19 +89,21 @@ test_that("moneca_temporal input validation works", {
     "Number of periods must be at least equal to window_size"
   )
   
-  # Test invalid stability method
+  # Test invalid stability method (need enough periods for window size)
+  test_matrices_valid <- create_test_matrices(n_periods = 5, n_classes = 4)
+
   expect_error(
     moneca_temporal(
-      matrix_list = test_matrices,
+      matrix_list = test_matrices_valid,
       stability_method = "invalid_method"
     ),
     "stability_method must be one of"
   )
-  
-  # Test invalid aggregation method  
+
+  # Test invalid aggregation method
   expect_error(
     moneca_temporal(
-      matrix_list = test_matrices,
+      matrix_list = test_matrices_valid,
       aggregation_method = "invalid_method"
     ),
     "aggregation_method must be one of"
