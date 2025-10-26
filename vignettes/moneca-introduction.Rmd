@@ -1189,7 +1189,7 @@ grid.arrange(manual_plot, stability_plot, quality_plot, performance_plot,
 
 ### Advanced Auto-Tuning Methods
 
-```{r advanced_auto_tuning, eval=TRUE}
+```{r advanced_auto_tuning, eval=FALSE}
 # Pareto optimization - balances multiple objectives
 cat("\n=== Pareto Multi-Objective Optimization ===\n")
 seg_pareto <- moneca(

@@ -136,7 +136,7 @@ plot_moneca_ggraph(segments,
 
 For computational efficiency, use adaptive refinement that starts with a coarse grid and refines promising regions:
 
-```{r adaptive}
+```{r adaptive, eval=FALSE}
 adaptive_result <- auto_tune_joint_parameters(
   mx = mobility_data,
   method = "adaptive",
@@ -263,7 +263,7 @@ quick_result <- auto_tune_joint_parameters(
 
 ### 3. Refine with Adaptive Method
 
-```{r guidelines3}
+```{r guidelines3, eval=FALSE}
 # Refine around promising region
 refined_result <- auto_tune_joint_parameters(
   mx = mobility_data,
@@ -299,7 +299,7 @@ cat("  cut.off:", joint_result$optimal_cutoff, "\n")
 
 ### Computational Trade-offs
 
-```{r performance}
+```{r performance, eval=FALSE}
 # Fast approximate tuning
 fast_result <- auto_tune_joint_parameters(
   mx = mobility_data,
@@ -335,7 +335,7 @@ For large matrices (>100x100), consider:
 
 ### High Mobility Data
 
-```{r case_high_mobility}
+```{r case_high_mobility, eval=FALSE}
 # Generate high mobility data (dense matrix)
 high_mobility <- generate_mobility_data(
   n_classes = 5,
@@ -357,7 +357,7 @@ cat("SCR:", high_result$optimal_scr, "Cutoff:", high_result$optimal_cutoff, "\n"
 
 ### Low Mobility Data
 
-```{r case_low_mobility}
+```{r case_low_mobility, eval=FALSE}
 # Generate low mobility data (sparse matrix)
 low_mobility <- generate_mobility_data(
   n_classes = 5,
@@ -368,7 +368,7 @@ low_mobility <- generate_mobility_data(
 
 low_result <- auto_tune_joint_parameters(
   mx = low_mobility,
-  method = "grid", 
+  method = "grid",
   n_grid_points = 6,
   verbose = FALSE
 )
@@ -379,7 +379,7 @@ cat("SCR:", low_result$optimal_scr, "Cutoff:", low_result$optimal_cutoff, "\n")
 
 ### Parameter Sensitivity by Data Type
 
-```{r sensitivity_comparison}
+```{r sensitivity_comparison, eval=FALSE}
 high_interaction <- analyze_parameter_interaction(
   mx = high_mobility,
   scr = high_result$optimal_scr,
@@ -427,7 +427,7 @@ knitr::kable(sensitivity_comparison, digits = 3,
 
 ### Diagnostic Functions
 
-```{r diagnostics}
+```{r diagnostics, eval=FALSE}
 # Check data characteristics
 ranges <- suggest_parameter_ranges(mobility_data)
 cat("Data diagnostics:\n")
