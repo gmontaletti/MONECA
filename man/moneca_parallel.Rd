@@ -18,7 +18,8 @@ moneca_parallel(
   progress = TRUE,
   auto_tune = FALSE,
   tune_method = "stability",
-  tune_verbose = FALSE
+  tune_verbose = FALSE,
+  use_maximal_cliques = FALSE
 )
 }
 \arguments{
@@ -64,6 +65,11 @@ auto_tune is TRUE. Options are "stability" (default), "quality", or
 
 \item{tune_verbose}{Logical indicating whether to print verbose messages
 during auto-tuning. Default is FALSE.}
+
+\item{use_maximal_cliques}{Logical indicating whether to use maximal cliques
+(faster, fewer cliques) instead of all cliques (slower, more complete enumeration).
+Default is FALSE (use all cliques for algorithmic correctness). Set to TRUE for
+performance optimization on very dense graphs.}
 }
 \value{
 An object of class "moneca" containing:
@@ -89,6 +95,20 @@ The parallel implementation uses several strategies to improve performance:
   \item Automatic load balancing and chunk size optimization
   \item Intelligent fallback to sequential processing when beneficial
 }
+
+\strong{Produces identical results to} \code{\link{moneca}} and \code{\link{moneca_fast}}
+when using default parameters.
+
+\strong{When to use:}
+\itemize{
+  \item Multi-core systems (desktops, servers, HPC clusters)
+  \item Large datasets (> 50 classes)
+  \item When computational time is critical
+}
+
+\strong{Performance note:} For single-core systems or small-medium datasets (< 50 classes),
+consider using \code{\link{moneca_fast}} instead, which may be faster due to lower
+parallelization overhead.
 }
 \examples{
 \dontrun{
@@ -105,4 +125,8 @@ result <- moneca_parallel(test_data, segment.levels = 3, n.cores = 4)
 result <- moneca_parallel(test_data, parallel.backend = "socket")
 }
 
+}
+\seealso{
+\code{\link{moneca}} for the original implementation,
+  \code{\link{moneca_fast}} for single-core optimizations
 }

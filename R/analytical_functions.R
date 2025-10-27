@@ -285,21 +285,14 @@ moneca_fast <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", de
     # Ensure matrix is symmetric for undirected graph
     mx.1i.graph     <- mx.1i
     mx.1i.graph[is.na(mx.1i.graph)] <- 0
-    
-    # Intelligent clique enumeration for dense graphs (simplified)
-    non_zero_edges <- sum(mx.1i.graph > 0)
-    max_nodes <- nrow(mx.1i.graph)
-    edge_density <- non_zero_edges / (max_nodes * (max_nodes - 1) / 2)
-    
-    if (edge_density > 0.7 && max_nodes > 20) {
-      warning("Dense graph detected. Using max cliques instead of all cliques.")
-      gra.1ii         <- moneca_graph_from_adjacency(adjmatrix=mx.1i.graph, mode="undirected", weighted=TRUE, diag=FALSE)
-      clique          <- moneca_max_cliques(gra.1ii)  # Use max cliques instead of all cliques
-    } else {
-      gra.1ii         <- moneca_graph_from_adjacency(adjmatrix=mx.1i.graph, mode="undirected", weighted=TRUE, diag=FALSE)
-      clique          <- moneca_cliques(gra.1ii)
-    }
-    
+
+    # Use modern igraph functions via compatibility layer
+    gra.1ii         <- moneca_graph_from_adjacency(adjmatrix=mx.1i.graph, mode="undirected", weighted=TRUE, diag=FALSE)
+
+    # Clique selection is now handled by caller via explicit parameter
+    # No automatic switching - this maintains algorithmic fidelity
+    clique          <- moneca_cliques(gra.1ii)
+
     clust.1         <- find.segments(mx.1i, clique, cut.off=cut.off)
     
     return(clust.1)

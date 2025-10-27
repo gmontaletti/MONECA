@@ -1,3 +1,36 @@
+# moneca 0.9.0
+
+## Breaking Changes
+
+* **Fixed clique detection inconsistencies across implementations**: All three implementations (`moneca()`, `moneca_fast()`, `moneca_parallel()`) now use **all cliques by default** for algorithmic correctness and reproducibility. Previously:
+  - `moneca()` and `moneca_parallel()` were silently switching to maximal cliques for graphs with edge_density > 0.6 && n_vertices > 15
+  - `moneca_fast()` was always using maximal cliques
+  - This caused the three implementations to produce different clustering results
+
+* **New explicit user control**: Added `use_maximal_cliques` parameter to all three functions:
+  - Default: `FALSE` (use all cliques - algorithmic fidelity)
+  - Set to `TRUE` for performance optimization on very dense graphs
+  - No more automatic switching - user makes explicit choice
+
+* **Removed automatic fallback logic** from igraph compatibility layer to prevent unintended behavior changes
+
+## Impact
+
+* **Scientific correctness**: All implementations now produce identical results by default
+* **Reproducibility**: Results are consistent across `moneca()`, `moneca_fast()`, and `moneca_parallel()`
+* **Performance**: Users with very dense graphs can explicitly enable `use_maximal_cliques=TRUE`
+* **Migration**: If you were relying on the previous behavior, set `use_maximal_cliques=TRUE` explicitly
+
+## New Features
+
+* **Algorithm equivalence tests**: Added comprehensive test suite (`test-algorithm-equivalence.R`) validating that all implementations produce identical results
+
+## Bug Fixes
+
+* Fixed architectural issue where wrapper layer (igraph_compatibility.R) was overriding algorithm-level clique selection decisions
+* Removed conflicting threshold checks (0.6/15 in wrapper vs 0.7/20 in algorithm layer)
+* Changed `moneca_fast()` default for `min.density` from 0.01 to 0 (disabled) to ensure algorithmic fidelity. Users wanting early stopping optimization can explicitly set `min.density > 0`.
+
 # moneca 0.8.1
 
 ## Bug Fixes

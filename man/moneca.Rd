@@ -13,7 +13,8 @@ moneca(
   small.cell.reduction = 0,
   auto_tune = FALSE,
   tune_method = "stability",
-  tune_verbose = FALSE
+  tune_verbose = FALSE,
+  use_maximal_cliques = FALSE
 )
 }
 \arguments{
@@ -46,6 +47,11 @@ auto_tune is TRUE. Options are "stability" (default), "quality", or
 
 \item{tune_verbose}{Logical indicating whether to print verbose messages
 during auto-tuning. Default is FALSE.}
+
+\item{use_maximal_cliques}{Logical indicating whether to use maximal cliques
+(faster, fewer cliques) instead of all cliques (slower, more complete enumeration).
+Default is FALSE (use all cliques for algorithmic correctness). Set to TRUE for
+performance optimization on very dense graphs.}
 }
 \value{
 An object of class "moneca" containing:
@@ -104,9 +110,15 @@ From Occupational Mobility to Social Class Categories Using Network Analysis.
 Sociology, 51(6), 1257-1276.
 }
 \seealso{
-\code{\link{moneca_fast}} for the memory-optimized version,
+\strong{Optimized implementations:}
+\code{\link{moneca_fast}} for single-core optimization (vectorization, sparse matrices),
+\code{\link{moneca_parallel}} for multi-core parallelization (large datasets)
+
+\strong{Core functions:}
 \code{\link{find.segments}} for the core segmentation algorithm,
-\code{\link{weight.matrix}} for relative risk calculation,
-\code{\link{plot_moneca_ggraph}} for modern visualization,
-\code{\link{segment.membership}} for extracting memberships
+\code{\link{weight.matrix}} for relative risk calculation
+
+\strong{Visualization and analysis:}
+\code{\link{plot_moneca_ggraph}} for modern network visualization,
+\code{\link{segment.membership}} for extracting segment memberships
 }

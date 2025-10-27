@@ -34,7 +34,11 @@
 #'   "performance". See \code{\link{auto_tune_small_cell_reduction}} for details.
 #' @param tune_verbose Logical indicating whether to print verbose messages
 #'   during auto-tuning. Default is FALSE.
-#' 
+#' @param use_maximal_cliques Logical indicating whether to use maximal cliques
+#'   (faster, fewer cliques) instead of all cliques (slower, more complete enumeration).
+#'   Default is FALSE (use all cliques for algorithmic correctness). Set to TRUE for
+#'   performance optimization on very dense graphs.
+#'
 #' @return An object of class "moneca" containing:
 #'   \describe{
 #'     \item{segment.list}{A list of segment memberships for each hierarchical level.}
@@ -52,7 +56,24 @@
 #'   \item Automatic load balancing and chunk size optimization
 #'   \item Intelligent fallback to sequential processing when beneficial
 #' }
-#' 
+#'
+#' \strong{Produces identical results to} \code{\link{moneca}} and \code{\link{moneca_fast}}
+#' when using default parameters.
+#'
+#' \strong{When to use:}
+#' \itemize{
+#'   \item Multi-core systems (desktops, servers, HPC clusters)
+#'   \item Large datasets (> 50 classes)
+#'   \item When computational time is critical
+#' }
+#'
+#' \strong{Performance note:} For single-core systems or small-medium datasets (< 50 classes),
+#' consider using \code{\link{moneca_fast}} instead, which may be faster due to lower
+#' parallelization overhead.
+#'
+#' @seealso \code{\link{moneca}} for the original implementation,
+#'   \code{\link{moneca_fast}} for single-core optimizations
+#'
 #' @examples
 #' \dontrun{
 #' # Generate test data
@@ -69,20 +90,21 @@
 #' }
 #' 
 #' @export
-moneca_parallel <- function(mx = mx, 
-                           segment.levels = 3, 
-                           cut.off = 1, 
-                           mode = "symmetric", 
-                           delete.upper.tri = TRUE, 
+moneca_parallel <- function(mx = mx,
+                           segment.levels = 3,
+                           cut.off = 1,
+                           mode = "symmetric",
+                           delete.upper.tri = TRUE,
                            small.cell.reduction = 0,
                            n.cores = NULL,
                            parallel.backend = "auto",
                            chunk.size = NULL,
                            fallback.sequential = TRUE,
                            progress = TRUE,
-                           auto_tune = FALSE, 
-                           tune_method = "stability", 
-                           tune_verbose = FALSE) {
+                           auto_tune = FALSE,
+                           tune_method = "stability",
+                           tune_verbose = FALSE,
+                           use_maximal_cliques = FALSE) {
   
   # Detect and configure parallel backend
   parallel_config <- setup_parallel_backend(n.cores, parallel.backend, nrow(mx))
@@ -114,7 +136,8 @@ moneca_parallel <- function(mx = mx,
   segments <- find.segments.parallel(weight_mat, graph, cut.off, mode, delete.upper.tri,
                                      n.cores = parallel_config$n_cores,
                                      chunk.size = chunk.size,
-                                     progress = progress)
+                                     progress = progress,
+                                     use_maximal_cliques = use_maximal_cliques)
   
   # Create aggregated matrix for level 2
   mx.2g <- segment.matrix.parallel(mx, segments$cliques, n.cores = parallel_config$n_cores)
@@ -141,7 +164,8 @@ moneca_parallel <- function(mx = mx,
       segments <- find.segments.parallel(weight_mat, graph, cut.off, mode, delete.upper.tri,
                                          n.cores = parallel_config$n_cores,
                                          chunk.size = chunk.size,
-                                         progress = progress)
+                                         progress = progress,
+                                         use_maximal_cliques = use_maximal_cliques)
       
       # Create next level matrix
       current_matrix <- segment.matrix.parallel(current_matrix, segments$cliques, 
@@ -330,24 +354,34 @@ weight.matrix.parallel <- function(mx, cut.off = 1, symmetric = TRUE,
 #' @param graph igraph object representing the network
 #' @param n.cores Number of cores to use
 #' @param chunk.size Size of chunks for parallel processing
-#' 
+#' @param use_maximal_cliques Whether to use maximal cliques
+#'
 #' @return List with membership and cliques
 #' @export
-find.segments.parallel <- function(mat, graph, cut.off = 1, mode = "symmetric", 
-                                  delete.upper.tri = TRUE, n.cores = NULL, 
-                                  chunk.size = NULL, progress = TRUE) {
+find.segments.parallel <- function(mat, graph, cut.off = 1, mode = "symmetric",
+                                  delete.upper.tri = TRUE, n.cores = NULL,
+                                  chunk.size = NULL, progress = TRUE,
+                                  use_maximal_cliques = FALSE) {
   
   # For small graphs, use sequential version
   if (igraph::vcount(graph) < 20 || igraph::ecount(graph) < 50) {
-    cliques <- moneca_cliques(graph, min = 2)
+    if (use_maximal_cliques) {
+      cliques <- moneca_max_cliques(graph, min = 2)
+    } else {
+      cliques <- moneca_cliques(graph, min = 2)
+    }
     return(find.segments(mat, cliques, cut.off, mode, delete.upper.tri))
   }
-  
+
   # Setup parallel backend
   if (is.null(n.cores)) n.cores <- min(parallel::detectCores() - 1, 4)
-  
+
   # Get cliques (this part is hard to parallelize effectively)
-  cliques <- moneca_cliques(graph, min = 2)
+  if (use_maximal_cliques) {
+    cliques <- moneca_max_cliques(graph, min = 2)
+  } else {
+    cliques <- moneca_cliques(graph, min = 2)
+  }
   
   # Process matrix
   if (mode == "Mutual") {

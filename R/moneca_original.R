@@ -28,7 +28,11 @@
 #'   "performance". See \code{\link{auto_tune_small_cell_reduction}} for details.
 #' @param tune_verbose Logical indicating whether to print verbose messages
 #'   during auto-tuning. Default is FALSE.
-#' 
+#' @param use_maximal_cliques Logical indicating whether to use maximal cliques
+#'   (faster, fewer cliques) instead of all cliques (slower, more complete enumeration).
+#'   Default is FALSE (use all cliques for algorithmic correctness). Set to TRUE for
+#'   performance optimization on very dense graphs.
+#'
 #' @return An object of class "moneca" containing:
 #'   \describe{
 #'     \item{segment.list}{A list of segment memberships for each hierarchical level.
@@ -74,16 +78,22 @@
 #' From Occupational Mobility to Social Class Categories Using Network Analysis.
 #' Sociology, 51(6), 1257-1276.
 #' 
-#' @seealso 
-#' \code{\link{moneca_fast}} for the memory-optimized version,
+#' @seealso
+#' \strong{Optimized implementations:}
+#' \code{\link{moneca_fast}} for single-core optimization (vectorization, sparse matrices),
+#' \code{\link{moneca_parallel}} for multi-core parallelization (large datasets)
+#'
+#' \strong{Core functions:}
 #' \code{\link{find.segments}} for the core segmentation algorithm,
-#' \code{\link{weight.matrix}} for relative risk calculation,
-#' \code{\link{plot_moneca_ggraph}} for modern visualization,
-#' \code{\link{segment.membership}} for extracting memberships
+#' \code{\link{weight.matrix}} for relative risk calculation
+#'
+#' \strong{Visualization and analysis:}
+#' \code{\link{plot_moneca_ggraph}} for modern network visualization,
+#' \code{\link{segment.membership}} for extracting segment memberships
 #' 
 #' @export
 
-moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.upper.tri=TRUE, small.cell.reduction=0, auto_tune = FALSE, tune_method = "stability", tune_verbose = FALSE){
+moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.upper.tri=TRUE, small.cell.reduction=0, auto_tune = FALSE, tune_method = "stability", tune_verbose = FALSE, use_maximal_cliques = FALSE){
   
   # Find segments based on a matrix
   # This is where find.segments options should be specified  
@@ -103,7 +113,14 @@ moneca <- function(mx=mx, segment.levels=3, cut.off=1, mode="symmetric", delete.
     
     # Use modern igraph functions via compatibility layer
     gra.1ii         <- moneca_graph_from_adjacency(adjmatrix=mx.1i.graph, mode="undirected", weighted=TRUE, diag=FALSE)
-    clique           <- moneca_cliques(gra.1ii)
+
+    # Use maximal cliques if requested for performance, otherwise use all cliques
+    if (use_maximal_cliques) {
+      clique        <- moneca_max_cliques(gra.1ii)
+    } else {
+      clique        <- moneca_cliques(gra.1ii)
+    }
+
     clust.1         <- find.segments(mx.1i, clique, cut.off=cut.off)
     
     return(clust.1)

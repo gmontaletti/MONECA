@@ -12,12 +12,13 @@ moneca_fast(
   delete.upper.tri = TRUE,
   small.cell.reduction = 0,
   use.sparse = FALSE,
-  min.density = 0.01,
+  min.density = 0,
   max.clique.size = NULL,
   progress = TRUE,
   auto_tune = FALSE,
   tune_method = "stability",
-  tune_verbose = FALSE
+  tune_verbose = FALSE,
+  use_maximal_cliques = FALSE
 )
 
 moneca_fast(
@@ -28,12 +29,13 @@ moneca_fast(
   delete.upper.tri = TRUE,
   small.cell.reduction = 0,
   use.sparse = FALSE,
-  min.density = 0.01,
+  min.density = 0,
   max.clique.size = NULL,
   progress = TRUE,
   auto_tune = FALSE,
   tune_method = "stability",
-  tune_verbose = FALSE
+  tune_verbose = FALSE,
+  use_maximal_cliques = FALSE
 )
 }
 \arguments{
@@ -54,8 +56,9 @@ a significant tie. Default is 1.}
 
 \item{use.sparse}{Logical indicating whether to use sparse matrices for large data. Default is FALSE.}
 
-\item{min.density}{Minimum strength-based density to continue processing. 
-Calculated as mean(strength)/max(strength). Default is 0.01.}
+\item{min.density}{Minimum strength-based density to continue processing.
+Calculated as mean(strength)/max(strength). Default is 0 (disabled for algorithmic
+fidelity). Set to 0.01 or higher for early stopping optimization on sparse graphs.}
 
 \item{max.clique.size}{Maximum size of cliques to consider (NULL for no limit). Default is NULL.}
 
@@ -71,6 +74,11 @@ auto_tune is TRUE. Options are "stability" (default), "quality", or
 
 \item{tune_verbose}{Logical indicating whether to print verbose messages
 during auto-tuning. Default is FALSE.}
+
+\item{use_maximal_cliques}{Logical indicating whether to use maximal cliques
+(faster, fewer cliques) instead of all cliques (slower, more complete enumeration).
+Default is FALSE (use all cliques for algorithmic correctness). Set to TRUE for
+performance optimization on very dense graphs.}
 }
 \value{
 An object of class "moneca" containing:
@@ -90,7 +98,7 @@ analysis on mobility tables. MONECA creates weighted networks from mobility data
 uses cliques to identify discrete and nested clusters of positions with high internal mobility.
 
 An optimized version of the moneca algorithm with improved performance for large datasets.
-Uses maximal cliques instead of all cliques and implements various performance optimizations.
+Implements various performance optimizations including vectorization and early stopping.
 }
 \details{
 This version includes intelligent memory management for dense graphs and optimized
@@ -116,6 +124,27 @@ nodes collapse into a single segment).
   \item Streamlined implementation based on the original bejler.test approach
   \item Maintains algorithmic correctness while minimizing memory overhead
 }
+
+This implementation is optimized for single-core performance using:
+\itemize{
+  \item Vectorized matrix operations for improved speed
+  \item Optional sparse matrix support via \code{use.sparse} parameter
+  \item Early stopping via \code{min.density} threshold (disabled by default)
+  \item Clique size limiting via \code{max.clique.size} parameter
+}
+
+\strong{Produces identical results to} \code{\link{moneca}} and \code{\link{moneca_parallel}}
+when using default parameters.
+
+\strong{When to use:}
+\itemize{
+  \item Single-core systems or laptops
+  \item Small to medium datasets (< 50 classes)
+  \item When you want explicit control over optimization parameters
+}
+
+For multi-core systems with large datasets (> 50 classes), consider using
+\code{\link{moneca_parallel}} instead for better performance through parallelization.
 }
 \examples{
 # Generate synthetic mobility data
@@ -151,4 +180,7 @@ Sociology, 51(6), 1257-1276.
 \code{\link{weight.matrix}} for relative risk calculation,
 \code{\link{plot_moneca_ggraph}} for modern visualization,
 \code{\link{segment.membership}} for extracting memberships
+
+\code{\link{moneca}} for the original implementation,
+  \code{\link{moneca_parallel}} for multi-core parallelization
 }

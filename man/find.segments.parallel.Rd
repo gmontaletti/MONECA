@@ -12,7 +12,8 @@ find.segments.parallel(
   delete.upper.tri = TRUE,
   n.cores = NULL,
   chunk.size = NULL,
-  progress = TRUE
+  progress = TRUE,
+  use_maximal_cliques = FALSE
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ triangle of the matrix for efficiency. Default is TRUE.}
 \item{n.cores}{Number of cores to use}
 
 \item{chunk.size}{Size of chunks for parallel processing}
+
+\item{use_maximal_cliques}{Whether to use maximal cliques}
 }
 \value{
 List with membership and cliques

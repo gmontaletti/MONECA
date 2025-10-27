@@ -1,7 +1,7 @@
 #' Fast moneca - Optimized Mobility Network Clustering Analysis
 #'
 #' An optimized version of the moneca algorithm with improved performance for large datasets.
-#' Uses maximal cliques instead of all cliques and implements various performance optimizations.
+#' Implements various performance optimizations including vectorization and early stopping.
 #'
 #' @param mx A mobility table (square matrix) with row and column totals in the last
 #'   row/column. Row names should identify the categories/classes.
@@ -13,27 +13,58 @@
 #' @param delete.upper.tri Logical indicating whether to use only lower triangle. Default is TRUE.
 #' @param small.cell.reduction Numeric value to handle small cell counts. Default is 0.
 #' @param use.sparse Logical indicating whether to use sparse matrices for large data. Default is FALSE.
-#' @param min.density Minimum strength-based density to continue processing. 
-#'   Calculated as mean(strength)/max(strength). Default is 0.01.
+#' @param min.density Minimum strength-based density to continue processing.
+#'   Calculated as mean(strength)/max(strength). Default is 0 (disabled for algorithmic
+#'   fidelity). Set to 0.01 or higher for early stopping optimization on sparse graphs.
 #' @param max.clique.size Maximum size of cliques to consider (NULL for no limit). Default is NULL.
 #' @param progress Logical indicating whether to show progress bars. Default is TRUE.
-#' 
+#' @param use_maximal_cliques Logical indicating whether to use maximal cliques
+#'   (faster, fewer cliques) instead of all cliques (slower, more complete enumeration).
+#'   Default is FALSE (use all cliques for algorithmic correctness). Set to TRUE for
+#'   performance optimization on very dense graphs.
+#'
+#' @details
+#' This implementation is optimized for single-core performance using:
+#' \itemize{
+#'   \item Vectorized matrix operations for improved speed
+#'   \item Optional sparse matrix support via \code{use.sparse} parameter
+#'   \item Early stopping via \code{min.density} threshold (disabled by default)
+#'   \item Clique size limiting via \code{max.clique.size} parameter
+#' }
+#'
+#' \strong{Produces identical results to} \code{\link{moneca}} and \code{\link{moneca_parallel}}
+#' when using default parameters.
+#'
+#' \strong{When to use:}
+#' \itemize{
+#'   \item Single-core systems or laptops
+#'   \item Small to medium datasets (< 50 classes)
+#'   \item When you want explicit control over optimization parameters
+#' }
+#'
+#' For multi-core systems with large datasets (> 50 classes), consider using
+#' \code{\link{moneca_parallel}} instead for better performance through parallelization.
+#'
 #' @return An object of class "moneca" with the same structure as the original moneca() function.
+#'
+#' @seealso \code{\link{moneca}} for the original implementation,
+#'   \code{\link{moneca_parallel}} for multi-core parallelization
 #' 
 #' @export
-moneca_fast <- function(mx = mx, 
-                       segment.levels = 3, 
-                       cut.off = 1, 
-                       mode = "symmetric", 
-                       delete.upper.tri = TRUE, 
+moneca_fast <- function(mx = mx,
+                       segment.levels = 3,
+                       cut.off = 1,
+                       mode = "symmetric",
+                       delete.upper.tri = TRUE,
                        small.cell.reduction = 0,
                        use.sparse = FALSE,
-                       min.density = 0.01,
+                       min.density = 0,
                        max.clique.size = NULL,
                        progress = TRUE,
-                       auto_tune = FALSE, 
-                       tune_method = "stability", 
-                       tune_verbose = FALSE) {
+                       auto_tune = FALSE,
+                       tune_method = "stability",
+                       tune_verbose = FALSE,
+                       use_maximal_cliques = FALSE) {
   
   # Convert to sparse matrix if requested and Matrix package is available
   if (use.sparse && requireNamespace("Matrix", quietly = TRUE)) {
@@ -106,11 +137,19 @@ moneca_fast <- function(mx = mx,
       return(out)
     }
     
-    # Use maximal cliques instead of all cliques
-    if (is.null(max.clique.size)) {
-      cliques <- moneca_max_cliques(graph, min = 2)
+    # Use maximal cliques if requested for performance, otherwise use all cliques
+    if (use_maximal_cliques) {
+      if (is.null(max.clique.size)) {
+        cliques <- moneca_max_cliques(graph, min = 2)
+      } else {
+        cliques <- moneca_max_cliques(graph, min = 2, max = max.clique.size)
+      }
     } else {
-      cliques <- moneca_max_cliques(graph, min = 2, max = max.clique.size)
+      if (is.null(max.clique.size)) {
+        cliques <- moneca_cliques(graph, min = 2)
+      } else {
+        cliques <- moneca_cliques(graph, min = 2, max = max.clique.size)
+      }
     }
     
     # If no cliques found, return trivial segmentation
