@@ -3,11 +3,11 @@
 analysis on mobility tables. MONECA creates weighted networks from mobility data and
 uses cliques to identify discrete and nested clusters of positions with high internal mobility.
 An optimized version of the moneca algorithm with improved performance for large datasets.
-Uses maximal cliques instead of all cliques and implements various performance optimizations."><meta property="og:description" content="Memory-optimized version of the main function for performing hierarchical clustering
+Implements various performance optimizations including vectorization and early stopping."><meta property="og:description" content="Memory-optimized version of the main function for performing hierarchical clustering
 analysis on mobility tables. MONECA creates weighted networks from mobility data and
 uses cliques to identify discrete and nested clusters of positions with high internal mobility.
 An optimized version of the moneca algorithm with improved performance for large datasets.
-Uses maximal cliques instead of all cliques and implements various performance optimizations."></head><body>
+Implements various performance optimizations including vectorization and early stopping."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -15,7 +15,7 @@ Uses maximal cliques instead of all cliques and implements various performance o
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -59,7 +59,7 @@ Uses maximal cliques instead of all cliques and implements various performance o
 analysis on mobility tables. MONECA creates weighted networks from mobility data and
 uses cliques to identify discrete and nested clusters of positions with high internal mobility.</p>
 <p>An optimized version of the moneca algorithm with improved performance for large datasets.
-Uses maximal cliques instead of all cliques and implements various performance optimizations.</p>
+Implements various performance optimizations including vectorization and early stopping.</p>
     </div>
 
     <div class="section level2">
@@ -72,12 +72,13 @@ Uses maximal cliques instead of all cliques and implements various performance o
 <span>  delete.upper.tri <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  small.cell.reduction <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  use.sparse <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  min.density <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>  min.density <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  max.clique.size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  progress <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  auto_tune <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  tune_method <span class="op">=</span> <span class="st">"stability"</span>,</span>
-<span>  tune_verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  tune_verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  use_maximal_cliques <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">moneca_fast</span><span class="op">(</span></span>
@@ -88,12 +89,13 @@ Uses maximal cliques instead of all cliques and implements various performance o
 <span>  delete.upper.tri <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  small.cell.reduction <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  use.sparse <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  min.density <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>  min.density <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  max.clique.size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  progress <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  auto_tune <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  tune_method <span class="op">=</span> <span class="st">"stability"</span>,</span>
-<span>  tune_verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  tune_verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  use_maximal_cliques <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -134,7 +136,8 @@ a significant tie. Default is 1.</p></dd>
 
 <dt id="arg-min-density">min.density<a class="anchor" aria-label="anchor" href="#arg-min-density"></a></dt>
 <dd><p>Minimum strength-based density to continue processing.
-Calculated as mean(strength)/max(strength). Default is 0.01.</p></dd>
+Calculated as mean(strength)/max(strength). Default is 0 (disabled for algorithmic
+fidelity). Set to 0.01 or higher for early stopping optimization on sparse graphs.</p></dd>
 
 
 <dt id="arg-max-clique-size">max.clique.size<a class="anchor" aria-label="anchor" href="#arg-max-clique-size"></a></dt>
@@ -160,6 +163,13 @@ auto_tune is TRUE. Options are "stability" (default), "quality", or
 <dt id="arg-tune-verbose">tune_verbose<a class="anchor" aria-label="anchor" href="#arg-tune-verbose"></a></dt>
 <dd><p>Logical indicating whether to print verbose messages
 during auto-tuning. Default is FALSE.</p></dd>
+
+
+<dt id="arg-use-maximal-cliques">use_maximal_cliques<a class="anchor" aria-label="anchor" href="#arg-use-maximal-cliques"></a></dt>
+<dd><p>Logical indicating whether to use maximal cliques
+(faster, fewer cliques) instead of all cliques (slower, more complete enumeration).
+Default is FALSE (use all cliques for algorithmic correctness). Set to TRUE for
+performance optimization on very dense graphs.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -194,7 +204,18 @@ nodes collapse into a single segment).</p>
 <li><p>Intelligent dense graph detection with fallback to maximal cliques</p></li>
 <li><p>Streamlined implementation based on the original bejler.test approach</p></li>
 <li><p>Maintains algorithmic correctness while minimizing memory overhead</p></li>
-</ul></div>
+</ul><p>This implementation is optimized for single-core performance using:</p><ul><li><p>Vectorized matrix operations for improved speed</p></li>
+<li><p>Optional sparse matrix support via <code>use.sparse</code> parameter</p></li>
+<li><p>Early stopping via <code>min.density</code> threshold (disabled by default)</p></li>
+<li><p>Clique size limiting via <code>max.clique.size</code> parameter</p></li>
+</ul><p><strong>Produces identical results to</strong> <code><a href="moneca.html">moneca</a></code> and <code><a href="moneca_parallel.html">moneca_parallel</a></code>
+when using default parameters.</p>
+<p><strong>When to use:</strong></p><ul><li><p>Single-core systems or laptops</p></li>
+<li><p>Small to medium datasets (&lt; 50 classes)</p></li>
+<li><p>When you want explicit control over optimization parameters</p></li>
+</ul><p>For multi-core systems with large datasets (&gt; 50 classes), consider using
+<code><a href="moneca_parallel.html">moneca_parallel</a></code> instead for better performance through parallelization.</p>
+    </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
     <p>Toubøl, J., &amp; Larsen, A. G. (2017). Mapping the Social Class Structure:
@@ -207,7 +228,9 @@ Sociology, 51(6), 1257-1276.</p>
 <code><a href="find.segments.html">find.segments</a></code> for the core segmentation algorithm,
 <code><a href="weight.matrix.html">weight.matrix</a></code> for relative risk calculation,
 <code><a href="plot_moneca_ggraph.html">plot_moneca_ggraph</a></code> for modern visualization,
-<code><a href="segment.membership.html">segment.membership</a></code> for extracting memberships</p></div>
+<code><a href="segment.membership.html">segment.membership</a></code> for extracting memberships</p>
+<p><code><a href="moneca.html">moneca</a></code> for the original implementation,
+  <code><a href="moneca_parallel.html">moneca_parallel</a></code> for multi-core parallelization</p></div>
     </div>
 
     <div class="section level2">

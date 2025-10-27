@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,52 @@
       <small>Source: <a href="https://github.com/gmontaletti/MONECA/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.0" id="moneca-090">moneca 0.9.0<a class="anchor" aria-label="anchor" href="#moneca-090"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-9-0">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-9-0"></a></h3>
+<ul><li>
+<strong>Fixed clique detection inconsistencies across implementations</strong>: All three implementations (<code><a href="../reference/moneca.html">moneca()</a></code>, <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code>, <code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code>) now use <strong>all cliques by default</strong> for algorithmic correctness and reproducibility. Previously:
+<ul><li>
+<code><a href="../reference/moneca.html">moneca()</a></code> and <code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code> were silently switching to maximal cliques for graphs with edge_density &gt; 0.6 &amp;&amp; n_vertices &gt; 15</li>
+<li>
+<code><a href="../reference/moneca_fast.html">moneca_fast()</a></code> was always using maximal cliques</li>
+<li>This caused the three implementations to produce different clustering results</li>
+</ul></li>
+<li>
+<strong>New explicit user control</strong>: Added <code>use_maximal_cliques</code> parameter to all three functions:
+<ul><li>Default: <code>FALSE</code> (use all cliques - algorithmic fidelity)</li>
+<li>Set to <code>TRUE</code> for performance optimization on very dense graphs</li>
+<li>No more automatic switching - user makes explicit choice</li>
+</ul></li>
+<li>
+<strong>Removed automatic fallback logic</strong> from igraph compatibility layer to prevent unintended behavior changes</li>
+</ul></div>
+<div class="section level3">
+<h3 id="impact-0-9-0">Impact<a class="anchor" aria-label="anchor" href="#impact-0-9-0"></a></h3>
+<ul><li>
+<strong>Scientific correctness</strong>: All implementations now produce identical results by default</li>
+<li>
+<strong>Reproducibility</strong>: Results are consistent across <code><a href="../reference/moneca.html">moneca()</a></code>, <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code>, and <code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code>
+</li>
+<li>
+<strong>Performance</strong>: Users with very dense graphs can explicitly enable <code>use_maximal_cliques=TRUE</code>
+</li>
+<li>
+<strong>Migration</strong>: If you were relying on the previous behavior, set <code>use_maximal_cliques=TRUE</code> explicitly</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-features-0-9-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-9-0"></a></h3>
+<ul><li>
+<strong>Algorithm equivalence tests</strong>: Added comprehensive test suite (<code>test-algorithm-equivalence.R</code>) validating that all implementations produce identical results</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-9-0">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-9-0"></a></h3>
+<ul><li>Fixed architectural issue where wrapper layer (igraph_compatibility.R) was overriding algorithm-level clique selection decisions</li>
+<li>Removed conflicting threshold checks (0.6/15 in wrapper vs 0.7/20 in algorithm layer)</li>
+<li>Changed <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code> default for <code>min.density</code> from 0.01 to 0 (disabled) to ensure algorithmic fidelity. Users wanting early stopping optimization can explicitly set <code>min.density &gt; 0</code>.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.8.1" id="moneca-081">moneca 0.8.1<a class="anchor" aria-label="anchor" href="#moneca-081"></a></h2>
 <div class="section level3">

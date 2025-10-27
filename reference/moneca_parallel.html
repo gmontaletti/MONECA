@@ -13,7 +13,7 @@ significant speedups through parallelization."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -75,7 +75,8 @@ significant speedups through parallelization.</p>
 <span>  progress <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  auto_tune <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  tune_method <span class="op">=</span> <span class="st">"stability"</span>,</span>
-<span>  tune_verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  tune_verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  use_maximal_cliques <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -153,6 +154,13 @@ auto_tune is TRUE. Options are "stability" (default), "quality", or
 <dd><p>Logical indicating whether to print verbose messages
 during auto-tuning. Default is FALSE.</p></dd>
 
+
+<dt id="arg-use-maximal-cliques">use_maximal_cliques<a class="anchor" aria-label="anchor" href="#arg-use-maximal-cliques"></a></dt>
+<dd><p>Logical indicating whether to use maximal cliques
+(faster, fewer cliques) instead of all cliques (slower, more complete enumeration).
+Default is FALSE (use all cliques for algorithmic correctness). Set to TRUE for
+performance optimization on very dense graphs.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -177,7 +185,20 @@ during auto-tuning. Default is FALSE.</p></dd>
 <li><p>Parallel aggregation in segment.matrix</p></li>
 <li><p>Automatic load balancing and chunk size optimization</p></li>
 <li><p>Intelligent fallback to sequential processing when beneficial</p></li>
-</ul></div>
+</ul><p><strong>Produces identical results to</strong> <code><a href="moneca.html">moneca</a></code> and <code><a href="moneca_fast.html">moneca_fast</a></code>
+when using default parameters.</p>
+<p><strong>When to use:</strong></p><ul><li><p>Multi-core systems (desktops, servers, HPC clusters)</p></li>
+<li><p>Large datasets (&gt; 50 classes)</p></li>
+<li><p>When computational time is critical</p></li>
+</ul><p><strong>Performance note:</strong> For single-core systems or small-medium datasets (&lt; 50 classes),
+consider using <code><a href="moneca_fast.html">moneca_fast</a></code> instead, which may be faster due to lower
+parallelization overhead.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p><code><a href="moneca.html">moneca</a></code> for the original implementation,
+  <code><a href="moneca_fast.html">moneca_fast</a></code> for single-core optimizations</p></div>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

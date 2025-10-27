@@ -11,7 +11,7 @@ clique-finding strategy."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -112,7 +112,8 @@ a significant tie. Default is 1.</p></dd>
 
 <dt id="arg-min-density">min.density<a class="anchor" aria-label="anchor" href="#arg-min-density"></a></dt>
 <dd><p>Minimum strength-based density to continue processing.
-Calculated as mean(strength)/max(strength). Default is 0.01.</p></dd>
+Calculated as mean(strength)/max(strength). Default is 0 (disabled for algorithmic
+fidelity). Set to 0.01 or higher for early stopping optimization on sparse graphs.</p></dd>
 
 
 <dt id="arg-max-clique-size">max.clique.size<a class="anchor" aria-label="anchor" href="#arg-max-clique-size"></a></dt>

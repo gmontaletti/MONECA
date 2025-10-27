@@ -11,7 +11,7 @@ discrete and nested clusters of positions with high internal mobility."></head><
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.8.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,7 +67,8 @@ discrete and nested clusters of positions with high internal mobility.</p>
 <span>  small.cell.reduction <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  auto_tune <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  tune_method <span class="op">=</span> <span class="st">"stability"</span>,</span>
-<span>  tune_verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  tune_verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  use_maximal_cliques <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -122,6 +123,13 @@ auto_tune is TRUE. Options are "stability" (default), "quality", or
 <dd><p>Logical indicating whether to print verbose messages
 during auto-tuning. Default is FALSE.</p></dd>
 
+
+<dt id="arg-use-maximal-cliques">use_maximal_cliques<a class="anchor" aria-label="anchor" href="#arg-use-maximal-cliques"></a></dt>
+<dd><p>Logical indicating whether to use maximal cliques
+(faster, fewer cliques) instead of all cliques (slower, more complete enumeration).
+Default is FALSE (use all cliques for algorithmic correctness). Set to TRUE for
+performance optimization on very dense graphs.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -159,11 +167,15 @@ Sociology, 51(6), 1257-1276.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="moneca_fast.html">moneca_fast</a></code> for the memory-optimized version,
+    <div class="dont-index"><p><strong>Optimized implementations:</strong>
+<code><a href="moneca_fast.html">moneca_fast</a></code> for single-core optimization (vectorization, sparse matrices),
+<code><a href="moneca_parallel.html">moneca_parallel</a></code> for multi-core parallelization (large datasets)</p>
+<p><strong>Core functions:</strong>
 <code><a href="find.segments.html">find.segments</a></code> for the core segmentation algorithm,
-<code><a href="weight.matrix.html">weight.matrix</a></code> for relative risk calculation,
-<code><a href="plot_moneca_ggraph.html">plot_moneca_ggraph</a></code> for modern visualization,
-<code><a href="segment.membership.html">segment.membership</a></code> for extracting memberships</p></div>
+<code><a href="weight.matrix.html">weight.matrix</a></code> for relative risk calculation</p>
+<p><strong>Visualization and analysis:</strong>
+<code><a href="plot_moneca_ggraph.html">plot_moneca_ggraph</a></code> for modern network visualization,
+<code><a href="segment.membership.html">segment.membership</a></code> for extracting segment memberships</p></div>
     </div>
 
     <div class="section level2">
@@ -356,7 +368,7 @@ Sociology, 51(6), 1257-1276.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> - Weight matrices cached: 20 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Optimal small.cell.reduction: 22 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Total tuning time: 48.26 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total tuning time: 49.02 seconds</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Selected optimal small.cell.reduction: 22</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 29% ready!</span>
@@ -420,7 +432,7 @@ Sociology, 51(6), 1257-1276.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> - Weight matrices cached: 20 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Optimal small.cell.reduction: 1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Total tuning time: 17.66 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total tuning time: 17.22 seconds</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Selected optimal small.cell.reduction: 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 100% ready!</span>
@@ -447,7 +459,7 @@ Sociology, 51(6), 1257-1276.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> - Weight matrices cached: 20 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Optimal small.cell.reduction: 0 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Total tuning time: 3.57 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Total tuning time: 3.66 seconds</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Selected optimal small.cell.reduction: 0</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">seg_tuned</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
