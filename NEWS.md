@@ -1,3 +1,10 @@
+# moneca 0.9.1
+
+## Maintenance Release
+
+* Version bump for maintenance and documentation updates
+* All core functionality remains stable from v0.9.0
+
 # moneca 0.9.0
 
 ## Breaking Changes

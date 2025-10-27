@@ -2,7 +2,7 @@ Package: moneca
 Title: Mobility Network Clustering Analysis with Auto-Tuning
 Description: moneca creates a weighted network from a mobility table and uses cliques (or similar) to create discrete and nested clusters. Features comprehensive auto-tuning capabilities for parameter optimization including stability-based, quality-based, performance-balanced, Pareto multi-objective, and cross-validation methods. This is a maintained fork of the original MONECA package with modernized visualizations, comprehensive testing, enhanced documentation, and advanced optimization features.
 URL: https://gmontaletti.github.io/MONECA/, https://github.com/gmontaletti/MONECA
-Version: 0.9.0
+Version: 0.9.1
 Maintainer: Giampaolo Montaletti <giampaolo.montaletti@gmail.com>
 Authors@R: c(
     person("Giampaolo", "Montaletti", 
