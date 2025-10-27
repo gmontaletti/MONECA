@@ -2,6 +2,8 @@
 
 ## Breaking Changes
 
+* **Removed `moneca_fast_fixed()` function**: This experimental function was outdated and inconsistent with the v0.9.0 fixes. Users should use `moneca_fast()` instead, which now includes all optimizations and the `use_maximal_cliques` parameter for explicit control.
+
 * **Fixed clique detection inconsistencies across implementations**: All three implementations (`moneca()`, `moneca_fast()`, `moneca_parallel()`) now use **all cliques by default** for algorithmic correctness and reproducibility. Previously:
   - `moneca()` and `moneca_parallel()` were silently switching to maximal cliques for graphs with edge_density > 0.6 && n_vertices > 15
   - `moneca_fast()` was always using maximal cliques

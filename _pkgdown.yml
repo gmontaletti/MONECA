@@ -20,7 +20,6 @@ reference:
     contents:
       - moneca
       - moneca_fast
-      - moneca_fast_fixed
       - moneca_parallel
       - weight.matrix
       - weight.matrix.parallel
