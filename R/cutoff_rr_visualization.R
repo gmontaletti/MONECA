@@ -112,7 +112,7 @@ plot_cutoff_analysis <- function(sensitivity_results,
   
   # Create the plot
   p <- ggplot(long_data, aes(x = cutoff, y = value, color = metric_label)) +
-    geom_line(size = 1.2) +
+    geom_line(linewidth = 1.2) +
     facet_wrap(~ metric_label, scales = "free_y", ncol = 2) +
     scale_color_manual(values = rep(colors, length.out = length(unique(long_data$metric_label)))) +
     labs(
@@ -204,7 +204,7 @@ plot_rr_distribution <- function(mx,
   }
   
   if (plot_type %in% c("density", "both")) {
-    p <- p + geom_density(fill = "blue", alpha = 0.3, color = "darkblue", size = 1)
+    p <- p + geom_density(fill = "blue", alpha = 0.3, color = "darkblue", linewidth = 1)
   }
   
   # Add cut-off lines
@@ -430,7 +430,7 @@ plot_elbow_curve <- function(sensitivity_results,
   
   # Create base plot
   p <- ggplot(data.frame(x = x, y = y), aes(x = x, y = y)) +
-    geom_line(size = 1.2, color = "darkblue") +
+    geom_line(linewidth = 1.2, color = "darkblue") +
     geom_point(size = 2, color = "darkblue") +
     labs(
       title = paste("Elbow Curve for", gsub("_", " ", metric)),

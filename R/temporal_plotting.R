@@ -395,7 +395,7 @@ plot_segment_timeline <- function(temporal_data, color_scheme, show_labels) {
   p <- ggplot2::ggplot(timeline_data,
                        ggplot2::aes(x = window, y = size, 
                                    color = segment, group = segment)) +
-    ggplot2::geom_line(size = 1.2) +
+    ggplot2::geom_line(linewidth = 1.2) +
     ggplot2::geom_point(size = 2) +
     ggplot2::scale_color_manual(values = colors, name = "Segment") +
     ggplot2::scale_x_continuous(breaks = 1:n_windows,
@@ -444,7 +444,7 @@ plot_stability_metrics <- function(stability_data, color_scheme) {
   # Create base plot for change magnitudes
   p1 <- ggplot2::ggplot(metrics_data,
                         ggplot2::aes(x = window, y = change_magnitude)) +
-    ggplot2::geom_line(color = "darkred", size = 1) +
+    ggplot2::geom_line(color = "darkred", linewidth = 1) +
     ggplot2::geom_point(color = "darkred", size = 2) +
     ggplot2::geom_hline(yintercept = mean(metrics_data$change_magnitude),
                        linetype = "dashed", color = "gray50") +
@@ -469,7 +469,7 @@ plot_stability_metrics <- function(stability_data, color_scheme) {
   if ("n_segments" %in% names(metrics_data)) {
     p2 <- ggplot2::ggplot(metrics_data,
                          ggplot2::aes(x = window, y = n_segments)) +
-      ggplot2::geom_line(color = "darkblue", size = 1) +
+      ggplot2::geom_line(color = "darkblue", linewidth = 1) +
       ggplot2::geom_point(color = "darkblue", size = 2) +
       ggplot2::labs(x = "Time Window",
                    y = "Number of Segments",

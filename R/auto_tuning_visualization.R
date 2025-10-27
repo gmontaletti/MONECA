@@ -103,9 +103,9 @@ create_overview_plot <- function(tuning_result, candidates, quality_scores,
   
   # Create plot
   p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = candidate, y = value, color = metric)) +
-    ggplot2::geom_line(size = 1.2, alpha = 0.8) +
+    ggplot2::geom_line(linewidth = 1.2, alpha = 0.8) +
     ggplot2::geom_point(size = 2.5, alpha = 0.9) +
-    ggplot2::geom_smooth(method = "loess", se = TRUE, alpha = 0.3, size = 0.5) +
+    ggplot2::geom_smooth(method = "loess", se = TRUE, alpha = 0.3, linewidth = 0.5) +
     ggplot2::geom_vline(xintercept = tuning_result$optimal_value, 
                        linetype = "dashed", color = "red", size = 1) +
     ggplot2::scale_color_manual(values = c("Quality" = "#2E86AB", 
@@ -312,9 +312,9 @@ create_sensitivity_plot <- function(tuning_result, candidates, quality_scores, s
   )
   
   p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = candidate, y = sensitivity, color = metric)) +
-    ggplot2::geom_line(size = 1.2, alpha = 0.8) +
+    ggplot2::geom_line(linewidth = 1.2, alpha = 0.8) +
     ggplot2::geom_point(size = 2.5) +
-    ggplot2::geom_smooth(method = "loess", se = TRUE, alpha = 0.3, size = 0.5) +
+    ggplot2::geom_smooth(method = "loess", se = TRUE, alpha = 0.3, linewidth = 0.5) +
     ggplot2::geom_vline(xintercept = tuning_result$optimal_value, 
                        linetype = "dashed", color = "red", size = 1) +
     ggplot2::scale_color_manual(values = c("Quality" = "#1f77b4", "Stability" = "#ff7f0e")) +
@@ -365,7 +365,7 @@ create_convergence_plot <- function(tuning_result) {
   )
   
   p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = iteration, y = score, color = type)) +
-    ggplot2::geom_line(size = 1.2) +
+    ggplot2::geom_line(linewidth = 1.2) +
     ggplot2::geom_point(size = 2, alpha = 0.7) +
     ggplot2::scale_color_manual(values = c("Current" = "#1f77b4", "Best So Far" = "#d62728")) +
     ggplot2::labs(
