@@ -49,8 +49,9 @@
 <h2 class="pkg-version" data-toc-text="0.9.0" id="moneca-090">moneca 0.9.0<a class="anchor" aria-label="anchor" href="#moneca-090"></a></h2>
 <div class="section level3">
 <h3 id="breaking-changes-0-9-0">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-9-0"></a></h3>
-<ul><li>
-<strong>Fixed clique detection inconsistencies across implementations</strong>: All three implementations (<code><a href="../reference/moneca.html">moneca()</a></code>, <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code>, <code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code>) now use <strong>all cliques by default</strong> for algorithmic correctness and reproducibility. Previously:
+<ul><li><p><strong>Removed <code>moneca_fast_fixed()</code> function</strong>: This experimental function was outdated and inconsistent with the v0.9.0 fixes. Users should use <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code> instead, which now includes all optimizations and the <code>use_maximal_cliques</code> parameter for explicit control.</p></li>
+<li>
+<p><strong>Fixed clique detection inconsistencies across implementations</strong>: All three implementations (<code><a href="../reference/moneca.html">moneca()</a></code>, <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code>, <code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code>) now use <strong>all cliques by default</strong> for algorithmic correctness and reproducibility. Previously:</p>
 <ul><li>
 <code><a href="../reference/moneca.html">moneca()</a></code> and <code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code> were silently switching to maximal cliques for graphs with edge_density &gt; 0.6 &amp;&amp; n_vertices &gt; 15</li>
 <li>
@@ -58,13 +59,12 @@
 <li>This caused the three implementations to produce different clustering results</li>
 </ul></li>
 <li>
-<strong>New explicit user control</strong>: Added <code>use_maximal_cliques</code> parameter to all three functions:
+<p><strong>New explicit user control</strong>: Added <code>use_maximal_cliques</code> parameter to all three functions:</p>
 <ul><li>Default: <code>FALSE</code> (use all cliques - algorithmic fidelity)</li>
 <li>Set to <code>TRUE</code> for performance optimization on very dense graphs</li>
 <li>No more automatic switching - user makes explicit choice</li>
 </ul></li>
-<li>
-<strong>Removed automatic fallback logic</strong> from igraph compatibility layer to prevent unintended behavior changes</li>
+<li><p><strong>Removed automatic fallback logic</strong> from igraph compatibility layer to prevent unintended behavior changes</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="impact-0-9-0">Impact<a class="anchor" aria-label="anchor" href="#impact-0-9-0"></a></h3>
@@ -239,7 +239,7 @@
 <li>
 <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code>: Optimized version with auto-tuning capabilities</li>
 <li>
-<code><a href="../reference/moneca_fast_fixed.html">moneca_fast_fixed()</a></code>: Fixed-algorithm version with auto-tuning</li>
+<code>moneca_fast_fixed()</code>: Fixed-algorithm version with auto-tuning</li>
 <li>
 <code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code>: Parallel processing version with auto-tuning</li>
 <li>

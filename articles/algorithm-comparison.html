@@ -801,9 +801,9 @@ nodes)</strong>: Fast version can be 10-100x faster or more</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Performance Results:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Original algorithm time:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">time_original</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"seconds\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Original algorithm time: 0.39 seconds</span></span>
+<span><span class="co">#&gt; Original algorithm time: 0.38 seconds</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Fast algorithm time:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">time_fast</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"seconds\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Fast algorithm time: 0.35 seconds</span></span>
+<span><span class="co">#&gt; Fast algorithm time: 0.34 seconds</span></span>
 <span><span class="kw">if</span><span class="op">(</span><span class="va">time_fast</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">speedup</span> <span class="op">&lt;-</span> <span class="va">time_original</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span> <span class="op">/</span> <span class="va">time_fast</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Speedup factor:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">speedup</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"x\n"</span><span class="op">)</span></span>
@@ -1094,15 +1094,15 @@ for performance tuning:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Unlimited cliques:"</span>, </span>
 <span>    <span class="st">"- Time:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">time_unlimited</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"sec"</span>,</span>
 <span>    <span class="st">"- L2 segments:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">result_unlimited</span><span class="op">$</span><span class="va">segment.list</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Unlimited cliques: - Time: 0.54 sec - L2 segments: 11</span></span>
+<span><span class="co">#&gt; Unlimited cliques: - Time: 0.5 sec - L2 segments: 11</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Moderate limit (6):"</span>, </span>
 <span>    <span class="st">"- Time:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">time_moderate</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"sec"</span>,</span>
 <span>    <span class="st">"- L2 segments:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">result_moderate</span><span class="op">$</span><span class="va">segment.list</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Moderate limit (6): - Time: 0.53 sec - L2 segments: 11</span></span>
+<span><span class="co">#&gt; Moderate limit (6): - Time: 0.5 sec - L2 segments: 11</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Strict limit (4):"</span>, </span>
 <span>    <span class="st">"- Time:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">time_strict</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"sec"</span>,</span>
 <span>    <span class="st">"- L2 segments:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">result_strict</span><span class="op">$</span><span class="va">segment.list</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Strict limit (4): - Time: 0.53 sec - L2 segments: 11</span></span>
+<span><span class="co">#&gt; Strict limit (4): - Time: 0.51 sec - L2 segments: 11</span></span>
 <span></span>
 <span><span class="co"># Compare segmentation quality</span></span>
 <span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">result_unlimited</span><span class="op">$</span><span class="va">segment.list</span><span class="op">)</span> <span class="op">&gt;=</span> <span class="fl">2</span><span class="op">)</span> <span class="op">{</span></span>
@@ -1187,8 +1187,8 @@ for performance tuning:</p>
 <span><span class="co">#&gt; Running with sparse matrix representation...</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Matrix representation comparison:</span></span>
-<span><span class="co">#&gt; Dense matrices - Time: 0.54 sec - L2 segments: 11 </span></span>
-<span><span class="co">#&gt; Sparse matrices - Time: 0.55 sec - L2 segments: 11 </span></span>
+<span><span class="co">#&gt; Dense matrices - Time: 0.51 sec - L2 segments: 11 </span></span>
+<span><span class="co">#&gt; Sparse matrices - Time: 0.51 sec - L2 segments: 11 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Approximate memory usage:</span></span>
 <span><span class="co">#&gt; Dense result: 0.03 MB</span></span>
@@ -1276,7 +1276,7 @@ datasets and need efficiency</li>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Fast exploration completed in"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">time_initial</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"seconds\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Fast exploration completed in 0.53 seconds</span></span>
+<span><span class="co">#&gt; Fast exploration completed in 0.5 seconds</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Levels found:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">initial_result</span><span class="op">$</span><span class="va">segment.list</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Levels found: 4</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Level 2 segments:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">initial_result</span><span class="op">$</span><span class="va">segment.list</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
@@ -1335,7 +1335,7 @@ datasets and need efficiency</li>
 <span><span class="co">#&gt;   |                                                                              |                                                                      |   0%</span></span>
 <span><span class="co">#&gt; 100% ready!</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Validation completed in 0.57 seconds</span></span>
+<span><span class="co">#&gt; Validation completed in 0.54 seconds</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Comparison of hybrid approach results:</span></span>
 <span><span class="co">#&gt; Fast (exploration) - L2 segments: 10 </span></span>
@@ -1343,7 +1343,7 @@ datasets and need efficiency</li>
 <span><span class="co">#&gt; Results match: FALSE </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Differences found - Original algorithm provides more conservative segmentation</span></span>
-<span><span class="co">#&gt; Total time for hybrid approach: 1.11 seconds</span></span>
+<span><span class="co">#&gt; Total time for hybrid approach: 1.05 seconds</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Hybrid approach: Fast exploration followed by selective validation</span></span>
 <span><span class="co">#&gt; Recommended for: Large datasets where accuracy is critical but</span></span>
