@@ -138,12 +138,37 @@ print.moneca <- function(x,
   total.total <- mx[l, l]
   # Calculate off-diagonal sum (excluding diagonal = those who actually move)
   mx.no.margins <- mx[-l, -l]
-  off.diagonal.sum <- sum(mx.no.margins) - sum(diag(mx.no.margins))
+
+  # Handle matrix conversion and prevent diag() scalar interpretation issue
+  if (!is.matrix(mx.no.margins)) {
+    mx.no.margins <- as.matrix(mx.no.margins)
+  }
+
+  # For 1x1 matrices, diag() would try to create an identity matrix of size n
+  # Instead, directly use the single value as both the sum and diagonal
+  if (nrow(mx.no.margins) == 1 && ncol(mx.no.margins) == 1) {
+    diagonal_sum <- as.numeric(mx.no.margins)
+  } else {
+    diagonal_sum <- sum(diag(mx.no.margins))
+  }
+
+  off.diagonal.sum <- sum(mx.no.margins) - diagonal_sum
   total.mobility <- off.diagonal.sum / total.total
   
   # Calculate diagonal mobility function
   diag.mobility <- function(mx) {
     l <- ncol(mx)
+
+    # Ensure mx is a matrix
+    if (!is.matrix(mx)) {
+      mx <- as.matrix(mx)
+    }
+
+    # Handle edge case of 1x1 matrix after removing margins
+    if (nrow(mx) == 1 || ncol(mx) == 1) {
+      return(1)  # Single element has perfect internal mobility
+    }
+
     mx.dia <- diag(mx)
     mx.dia <- mx.dia[-l]
     internal.mobility <- sum(mx.dia) / sum(mx[-l, -l])
