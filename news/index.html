@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,27 @@
       <small>Source: <a href="https://github.com/gmontaletti/MONECA/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.2" id="moneca-092">moneca 0.9.2<a class="anchor" aria-label="anchor" href="#moneca-092"></a></h2>
+<div class="section level3">
+<h3 id="maintenance-release-0-9-2">Maintenance Release<a class="anchor" aria-label="anchor" href="#maintenance-release-0-9-2"></a></h3>
+<div class="section level4">
+<h4 id="bug-fixes-0-9-2">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-9-2"></a></h4>
+<ul><li><p><strong>Fixed <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code> algorithmic correctness</strong>: The function now produces identical results to <code><a href="../reference/moneca.html">moneca()</a></code> by implementing consistent clique progression logic. Previously, <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code> would sometimes miss valid cliques that <code><a href="../reference/moneca.html">moneca()</a></code> would find, leading to different clustering outcomes.</p></li>
+<li><p><strong>Fixed <code><a href="../reference/print.moneca.html">print.moneca()</a></code> edge case</strong>: The print method now correctly handles 1x1 matrices without errors. Previously, attempting to print a moneca object with a single-element matrix at any level would cause an indexing error.</p></li>
+</ul></div>
+<div class="section level4">
+<h4 id="documentation-0-9-2">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-9-2"></a></h4>
+<ul><li>
+<strong>Added performance analyses</strong>: Comprehensive benchmarking comparing <code><a href="../reference/moneca.html">moneca()</a></code>, <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code>, and <code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code> implementations. Results show all three now produce identical outputs while offering different performance characteristics for various dataset sizes.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="project-maintenance-0-9-2">Project Maintenance<a class="anchor" aria-label="anchor" href="#project-maintenance-0-9-2"></a></h4>
+<ul><li>
+<strong>Cleaned up repository structure</strong>: Moved development scripts, benchmarks, and analysis files to reference directory to maintain clean R package structure.</li>
+</ul></div>
+</div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.1" id="moneca-091">moneca 0.9.1<a class="anchor" aria-label="anchor" href="#moneca-091"></a></h2>
 <div class="section level3">
