@@ -131,8 +131,8 @@ moneca_fast <- function(mx = mx,
     if (strength_density < min.density) {
       n <- nrow(mat)
       out <- list(
-        membership = as.factor(1:n),
-        cliques = as.list(1:n)
+        membership = as.factor(rep(1, n)),
+        cliques = list(1:n)
       )
       return(out)
     }
@@ -156,8 +156,8 @@ moneca_fast <- function(mx = mx,
     if (length(cliques) == 0) {
       n <- nrow(mat)
       out <- list(
-        membership = as.factor(1:n),
-        cliques = as.list(1:n)
+        membership = as.factor(rep(1, n)),
+        cliques = list(1:n)
       )
       return(out)
     }
@@ -181,8 +181,8 @@ moneca_fast <- function(mx = mx,
     if (nrow(edges) == 0) {
       n <- nrow(mat)
       out <- list(
-        membership = as.factor(1:n),
-        cliques = as.list(1:n)
+        membership = as.factor(rep(1, n)),
+        cliques = list(1:n)
       )
       return(out)
     }
@@ -250,9 +250,9 @@ moneca_fast <- function(mx = mx,
     group <- match(group, unique_groups)
     
     g <- as.factor(group)
-    
-    # Create clique list
-    ud.list <- split(seq_along(g), g)
+
+    # Create clique list (without names to match original implementation)
+    ud.list <- unname(split(seq_along(g), g))
     
     out <- list(
       membership = g,
@@ -266,18 +266,18 @@ moneca_fast <- function(mx = mx,
   segment.matrix.fast <- function(mx, segments) {
     # Use standard aggregation
     groups.1 <- c(segments$membership, length(segments$membership) + 1)
-    
+
     # Convert to regular matrix if sparse (rowsum doesn't work with sparse matrices)
     if (inherits(mx, "sparseMatrix")) {
       mx <- as.matrix(mx)
     }
-    
+
     # Standard aggregation
     mx.2_r <- rowsum(mx, groups.1)
     mx.2_r_t <- t(mx.2_r)
     mx.2_rc_t <- rowsum(mx.2_r_t, groups.1)
     mx.2g <- t(mx.2_rc_t)
-    
+
     return(mx.2g)
   }
   
@@ -295,23 +295,23 @@ moneca_fast <- function(mx = mx,
   }
   
   # Main segmentation function
-  make.segments.fast <- function(mx, cut.off = 1, mode = mode, delete.upper.tri = delete.upper.tri, 
+  make.segments.fast <- function(mx, cut.off = 1, mode = mode, delete.upper.tri = delete.upper.tri,
                                 small.cell.reduction = small.cell.reduction) {
-    
+
     mx.1i <- weight.matrix(mx, cut.off, small.cell.reduction = small.cell.reduction,
                            auto_tune = auto_tune, tune_method = tune_method, tune_verbose = tune_verbose)
-    
+
     # Create graph
     mx.1i.graph <- mx.1i
     mx.1i.graph[is.na(mx.1i.graph)] <- 0
-    
+
     gra.1ii <- moneca_graph_from_adjacency(
-      adjmatrix = mx.1i.graph, 
-      mode = "undirected", 
-      weighted = TRUE, 
+      adjmatrix = mx.1i.graph,
+      mode = "undirected",
+      weighted = TRUE,
       diag = FALSE
     )
-    
+
     # Early stopping based on strength density
     strengths <- igraph::strength(gra.1ii, mode = "all")
     if (length(strengths) > 0 && any(strengths > 0)) {
@@ -319,17 +319,17 @@ moneca_fast <- function(mx = mx,
     } else {
       strength_density <- 0
     }
-    
+
     if (strength_density < min.density) {
       n <- nrow(mx.1i)
       return(list(
-        membership = as.factor(1:n),
-        cliques = as.list(1:n)
+        membership = as.factor(rep(1, n)),
+        cliques = list(1:n)
       ))
     }
-    
+
     clust.1 <- find.segments.fast(mx.1i, gra.1ii, cut.off = cut.off, progress = progress)
-    
+
     return(clust.1)
   }
   
@@ -370,15 +370,15 @@ moneca_fast <- function(mx = mx,
   # Main algorithm
   mat.list <- list()
   mat.list[[1]] <- mx
-  
+
   segments <- make.segments.fast(
-    mx, 
-    cut.off = cut.off, 
-    mode = mode, 
-    delete.upper.tri = delete.upper.tri, 
+    mx,
+    cut.off = cut.off,
+    mode = mode,
+    delete.upper.tri = delete.upper.tri,
     small.cell.reduction = small.cell.reduction
   )
-  
+
   mx.2g <- segment.matrix.fast(mx, segments)
   mat.list[[2]] <- mx.2g
   
@@ -401,17 +401,17 @@ moneca_fast <- function(mx = mx,
   if (segment.levels > 1) {
     for (i in 2:segment.levels) {
       segments <- make.segments.fast(
-        mx.2g, 
-        cut.off = cut.off, 
-        mode = mode, 
-        delete.upper.tri = delete.upper.tri, 
+        mx.2g,
+        cut.off = cut.off,
+        mode = mode,
+        delete.upper.tri = delete.upper.tri,
         small.cell.reduction = small.cell.reduction
       )
-      
+
       mx.2g <- segment.matrix.fast(mx.2g, segments)
       mat.list[[i + 1]] <- mx.2g
       out.put[[i]] <- list(segments = segments, mat = mx.2g)
-      
+
       # Stop if only one segment remains or density too low
       if (length(segments$cliques) <= 1) {
         break
