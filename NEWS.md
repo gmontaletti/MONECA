@@ -1,3 +1,21 @@
+# moneca 0.9.2
+
+## Maintenance Release
+
+### Bug Fixes
+
+* **Fixed `moneca_fast()` algorithmic correctness**: The function now produces identical results to `moneca()` by implementing consistent clique progression logic. Previously, `moneca_fast()` would sometimes miss valid cliques that `moneca()` would find, leading to different clustering outcomes.
+
+* **Fixed `print.moneca()` edge case**: The print method now correctly handles 1x1 matrices without errors. Previously, attempting to print a moneca object with a single-element matrix at any level would cause an indexing error.
+
+### Documentation
+
+* **Added performance analyses**: Comprehensive benchmarking comparing `moneca()`, `moneca_fast()`, and `moneca_parallel()` implementations. Results show all three now produce identical outputs while offering different performance characteristics for various dataset sizes.
+
+### Project Maintenance
+
+* **Cleaned up repository structure**: Moved development scripts, benchmarks, and analysis files to reference directory to maintain clean R package structure.
+
 # moneca 0.9.1
 
 ## Maintenance Release

@@ -16,7 +16,13 @@
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(Rscript:*)",
       "Bash(awk:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(cat:*)",
+      "Bash(test:*)",
+      "Bash(git push:*)",
+      "Read(//Users/giampaolomontaletti/Documents/funzioni/reference/moneca/**)",
+      "Read(///**)",
+      "Bash(git log:*)"
     ]
   },
   "enableAllProjectMcpServers": false
