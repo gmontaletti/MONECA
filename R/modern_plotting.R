@@ -5,6 +5,7 @@
 #' network visualizations.
 #'
 #' @name modern_plotting
+#' @keywords internal
 NULL
 
 # Global variable declarations to avoid R CMD check warnings
