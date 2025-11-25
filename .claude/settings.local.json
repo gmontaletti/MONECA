@@ -22,7 +22,10 @@
       "Bash(git push:*)",
       "Read(//Users/giampaolomontaletti/Documents/funzioni/reference/moneca/**)",
       "Read(///**)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(/Library/Frameworks/R.framework/Resources/bin/Rscript:*)",
+      "Bash(git rm:*)",
+      "Bash(git reset:*)"
     ]
   },
   "enableAllProjectMcpServers": false

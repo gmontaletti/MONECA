@@ -1,0 +1,103 @@
+* using log directory ‘/Users/giampaolomontaletti/Documents/funzioni/MONECA/moneca.Rcheck’
+* using R version 4.5.1 (2025-06-13)
+* using platform: aarch64-apple-darwin20
+* R was compiled by
+    Apple clang version 16.0.0 (clang-1600.0.26.6)
+    GNU Fortran (GCC) 14.2.0
+* running under: macOS Tahoe 26.1
+* using session charset: UTF-8
+* using options ‘--no-manual --no-vignettes’
+* checking for file ‘moneca/DESCRIPTION’ ... OK
+* this is package ‘moneca’ version ‘1.0.0’
+* package encoding: UTF-8
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... NOTE
+Found the following hidden files and directories:
+  .claude
+  .github
+These were most likely included in error. See section ‘Package
+structure’ in the ‘Writing R Extensions’ manual.
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘moneca’ can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking DESCRIPTION meta-information ... OK
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking code files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking dependencies in R code ... NOTE
+importazioni '::' o ':::' non dichiarate da:
+  ‘data.table’ ‘eliter’ ‘ggforce’
+chiamate 'loadNamespace' o 'requireNamespace' non dichiarate da:
+  ‘data.table’ ‘doParallel’ ‘foreach’ ‘ggforce’
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... NOTE
+benchmark_implementations: no visible global function definition for
+  ‘sd’
+generate_segment_plot: no visible global function definition for ‘:=’
+plot_moneca_ggraph: no visible binding for global variable
+  ‘segment_label’
+plot_moneca_ggraph: no visible binding for global variable ‘.’
+plot_segment_quality: no visible binding for global variable
+  ‘plot_label’
+plot_segment_quality: no visible binding for global variable
+  ‘segment_label’
+plot_segment_quality: no visible binding for global variable
+  ‘Level_Label’
+Undefined global functions or variables:
+  . := Level_Label plot_label sd segment_label
+Consider adding
+  importFrom("stats", "sd")
+to your NAMESPACE file.
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking contents of ‘data’ directory ... OK
+* checking data for non-ASCII characters ... WARNING
+  Warning: found non-ASCII strings
+  '7220: Grovsmede- og v<c3><a6>rkt<c3><b8>jsmagerarbejde' in object 'mob.mat'
+  '7433: Tekstil- og bekl<c3><a6>dningsarbejde, skind-, l<c3><a6>der- og skot<c3><b8>jsarbejde' in object 'mob.mat'
+  '8261: Betjening af maskiner inden for tekstil-, skind- og l<c3><a6>derindustri' in object 'mob.mat'
+  '8331: Arbejde med andre mobile maskiner og k<c3><b8>ret<c3><b8>jer' in object 'mob.mat'
+  '7220: Grovsmede- og v<c3><a6>rkt<c3><b8>jsmagerarbejde' in object 'mob.seg'
+  '7433: Tekstil- og bekl<c3><a6>dningsarbejde, skind-, l<c3><a6>der- og skot<c3><b8>jsarbejde' in object 'mob.seg'
+  '8261: Betjening af maskiner inden for tekstil-, skind- og l<c3><a6>derindustri' in object 'mob.seg'
+  '8331: Arbejde med andre mobile maskiner og k<c3><b8>ret<c3><b8>jer' in object 'mob.seg'
+* checking data for ASCII and uncompressed saves ... OK
+* checking files in ‘vignettes’ ... WARNING
+Files in the 'vignettes' directory but no files in 'inst/doc':
+  ‘moneca-introduction.Rmd’
+* checking examples ... OK
+* checking for unstated dependencies in ‘tests’ ... OK
+* checking tests ... OK
+  Running ‘testthat.R’
+* checking for unstated dependencies in vignettes ... OK
+* checking package vignettes ... WARNING
+Directory 'inst/doc' does not exist.
+Package vignette without corresponding single PDF/HTML:
+  ‘moneca-introduction.Rmd’
+* checking running R code from vignettes ... SKIPPED
+* checking re-building of vignette outputs ... SKIPPED
+* DONE
+Status: 3 WARNINGs, 3 NOTEs

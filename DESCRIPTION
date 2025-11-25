@@ -1,20 +1,24 @@
 Package: moneca
-Title: Mobility Network Clustering Analysis with Auto-Tuning
-Description: moneca creates a weighted network from a mobility table and uses cliques (or similar) to create discrete and nested clusters. Features comprehensive auto-tuning capabilities for parameter optimization including stability-based, quality-based, performance-balanced, Pareto multi-objective, and cross-validation methods. This is a maintained fork of the original MONECA package with modernized visualizations, comprehensive testing, enhanced documentation, and advanced optimization features.
+Title: Mobility Network Clustering Analysis
+Description: Creates weighted networks from mobility tables and uses cliques to
+    identify discrete and nested clusters of positions with high internal mobility.
+    Includes modern ggraph visualizations, synthetic data generation for testing,
+    and quality metrics for assessing segmentation performance. Maintained fork
+    of the original MONECA package with streamlined API and enhanced documentation.
 URL: https://gmontaletti.github.io/MONECA/, https://github.com/gmontaletti/MONECA
-Version: 0.9.2
+Version: 1.0.0
 Maintainer: Giampaolo Montaletti <giampaolo.montaletti@gmail.com>
 Authors@R: c(
-    person("Giampaolo", "Montaletti", 
-           email = "giampaolo.montaletti@gmail.com", 
+    person("Giampaolo", "Montaletti",
+           email = "giampaolo.montaletti@gmail.com",
            role = c("aut", "cre"),
            comment = c(ORCID = "0009-0002-5327-1122")),
-    person("Jonas", "Touboel", 
-           email = "jt@soc.ku.dk", 
+    person("Jonas", "Touboel",
+           email = "jt@soc.ku.dk",
            role = "aut",
            comment = "Original algorithm and methodology"),
-    person("Anton Grau", "Larsen", 
-           email = "agl.ioa@cbs.dk", 
+    person("Anton Grau", "Larsen",
+           email = "agl.ioa@cbs.dk",
            role = "ctb",
            comment = "Original package development")
     )
@@ -40,11 +44,9 @@ Suggests:
   rmarkdown,
   testthat (>= 3.0.0),
   Matrix,
-  GPfit,
-  viridis,
-  microbenchmark
+  viridis
 License: GPL-3
-Date: 2025-11-05
+Date: 2025-11-25
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 Encoding: UTF-8
