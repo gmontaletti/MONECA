@@ -11,7 +11,7 @@ quality and characteristics of the segmentation."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,14 +23,12 @@ quality and characteristics of the segmentation."></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/moneca-introduction.html">Introduction to moneca: Mobility Network Clustering Analysis</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-news" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">News</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-news"><li><h6 class="dropdown-header" data-toc-skip>Releases</h6></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-08">Version 0.8</a></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-07">Version 0.7</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-100">Version 1.0.0</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-09">Version 0.9</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../news/index.html">Changelog</a></li>
   </ul></li>
@@ -170,102 +168,17 @@ hierarchical levels for each segment lineage.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Generate data and run MONECA</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># Generate data and run MONECA</span></span></span>
 <span class="r-in"><span><span class="va">mobility_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="generate_mobility_data.html">generate_mobility_data</a></span><span class="op">(</span>n_classes <span class="op">=</span> <span class="fl">8</span>, seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">seg</span> <span class="op">&lt;-</span> <span class="fu"><a href="moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |=======                                                               |  10%  |                                                                              |==============                                                        |  20%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |=====================                                                 |  30%  |                                                                              |============================                                          |  40%  |                                                                              |===================================                                   |  50%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 55% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |==========================================                            |  60%  |                                                                              |=================================================                     |  70%  |                                                                              |========================================================              |  80%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 82% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |===============================================================       |  90%  |                                                                              |======================================================================| 100%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 100% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 100% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Overview of level 2 quality</span></span></span>
 <span class="r-in"><span><span class="fu">plot_segment_quality</span><span class="op">(</span><span class="va">seg</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plot_segment_quality-1.png" alt="" width="700" height="433"></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> TableGrob (3 x 2) "arrange": 5 grobs</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   z     cells    name                 grob</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 1 (2-2,1-1) arrange       gtable[layout]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2 (2-2,2-2) arrange       gtable[layout]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 3 (3-3,1-1) arrange       gtable[layout]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 4 (3-3,2-2) arrange       gtable[layout]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 5 (1-1,1-2) arrange text[GRID.text.1065]</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Cohesion vs size analysis</span></span></span>
-<span class="r-in"><span><span class="fu">plot_segment_quality</span><span class="op">(</span><span class="va">seg</span>, plot_type <span class="op">=</span> <span class="st">"cohesion"</span>, level <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plot_segment_quality-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Radar plot for segment comparison</span></span></span>
 <span class="r-in"><span><span class="fu">plot_segment_quality</span><span class="op">(</span><span class="va">seg</span>, plot_type <span class="op">=</span> <span class="st">"radar"</span>, level <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plot_segment_quality-3.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Heatmap of all metrics across levels</span></span></span>
-<span class="r-in"><span><span class="fu">plot_segment_quality</span><span class="op">(</span><span class="va">seg</span>, plot_type <span class="op">=</span> <span class="st">"heatmap"</span>, level <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plot_segment_quality-4.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Evolution of metrics across levels</span></span></span>
-<span class="r-in"><span><span class="fu">plot_segment_quality</span><span class="op">(</span><span class="va">seg</span>, plot_type <span class="op">=</span> <span class="st">"evolution"</span>, </span></span>
-<span class="r-in"><span>                    metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"within.mobility"</span>, <span class="st">"Density"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Removed 8 rows containing missing values or values outside the scale range</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> (`geom_line()`).</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Removed 12 rows containing missing values or values outside the scale range</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> (`geom_point()`).</span>
-<span class="r-plt img"><img src="plot_segment_quality-5.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Custom styling</span></span></span>
-<span class="r-in"><span><span class="fu">plot_segment_quality</span><span class="op">(</span><span class="va">seg</span>, plot_type <span class="op">=</span> <span class="st">"cohesion"</span>,</span></span>
-<span class="r-in"><span>                    color_palette <span class="op">=</span> <span class="st">"Dark2"</span>,</span></span>
-<span class="r-in"><span>                    theme_style <span class="op">=</span> <span class="st">"classic"</span>,</span></span>
-<span class="r-in"><span>                    title <span class="op">=</span> <span class="st">"Segment Quality Analysis"</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plot_segment_quality-6.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Using segment.membership.enhanced for consistent naming (RECOMMENDED)</span></span></span>
-<span class="r-in"><span><span class="va">enhanced_membership</span> <span class="op">&lt;-</span> <span class="fu"><a href="segment.membership.enhanced.html">segment.membership.enhanced</a></span><span class="op">(</span><span class="va">seg</span>, level <span class="op">=</span> <span class="fl">2</span>, </span></span>
-<span class="r-in"><span>                                                  naming_strategy <span class="op">=</span> <span class="st">"pattern"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">plot_segment_quality</span><span class="op">(</span><span class="va">seg</span>, plot_type <span class="op">=</span> <span class="st">"overview"</span>,</span></span>
-<span class="r-in"><span>                    segment_naming <span class="op">=</span> <span class="va">enhanced_membership</span>,</span></span>
-<span class="r-in"><span>                    title <span class="op">=</span> <span class="st">"Quality Analysis with Pattern-Based Names"</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plot_segment_quality-7.png" alt="" width="700" height="433"></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> TableGrob (3 x 2) "arrange": 5 grobs</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   z     cells    name                 grob</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 1 (2-2,1-1) arrange       gtable[layout]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2 (2-2,2-2) arrange       gtable[layout]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 3 (3-3,1-1) arrange       gtable[layout]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 4 (3-3,2-2) arrange       gtable[layout]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 5 (1-1,1-2) arrange text[GRID.text.1739]</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Works with all plot types</span></span></span>
-<span class="r-in"><span><span class="fu">plot_segment_quality</span><span class="op">(</span><span class="va">seg</span>, plot_type <span class="op">=</span> <span class="st">"radar"</span>, </span></span>
-<span class="r-in"><span>                    segment_naming <span class="op">=</span> <span class="va">enhanced_membership</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plot_segment_quality-8.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span><span class="fu">plot_segment_quality</span><span class="op">(</span><span class="va">seg</span>, plot_type <span class="op">=</span> <span class="st">"heatmap"</span>, </span></span>
-<span class="r-in"><span>                    segment_naming <span class="op">=</span> <span class="va">enhanced_membership</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plot_segment_quality-9.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span><span class="fu">plot_segment_quality</span><span class="op">(</span><span class="va">seg</span>, plot_type <span class="op">=</span> <span class="st">"evolution"</span>, </span></span>
-<span class="r-in"><span>                    segment_naming <span class="op">=</span> <span class="va">enhanced_membership</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Removed 8 rows containing missing values or values outside the scale range</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> (`geom_line()`).</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Removed 20 rows containing missing values or values outside the scale range</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> (`geom_point()`).</span>
-<span class="r-plt img"><img src="plot_segment_quality-10.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Combining with custom segment names for professional visualization</span></span></span>
-<span class="r-in"><span><span class="va">custom_names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Executive"</span>, <span class="st">"Manager"</span>, <span class="st">"Professional"</span>, <span class="st">"Technical"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  segment_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Leadership Level"</span>, <span class="st">"Management Tier"</span>, </span></span>
-<span class="r-in"><span>                  <span class="st">"Professional Services"</span>, <span class="st">"Technical Specialists"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">plot_segment_quality</span><span class="op">(</span><span class="va">seg</span>, plot_type <span class="op">=</span> <span class="st">"radar"</span>, </span></span>
-<span class="r-in"><span>                    segment_naming <span class="op">=</span> <span class="va">custom_names</span>,</span></span>
-<span class="r-in"><span>                    title <span class="op">=</span> <span class="st">"Professional Hierarchy Quality Metrics"</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plot_segment_quality-11.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
@@ -278,7 +191,7 @@ hierarchical levels for each segment lineage.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

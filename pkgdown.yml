@@ -1,13 +1,9 @@
 pandoc: 3.1.11
-pkgdown: 2.1.3
+pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
-  algorithm-comparison: algorithm-comparison.html
-  auto-tuning-guide: auto-tuning-guide.html
   moneca-introduction: moneca-introduction.html
-  moneca-statistics: moneca-statistics.html
-  parameter-calibration: parameter-calibration.html
-last_built: 2025-11-05T11:41Z
+last_built: 2025-11-25T11:23Z
 urls:
   reference: https://gmontaletti.github.io/MONECA/reference
   article: https://gmontaletti.github.io/MONECA/articles

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,14 +19,12 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/moneca-introduction.html">Introduction to moneca: Mobility Network Clustering Analysis</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul></li>
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-news" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">News</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-news"><li><h6 class="dropdown-header" data-toc-skip>Releases</h6></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-08">Version 0.8</a></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-07">Version 0.7</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-100">Version 1.0.0</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-09">Version 0.9</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../news/index.html">Changelog</a></li>
   </ul></li>
@@ -57,7 +55,7 @@
 <div class="section level4">
 <h4 id="documentation-0-9-2">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-9-2"></a></h4>
 <ul><li>
-<strong>Added performance analyses</strong>: Comprehensive benchmarking comparing <code><a href="../reference/moneca.html">moneca()</a></code>, <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code>, and <code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code> implementations. Results show all three now produce identical outputs while offering different performance characteristics for various dataset sizes.</li>
+<strong>Added performance analyses</strong>: Comprehensive benchmarking comparing <code><a href="../reference/moneca.html">moneca()</a></code>, <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code>, and <code>moneca_parallel()</code> implementations. Results show all three now produce identical outputs while offering different performance characteristics for various dataset sizes.</li>
 </ul></div>
 <div class="section level4">
 <h4 id="project-maintenance-0-9-2">Project Maintenance<a class="anchor" aria-label="anchor" href="#project-maintenance-0-9-2"></a></h4>
@@ -80,9 +78,9 @@
 <h3 id="breaking-changes-0-9-0">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-9-0"></a></h3>
 <ul><li><p><strong>Removed <code>moneca_fast_fixed()</code> function</strong>: This experimental function was outdated and inconsistent with the v0.9.0 fixes. Users should use <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code> instead, which now includes all optimizations and the <code>use_maximal_cliques</code> parameter for explicit control.</p></li>
 <li>
-<p><strong>Fixed clique detection inconsistencies across implementations</strong>: All three implementations (<code><a href="../reference/moneca.html">moneca()</a></code>, <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code>, <code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code>) now use <strong>all cliques by default</strong> for algorithmic correctness and reproducibility. Previously:</p>
+<p><strong>Fixed clique detection inconsistencies across implementations</strong>: All three implementations (<code><a href="../reference/moneca.html">moneca()</a></code>, <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code>, <code>moneca_parallel()</code>) now use <strong>all cliques by default</strong> for algorithmic correctness and reproducibility. Previously:</p>
 <ul><li>
-<code><a href="../reference/moneca.html">moneca()</a></code> and <code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code> were silently switching to maximal cliques for graphs with edge_density &gt; 0.6 &amp;&amp; n_vertices &gt; 15</li>
+<code><a href="../reference/moneca.html">moneca()</a></code> and <code>moneca_parallel()</code> were silently switching to maximal cliques for graphs with edge_density &gt; 0.6 &amp;&amp; n_vertices &gt; 15</li>
 <li>
 <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code> was always using maximal cliques</li>
 <li>This caused the three implementations to produce different clustering results</li>
@@ -100,7 +98,7 @@
 <ul><li>
 <strong>Scientific correctness</strong>: All implementations now produce identical results by default</li>
 <li>
-<strong>Reproducibility</strong>: Results are consistent across <code><a href="../reference/moneca.html">moneca()</a></code>, <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code>, and <code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code>
+<strong>Reproducibility</strong>: Results are consistent across <code><a href="../reference/moneca.html">moneca()</a></code>, <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code>, and <code>moneca_parallel()</code>
 </li>
 <li>
 <strong>Performance</strong>: Users with very dense graphs can explicitly enable <code>use_maximal_cliques=TRUE</code>
@@ -125,7 +123,7 @@
 <div class="section level3">
 <h3 id="bug-fixes-0-8-1">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-8-1"></a></h3>
 <ul><li>
-<strong>Fixed <code><a href="../reference/calculate_gini.html">calculate_gini()</a></code> Gini coefficient calculation</strong>: The function now correctly includes zero values in the inequality calculation, aligning with the standard mathematical definition and documented behavior. Previously, the function incorrectly filtered out zeros before calculation, which led to underestimating inequality in distributions with isolates or highly centralized networks (e.g., star networks). This fix improves the accuracy of network structure metrics in cutoff sensitivity analysis.</li>
+<strong>Fixed <code>calculate_gini()</code> Gini coefficient calculation</strong>: The function now correctly includes zero values in the inequality calculation, aligning with the standard mathematical definition and documented behavior. Previously, the function incorrectly filtered out zeros before calculation, which led to underestimating inequality in distributions with isolates or highly centralized networks (e.g., star networks). This fix improves the accuracy of network structure metrics in cutoff sensitivity analysis.</li>
 </ul></div>
 </div>
     <div class="section level2">
@@ -137,7 +135,7 @@
 <ul><li>
 <strong>Added comprehensive temporal clustering analysis</strong>:
 <ul><li>
-<code><a href="../reference/moneca_temporal.html">moneca_temporal()</a></code>: Moving window clustering for time series of mobility matrices</li>
+<code>moneca_temporal()</code>: Moving window clustering for time series of mobility matrices</li>
 <li>Maintains stable segment labels across time periods using Hungarian algorithm</li>
 <li>Tracks segment evolution and transitions over time</li>
 <li>Supports multiple aggregation methods (mean, sum, weighted) for temporal windows</li>
@@ -146,7 +144,7 @@
 <li>
 <strong>Temporal stability assessment</strong>:
 <ul><li>
-<code><a href="../reference/temporal_stability_analysis.html">temporal_stability_analysis()</a></code>: Comprehensive stability metrics over time</li>
+<code>temporal_stability_analysis()</code>: Comprehensive stability metrics over time</li>
 <li>
 <code><a href="../reference/assess_clustering_stability_parallel.html">assess_clustering_stability_parallel()</a></code>: Multi-core stability evaluation</li>
 <li>Tracks clustering consistency across different time windows</li>
@@ -155,26 +153,26 @@
 <li>
 <strong>Advanced temporal visualization</strong>:
 <ul><li>
-<code><a href="../reference/plot_temporal_segments.html">plot_temporal_segments()</a></code>: Network evolution visualization across time</li>
+<code>plot_temporal_segments()</code>: Network evolution visualization across time</li>
 <li>
-<code><a href="../reference/plot_alluvial_diagram.html">plot_alluvial_diagram()</a></code>: Flow-based visualization of segment transitions</li>
+<code>plot_alluvial_diagram()</code>: Flow-based visualization of segment transitions</li>
 <li>
-<code><a href="../reference/plot_segment_timeline.html">plot_segment_timeline()</a></code>: Temporal progression of individual segments</li>
+<code>plot_segment_timeline()</code>: Temporal progression of individual segments</li>
 <li>
-<code><a href="../reference/plot_transition_heatmap.html">plot_transition_heatmap()</a></code>: Heatmap visualization of segment transitions</li>
+<code>plot_transition_heatmap()</code>: Heatmap visualization of segment transitions</li>
 <li>
-<code><a href="../reference/plot_stability_metrics.html">plot_stability_metrics()</a></code>: Temporal stability trend visualization</li>
+<code>plot_stability_metrics()</code>: Temporal stability trend visualization</li>
 </ul></li>
 <li>
 <strong>Temporal data management</strong>:
 <ul><li>
-<code><a href="../reference/aggregate_mobility_window.html">aggregate_mobility_window()</a></code>: Efficient temporal window aggregation</li>
+<code>aggregate_mobility_window()</code>: Efficient temporal window aggregation</li>
 <li>
-<code><a href="../reference/match_segments_across_time.html">match_segments_across_time()</a></code>: Intelligent segment matching between time periods</li>
+<code>match_segments_across_time()</code>: Intelligent segment matching between time periods</li>
 <li>
-<code><a href="../reference/compute_transition_matrix.html">compute_transition_matrix()</a></code>: Segment-to-segment transition analysis</li>
+<code>compute_transition_matrix()</code>: Segment-to-segment transition analysis</li>
 <li>
-<code><a href="../reference/export_node_trajectories.html">export_node_trajectories()</a></code>: Node-level temporal trajectory extraction</li>
+<code>export_node_trajectories()</code>: Node-level temporal trajectory extraction</li>
 </ul></li>
 </ul></div>
 <div class="section level4">
@@ -270,11 +268,11 @@
 <li>
 <code>moneca_fast_fixed()</code>: Fixed-algorithm version with auto-tuning</li>
 <li>
-<code><a href="../reference/moneca_parallel.html">moneca_parallel()</a></code>: Parallel processing version with auto-tuning</li>
+<code>moneca_parallel()</code>: Parallel processing version with auto-tuning</li>
 <li>
 <code><a href="../reference/weight.matrix.html">weight.matrix()</a></code>: Weight matrix computation with parameter optimization</li>
 <li>
-<code><a href="../reference/weight.matrix.parallel.html">weight.matrix.parallel()</a></code>: Parallel weight matrix with auto-tuning</li>
+<code>weight.matrix.parallel()</code>: Parallel weight matrix with auto-tuning</li>
 </ul></li>
 </ul></div>
 </div>
@@ -285,7 +283,7 @@
 <ul><li>
 <code><a href="../reference/auto_tune_small_cell_reduction.html">auto_tune_small_cell_reduction()</a></code>: Main auto-tuning function with comprehensive optimization strategies</li>
 <li>
-<code><a href="../reference/auto_tune_small_cell_reduction_enhanced.html">auto_tune_small_cell_reduction_enhanced()</a></code>: Enhanced version with advanced features and performance improvements</li>
+<code>auto_tune_small_cell_reduction_enhanced()</code>: Enhanced version with advanced features and performance improvements</li>
 <li>
 <code><a href="../reference/generate_candidate_values.html">generate_candidate_values()</a></code>: Intelligent candidate parameter generation using data-driven methods</li>
 <li>
@@ -324,11 +322,11 @@
 <div class="section level4">
 <h4 id="visualization-and-analysis-0-6-0"><strong>Visualization and Analysis</strong><a class="anchor" aria-label="anchor" href="#visualization-and-analysis-0-6-0"></a></h4>
 <ul><li>
-<code><a href="../reference/plot_tuning_results.html">plot_tuning_results()</a></code>: Comprehensive visualization of auto-tuning results</li>
+<code>plot_tuning_results()</code>: Comprehensive visualization of auto-tuning results</li>
 <li>
 <code>plot_pareto_front()</code>: Pareto frontier visualization for multi-objective results</li>
 <li>
-<code><a href="../reference/parameter_sensitivity_plot.html">parameter_sensitivity_plot()</a></code>: Sensitivity analysis visualization</li>
+<code>parameter_sensitivity_plot()</code>: Sensitivity analysis visualization</li>
 <li>
 <code>tuning_convergence_plot()</code>: Convergence analysis for optimization methods</li>
 </ul></div>
@@ -1045,7 +1043,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

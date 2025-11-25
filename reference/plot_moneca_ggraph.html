@@ -11,7 +11,7 @@ with support for multiple layout algorithms, node aesthetics, and segment highli
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,14 +23,12 @@ with support for multiple layout algorithms, node aesthetics, and segment highli
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/moneca-introduction.html">Introduction to moneca: Mobility Network Clustering Analysis</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-news" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">News</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-news"><li><h6 class="dropdown-header" data-toc-skip>Releases</h6></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-08">Version 0.8</a></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-07">Version 0.7</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-100">Version 1.0.0</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-09">Version 0.9</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../news/index.html">Changelog</a></li>
   </ul></li>
@@ -222,81 +220,22 @@ complete control over how segments are labeled. This is particularly useful for:
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Generate synthetic data and run MONECA</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># Generate synthetic data and run MONECA</span></span></span>
 <span class="r-in"><span><span class="va">mobility_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="generate_mobility_data.html">generate_mobility_data</a></span><span class="op">(</span>n_classes <span class="op">=</span> <span class="fl">6</span>, seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">seg</span> <span class="op">&lt;-</span> <span class="fu"><a href="moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |==========                                                            |  14%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |====================                                                  |  29%  |                                                                              |==============================                                        |  43%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 50% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |========================================                              |  57%  |                                                                              |==================================================                    |  71%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 75% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |============================================================          |  86%  |                                                                              |======================================================================| 100%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 100% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Basic network plot</span></span></span>
 <span class="r-in"><span><span class="fu">plot_moneca_ggraph</span><span class="op">(</span><span class="va">seg</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plot_moneca_ggraph-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Customized plot with different aesthetics</span></span></span>
 <span class="r-in"><span><span class="fu">plot_moneca_ggraph</span><span class="op">(</span><span class="va">seg</span>,</span></span>
 <span class="r-in"><span>  layout <span class="op">=</span> <span class="st">"stress"</span>,</span></span>
 <span class="r-in"><span>  node_color <span class="op">=</span> <span class="st">"mobility"</span>,</span></span>
-<span class="r-in"><span>  edge_width <span class="op">=</span> <span class="st">"weight"</span>,</span></span>
 <span class="r-in"><span>  color_palette <span class="op">=</span> <span class="st">"Spectral"</span>,</span></span>
-<span class="r-in"><span>  title <span class="op">=</span> <span class="st">"Social Mobility Network"</span>,</span></span>
-<span class="r-in"><span>  show_segments <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span>  title <span class="op">=</span> <span class="st">"Social Mobility Network"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plot_moneca_ggraph-2.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Plot with custom node sizes and colors</span></span></span>
-<span class="r-in"><span><span class="va">custom_plot</span> <span class="op">&lt;-</span> <span class="fu">plot_moneca_ggraph</span><span class="op">(</span><span class="va">seg</span>,</span></span>
-<span class="r-in"><span>  node_size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fl">6</span>, <span class="fl">10</span>, <span class="fl">4</span>, <span class="fl">7</span>, <span class="fl">5</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  node_color <span class="op">=</span> <span class="st">"red"</span>,</span></span>
-<span class="r-in"><span>  edge_color <span class="op">=</span> <span class="st">"darkblue"</span>,</span></span>
-<span class="r-in"><span>  theme_style <span class="op">=</span> <span class="st">"minimal"</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Further customize with ggplot2</span></span></span>
-<span class="r-in"><span><span class="va">custom_plot</span> <span class="op">+</span> </span></span>
-<span class="r-in"><span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>subtitle <span class="op">=</span> <span class="st">"Custom subtitle"</span><span class="op">)</span> <span class="op">+</span></span></span>
-<span class="r-in"><span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">16</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="plot_moneca_ggraph-3.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Using custom segment labels with data.frame (NEW FUNCTIONALITY)</span></span></span>
-<span class="r-in"><span><span class="va">node_names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">mobility_data</span><span class="op">)</span><span class="op">[</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">mobility_data</span><span class="op">)</span><span class="op">]</span>  <span class="co"># Remove "Total" row</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 1: Professional category labels</span></span></span>
-<span class="r-in"><span><span class="va">professional_labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  name <span class="op">=</span> <span class="va">node_names</span>,</span></span>
-<span class="r-in"><span>  segment_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Senior Management"</span>, <span class="st">"Middle Management"</span>, <span class="st">"Professional Staff"</span>, </span></span>
-<span class="r-in"><span>                    <span class="st">"Technical Staff"</span>, <span class="st">"Administrative"</span>, <span class="st">"Support Staff"</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">node_names</span><span class="op">)</span><span class="op">]</span>,</span></span>
-<span class="r-in"><span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">professional_plot</span> <span class="op">&lt;-</span> <span class="fu">plot_moneca_ggraph</span><span class="op">(</span><span class="va">seg</span>,</span></span>
-<span class="r-in"><span>  segment_naming <span class="op">=</span> <span class="va">professional_labels</span>,</span></span>
-<span class="r-in"><span>  title <span class="op">=</span> <span class="st">"Professional Hierarchy Analysis"</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 2: Partial custom labeling (mix of custom and auto-generated)</span></span></span>
-<span class="r-in"><span><span class="va">partial_labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  name <span class="op">=</span> <span class="va">node_names</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>,  <span class="co"># Only label first two categories</span></span></span>
-<span class="r-in"><span>  segment_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Executive Level"</span>, <span class="st">"Management Level"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">partial_plot</span> <span class="op">&lt;-</span> <span class="fu">plot_moneca_ggraph</span><span class="op">(</span><span class="va">seg</span>,</span></span>
-<span class="r-in"><span>  segment_naming <span class="op">=</span> <span class="va">partial_labels</span>,</span></span>
-<span class="r-in"><span>  title <span class="op">=</span> <span class="st">"Mixed Labeling Approach"</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Example 3: Comparing naming strategies</span></span></span>
-<span class="r-in"><span><span class="va">auto_plot</span> <span class="op">&lt;-</span> <span class="fu">plot_moneca_ggraph</span><span class="op">(</span><span class="va">seg</span>, segment_naming <span class="op">=</span> <span class="st">"auto"</span>, </span></span>
-<span class="r-in"><span>                               title <span class="op">=</span> <span class="st">"Automatic Naming"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">concat_plot</span> <span class="op">&lt;-</span> <span class="fu">plot_moneca_ggraph</span><span class="op">(</span><span class="va">seg</span>, segment_naming <span class="op">=</span> <span class="st">"concat"</span>, </span></span>
-<span class="r-in"><span>                                 title <span class="op">=</span> <span class="st">"Concatenated Names"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
@@ -309,7 +248,7 @@ complete control over how segments are labeled. This is particularly useful for:
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

@@ -5,15 +5,15 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Mobility Network Clustering Analysis with Auto-Tuning • moneca</title>
+<title>Mobility Network Clustering Analysis • moneca</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/Roboto-0.4.10/font.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Mobility Network Clustering Analysis with Auto-Tuning">
-<meta name="description" content="moneca creates a weighted network from a mobility table and uses cliques (or similar) to create discrete and nested clusters. Features comprehensive auto-tuning capabilities for parameter optimization including stability-based, quality-based, performance-balanced, Pareto multi-objective, and cross-validation methods. This is a maintained fork of the original MONECA package with modernized visualizations, comprehensive testing, enhanced documentation, and advanced optimization features.">
-<meta property="og:description" content="moneca creates a weighted network from a mobility table and uses cliques (or similar) to create discrete and nested clusters. Features comprehensive auto-tuning capabilities for parameter optimization including stability-based, quality-based, performance-balanced, Pareto multi-objective, and cross-validation methods. This is a maintained fork of the original MONECA package with modernized visualizations, comprehensive testing, enhanced documentation, and advanced optimization features.">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Mobility Network Clustering Analysis">
+<meta name="description" content="Creates weighted networks from mobility tables and uses cliques to identify discrete and nested clusters of positions with high internal mobility. Includes modern ggraph visualizations, synthetic data generation for testing, and quality metrics for assessing segmentation performance. Maintained fork of the original MONECA package with streamlined API and enhanced documentation.">
+<meta property="og:description" content="Creates weighted networks from mobility tables and uses cliques to identify discrete and nested clusters of positions with high internal mobility. Includes modern ggraph visualizations, synthetic data generation for testing, and quality metrics for assessing segmentation performance. Maintained fork of the original MONECA package with streamlined API and enhanced documentation.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,16 +37,14 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/moneca-introduction.html">Introduction to moneca: Mobility Network Clustering Analysis</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="articles/index.html">More articles...</a></li>
   </ul>
 </li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-news" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">News</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-news">
 <li><h6 class="dropdown-header" data-toc-skip>Releases</h6></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-08">Version 0.8</a></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-07">Version 0.7</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-100">Version 1.0.0</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-09">Version 0.9</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="news/index.html">Changelog</a></li>
   </ul>
@@ -105,10 +103,11 @@ GitHub: <a href="https://github.com/gmontaletti" class="external-link uri">https
 <li>
 <strong>Network-based clustering</strong> of mobility tables using graph theory</li>
 <li>
-<strong>Hierarchical segmentation</strong> at multiple analytical levels<br>
-</li>
+<strong>Hierarchical segmentation</strong> at multiple analytical levels</li>
 <li>
-<strong>Advanced auto-tuning</strong> with 6 optimization methods (stability, quality, performance, Pareto, cross-validation, Bayesian)</li>
+<strong>Fast implementation</strong> with moneca_fast() for large datasets</li>
+<li>
+<strong>Auto-tuning</strong> capabilities for automatic parameter optimization</li>
 <li>
 <strong>Modern visualization</strong> with ggplot2 and ggraph</li>
 <li>
@@ -117,8 +116,6 @@ GitHub: <a href="https://github.com/gmontaletti" class="external-link uri">https
 <strong>Comprehensive testing suite</strong> and documentation</li>
 <li>
 <strong>igraph compatibility layer</strong> supporting versions 1.3.0+</li>
-<li>
-<strong>Performance optimization</strong> with parallel processing and caching</li>
 </ul>
 </div>
 <div class="section level2">
@@ -149,14 +146,13 @@ GitHub: <a href="https://github.com/gmontaletti" class="external-link uri">https
 <span>  seed <span class="op">=</span> <span class="fl">123</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Run MONECA analysis with auto-tuning</span></span>
-<span><span class="va">seg</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">3</span>, </span>
-<span>              auto_tune <span class="op">=</span> <span class="cn">TRUE</span>, auto_tune_method <span class="op">=</span> <span class="st">"stability"</span><span class="op">)</span></span>
+<span><span class="co"># Run MONECA analysis</span></span>
+<span><span class="va">seg</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">seg</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Modern network visualization</span></span>
-<span><span class="fu"><a href="reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg</span>, </span>
-<span>                  node_color <span class="op">=</span> <span class="st">"segment"</span>, </span>
+<span><span class="fu"><a href="reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg</span>,</span>
+<span>                  node_color <span class="op">=</span> <span class="st">"segment"</span>,</span>
 <span>                  title <span class="op">=</span> <span class="st">"Social Mobility Network"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Ego network analysis</span></span>
@@ -167,157 +163,19 @@ GitHub: <a href="https://github.com/gmontaletti" class="external-link uri">https
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">membership</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="auto-tuning-automatic-parameter-optimization">Auto-Tuning: Automatic Parameter Optimization<a class="anchor" aria-label="anchor" href="#auto-tuning-automatic-parameter-optimization"></a>
+<h2 id="core-functions">Core Functions<a class="anchor" aria-label="anchor" href="#core-functions"></a>
 </h2>
-<p>MONECA includes advanced auto-tuning capabilities that automatically optimize the <code>small.cell.reduction</code> parameter for improved clustering quality:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Stability-based auto-tuning (recommended for general use)</span></span>
-<span><span class="va">seg_stable</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>                     auto_tune <span class="op">=</span> <span class="cn">TRUE</span>, auto_tune_method <span class="op">=</span> <span class="st">"stability"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Quality-optimized auto-tuning (best clustering performance)  </span></span>
-<span><span class="va">seg_quality</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>                      auto_tune <span class="op">=</span> <span class="cn">TRUE</span>, auto_tune_method <span class="op">=</span> <span class="st">"quality"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Performance-balanced auto-tuning (speed vs quality trade-off)</span></span>
-<span><span class="va">seg_balanced</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>                       auto_tune <span class="op">=</span> <span class="cn">TRUE</span>, auto_tune_method <span class="op">=</span> <span class="st">"performance"</span>,</span>
-<span>                       performance_weight <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Multi-objective Pareto optimization</span></span>
-<span><span class="va">seg_pareto</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>                     auto_tune <span class="op">=</span> <span class="cn">TRUE</span>, auto_tune_method <span class="op">=</span> <span class="st">"pareto"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Cross-validation based tuning (conservative approach)</span></span>
-<span><span class="va">seg_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>                 auto_tune <span class="op">=</span> <span class="cn">TRUE</span>, auto_tune_method <span class="op">=</span> <span class="st">"cross_validation"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># View auto-tuning results</span></span>
-<span><span class="va">auto_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">seg_stable</span>, <span class="st">"auto_tune_result"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Optimal parameter:"</span>, <span class="va">auto_result</span><span class="op">$</span><span class="va">best_parameter</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Score:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">auto_result</span><span class="op">$</span><span class="va">best_score</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The streamlined moneca API includes 21 key functions organized into functional groups:</p>
 <div class="section level3">
-<h3 id="auto-tuning-methods">Auto-Tuning Methods<a class="anchor" aria-label="anchor" href="#auto-tuning-methods"></a>
-</h3>
-<table class="table">
-<colgroup>
-<col width="25%">
-<col width="32%">
-<col width="41%">
-</colgroup>
-<thead><tr class="header">
-<th>Method</th>
-<th>Best For</th>
-<th>Description</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>stability</code></td>
-<td>General use</td>
-<td>Bootstrap-based stability assessment</td>
-</tr>
-<tr class="even">
-<td><code>quality</code></td>
-<td>Research/publication</td>
-<td>Maximizes clustering quality metrics</td>
-</tr>
-<tr class="odd">
-<td><code>performance</code></td>
-<td>Large datasets</td>
-<td>Balances quality and computational speed</td>
-</tr>
-<tr class="even">
-<td><code>pareto</code></td>
-<td>Exploration</td>
-<td>Multi-objective optimization</td>
-</tr>
-<tr class="odd">
-<td><code>cross_validation</code></td>
-<td>Small datasets</td>
-<td>Conservative parameter selection</td>
-</tr>
-<tr class="even">
-<td><code>bayesian</code></td>
-<td>Advanced users</td>
-<td>Gaussian Process optimization*</td>
-</tr>
-</tbody>
-</table>
-<p>*Requires GPfit package</p>
-</div>
-<div class="section level3">
-<h3 id="beforeafter-comparison">Before/After Comparison<a class="anchor" aria-label="anchor" href="#beforeafter-comparison"></a>
-</h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Compare manual vs auto-tuned results</span></span>
-<span><span class="va">manual_seg</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">2</span>, small.cell.reduction <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
-<span><span class="va">auto_seg</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">2</span>, </span>
-<span>                   auto_tune <span class="op">=</span> <span class="cn">TRUE</span>, auto_tune_method <span class="op">=</span> <span class="st">"stability"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Visualize comparison</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">gridExtra</span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">manual_seg</span>, title <span class="op">=</span> <span class="st">"Manual Parameter"</span><span class="op">)</span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">auto_seg</span>, title <span class="op">=</span> <span class="st">"Auto-Tuned"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">grid.arrange</a></span><span class="op">(</span><span class="va">p1</span>, <span class="va">p2</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="analysis-and-visualization">Analysis and Visualization<a class="anchor" aria-label="anchor" href="#analysis-and-visualization"></a>
-</h2>
-<p>MONECA provides several tools for analyzing and visualizing mobility patterns:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Enhanced segment membership analysis</span></span>
-<span><span class="va">enhanced_membership</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/segment.membership.enhanced.html">segment.membership.enhanced</a></span><span class="op">(</span><span class="va">seg</span>, node_naming <span class="op">=</span> <span class="st">"semantic"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">enhanced_membership</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Quality assessment of segments</span></span>
-<span><span class="va">quality</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/segment.quality.html">segment.quality</a></span><span class="op">(</span><span class="va">seg</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">quality</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Visualize segment quality</span></span>
-<span><span class="fu"><a href="reference/plot_segment_quality.html">plot_segment_quality</a></span><span class="op">(</span><span class="va">seg</span>, title <span class="op">=</span> <span class="st">"Segment Quality Assessment"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Multi-level stair plot</span></span>
-<span><span class="fu"><a href="reference/plot_stair_ggraph.html">plot_stair_ggraph</a></span><span class="op">(</span><span class="va">seg</span>, title <span class="op">=</span> <span class="st">"Hierarchical Segmentation"</span><span class="op">)</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="enhanced-segment-naming">Enhanced Segment Naming<a class="anchor" aria-label="anchor" href="#enhanced-segment-naming"></a>
-</h3>
-<p>MONECA now supports flexible segment naming to improve visualization interpretability:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Create custom meaningful labels</span></span>
-<span><span class="va">custom_labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Class 1"</span>, <span class="st">"Class 2"</span>, <span class="st">"Class 3"</span>, <span class="st">"Class 4"</span>, <span class="st">"Class 5"</span>, <span class="st">"Class 6"</span><span class="op">)</span>,</span>
-<span>  segment_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Executive"</span>, <span class="st">"Professional"</span>, <span class="st">"Manager"</span>, </span>
-<span>                    <span class="st">"Technical"</span>, <span class="st">"Service"</span>, <span class="st">"Manual"</span><span class="op">)</span>,</span>
-<span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Use in any plotting function</span></span>
-<span><span class="fu"><a href="reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg</span>, </span>
-<span>                  segment_naming <span class="op">=</span> <span class="va">custom_labels</span>,</span>
-<span>                  title <span class="op">=</span> <span class="st">"Occupational Mobility Network"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Also works with string strategies</span></span>
-<span><span class="fu"><a href="reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg</span>, segment_naming <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span>    <span class="co"># Intelligent pattern recognition</span></span>
-<span><span class="fu"><a href="reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg</span>, segment_naming <span class="op">=</span> <span class="st">"concat"</span><span class="op">)</span>  <span class="co"># Name concatenation</span></span>
-<span><span class="fu"><a href="reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg</span>, segment_naming <span class="op">=</span> <span class="st">"pattern"</span><span class="op">)</span> <span class="co"># Advanced pattern matching</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="key-functions">Key Functions<a class="anchor" aria-label="anchor" href="#key-functions"></a>
-</h2>
-<div class="section level3">
-<h3 id="core-analysis">Core Analysis<a class="anchor" aria-label="anchor" href="#core-analysis"></a>
+<h3 id="core-analysis-functions">Core Analysis Functions<a class="anchor" aria-label="anchor" href="#core-analysis-functions"></a>
 </h3>
 <ul>
 <li>
-<code><a href="reference/moneca.html">moneca()</a></code> - Main clustering algorithm</li>
+<strong>moneca()</strong> - Main clustering algorithm with hierarchical segmentation</li>
 <li>
-<code><a href="reference/weight.matrix.html">weight.matrix()</a></code> - Convert mobility tables to relative risk matrices</li>
+<strong>moneca_fast()</strong> - Fast implementation for large datasets (identical results)</li>
 <li>
-<code><a href="reference/find.segments.html">find.segments()</a></code> - Identify cliques in weighted networks</li>
-<li>
-<code><a href="reference/segment.membership.html">segment.membership()</a></code> - Extract segment membership information</li>
+<strong>weight.matrix()</strong> - Convert mobility tables to relative risk matrices</li>
 </ul>
 </div>
 <div class="section level3">
@@ -325,21 +183,23 @@ GitHub: <a href="https://github.com/gmontaletti" class="external-link uri">https
 </h3>
 <ul>
 <li>
-<code><a href="reference/generate_mobility_data.html">generate_mobility_data()</a></code> - Create synthetic mobility matrices</li>
-<li>
-<code><a href="reference/generate_example_datasets.html">generate_example_datasets()</a></code> - Pre-configured example datasets</li>
+<strong>generate_mobility_data()</strong> - Create synthetic mobility matrices for testing</li>
 </ul>
 </div>
 <div class="section level3">
-<h3 id="modern-visualization">Modern Visualization<a class="anchor" aria-label="anchor" href="#modern-visualization"></a>
+<h3 id="modern-visualization-ggraph-based">Modern Visualization (ggraph-based)<a class="anchor" aria-label="anchor" href="#modern-visualization-ggraph-based"></a>
 </h3>
 <ul>
 <li>
-<code><a href="reference/plot_moneca_ggraph.html">plot_moneca_ggraph()</a></code> - Network plots with ggraph (supports enhanced segment naming)</li>
+<strong>plot_moneca_ggraph()</strong> - Network visualization with segment highlighting</li>
 <li>
-<code><a href="reference/plot_ego_ggraph.html">plot_ego_ggraph()</a></code> - Ego network visualization (supports enhanced segment naming)</li>
+<strong>plot_ego_ggraph()</strong> - Ego network analysis and visualization</li>
 <li>
-<code><a href="reference/plot_stair_ggraph.html">plot_stair_ggraph()</a></code> - Multi-level segmentation plots (supports enhanced segment naming)</li>
+<strong>plot_stair_ggraph()</strong> - Multi-level hierarchical segmentation plots</li>
+<li>
+<strong>plot_moneca_dendrogram()</strong> - Dendrogram visualization of hierarchical structure</li>
+<li>
+<strong>plot_segment_quality()</strong> - Quality assessment visualization</li>
 </ul>
 </div>
 <div class="section level3">
@@ -347,22 +207,88 @@ GitHub: <a href="https://github.com/gmontaletti" class="external-link uri">https
 </h3>
 <ul>
 <li>
-<code><a href="reference/segment.membership.enhanced.html">segment.membership.enhanced()</a></code> - Enhanced segment membership with naming</li>
+<strong>segment.membership()</strong> - Extract segment membership at each level</li>
 <li>
-<code><a href="reference/segment.quality.html">segment.quality()</a></code> - Assess segmentation quality across levels</li>
+<strong>segment.membership.dataframe()</strong> - Membership as data frame</li>
 <li>
-<code><a href="reference/plot_segment_quality.html">plot_segment_quality()</a></code> - Visualize quality metrics</li>
+<strong>segment.quality()</strong> - Assess segmentation quality metrics</li>
+<li>
+<strong>segment.edges()</strong> - Extract edge weights between segments</li>
+<li>
+<strong>segment.colors()</strong> - Get color assignments for segments</li>
+<li>
+<strong>vertex.mobility()</strong> - Calculate vertex-level mobility metrics</li>
 </ul>
 </div>
 <div class="section level3">
-<h3 id="legacy-functions">Legacy Functions<a class="anchor" aria-label="anchor" href="#legacy-functions"></a>
+<h3 id="auto-tuning">Auto-Tuning<a class="anchor" aria-label="anchor" href="#auto-tuning"></a>
 </h3>
 <ul>
 <li>
-<code><a href="reference/moneca.plot.html">moneca.plot()</a></code> - Base R plotting (still supported)</li>
-<li>
-<code><a href="reference/gg.moneca.html">gg.moneca()</a></code> - Original ggplot2 plotting (still supported)</li>
+<strong>auto_tune_small_cell_reduction()</strong> - Automatic parameter optimization</li>
 </ul>
+</div>
+<div class="section level3">
+<h3 id="legacy-visualization-backward-compatibility">Legacy Visualization (backward compatibility)<a class="anchor" aria-label="anchor" href="#legacy-visualization-backward-compatibility"></a>
+</h3>
+<ul>
+<li>
+<strong>moneca.plot()</strong> - Base R network plotting</li>
+<li>
+<strong>gg.moneca()</strong> - Original ggplot2 visualization</li>
+<li>
+<strong>ego.plot()</strong> - Legacy ego network plot</li>
+<li>
+<strong>stair.plot()</strong> - Legacy stair plot</li>
+<li>
+<strong>layout.matrix()</strong> - Custom layout algorithm for network positioning</li>
+</ul>
+</div>
+</div>
+<div class="section level2">
+<h2 id="advanced-usage">Advanced Usage<a class="anchor" aria-label="anchor" href="#advanced-usage"></a>
+</h2>
+<div class="section level3">
+<h3 id="fast-implementation">Fast Implementation<a class="anchor" aria-label="anchor" href="#fast-implementation"></a>
+</h3>
+<p>For large datasets, use the optimized implementation:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Fast implementation (identical results to standard moneca)</span></span>
+<span><span class="va">seg_fast</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/moneca_fast.html">moneca_fast</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Works with all visualization and analysis functions</span></span>
+<span><span class="fu"><a href="reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg_fast</span>, node_color <span class="op">=</span> <span class="st">"segment"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="auto-tuning-1">Auto-Tuning<a class="anchor" aria-label="anchor" href="#auto-tuning-1"></a>
+</h3>
+<p>Automatically optimize the small.cell.reduction parameter:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Use auto-tuning for parameter optimization</span></span>
+<span><span class="va">seg_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">3</span>, auto_tune <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Advanced: use auto_tune_small_cell_reduction() for more control</span></span>
+<span><span class="va">tuning_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/auto_tune_small_cell_reduction.html">auto_tune_small_cell_reduction</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">seg</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>,</span>
+<span>              segment.levels <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>              small.cell.reduction <span class="op">=</span> <span class="va">tuning_result</span><span class="op">$</span><span class="va">best_parameter</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="enhanced-segment-naming">Enhanced Segment Naming<a class="anchor" aria-label="anchor" href="#enhanced-segment-naming"></a>
+</h3>
+<p>Improve visualization interpretability with custom labels:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Create custom meaningful labels</span></span>
+<span><span class="va">custom_labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Class 1"</span>, <span class="st">"Class 2"</span>, <span class="st">"Class 3"</span><span class="op">)</span>,</span>
+<span>  segment_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Executive"</span>, <span class="st">"Professional"</span>, <span class="st">"Technical"</span><span class="op">)</span>,</span>
+<span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Use in plotting functions</span></span>
+<span><span class="fu"><a href="reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg</span>,</span>
+<span>                  segment_naming <span class="op">=</span> <span class="va">custom_labels</span>,</span>
+<span>                  title <span class="op">=</span> <span class="st">"Occupational Mobility Network"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -381,7 +307,7 @@ GitHub: <a href="https://github.com/gmontaletti" class="external-link uri">https
 <h2 id="development-and-testing">Development and Testing<a class="anchor" aria-label="anchor" href="#development-and-testing"></a>
 </h2>
 <p>The package includes a comprehensive test suite and modern development practices:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Run tests</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -414,7 +340,7 @@ GitHub: <a href="https://github.com/gmontaletti" class="external-link uri">https
 <p>If you use moneca in your research, please cite:</p>
 <pre><code># Current package:
 Montaletti, G. (2025). moneca: Mobility Network Clustering Analysis.
-R package version 0.9.2. https://github.com/gmontaletti/moneca
+R package version 1.0.0. https://github.com/gmontaletti/moneca
 
 # Original algorithm and methodology:
 Touboel, J., &amp; Larsen, A. G. (2017). Mapping the Social Class Structure:
@@ -493,7 +419,7 @@ Sociology, 51(6), 1257-1276.</code></pre>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

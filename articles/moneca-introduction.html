@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,16 +35,14 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/moneca-introduction.html">Introduction to moneca: Mobility Network Clustering Analysis</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-news" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">News</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-news">
 <li><h6 class="dropdown-header" data-toc-skip>Releases</h6></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-08">Version 0.8</a></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-07">Version 0.7</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-100">Version 1.0.0</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-09">Version 0.9</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../news/index.html">Changelog</a></li>
   </ul>
@@ -72,7 +70,7 @@
                         <h4 data-toc-skip class="author">Giampaolo
 Montaletti</h4>
             
-            <h4 data-toc-skip class="date">2025-11-05</h4>
+            <h4 data-toc-skip class="date">2025-11-25</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/gmontaletti/MONECA/blob/master/vignettes/moneca-introduction.Rmd" class="external-link"><code>vignettes/moneca-introduction.Rmd</code></a></small>
       <div class="d-none name"><code>moneca-introduction.Rmd</code></div>
@@ -240,16 +238,12 @@ class)</p>
 <h3 id="creating-different-mobility-scenarios">Creating Different Mobility Scenarios<a class="anchor" aria-label="anchor" href="#creating-different-mobility-scenarios"></a>
 </h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Get multiple example datasets (note: these are pre-configured examples)</span></span>
-<span><span class="va">examples</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_example_datasets.html">generate_example_datasets</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Available example datasets:\\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Available example datasets:\n</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">examples</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "simple"  "complex" "fluid"   "rigid"</span></span>
+<code class="sourceCode R"><span><span class="co"># Create example datasets with different mobility patterns</span></span>
+<span><span class="co"># Using generate_mobility_data() with different parameters</span></span>
 <span></span>
 <span><span class="co"># For demonstration of larger networks, create custom 30x30 examples</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\\n\\nCreating custom 30x30 examples for comparison:\\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; \n\nCreating custom 30x30 examples for comparison:\n</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Creating custom 30x30 examples for comparison:\\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Creating custom 30x30 examples for comparison:\n</span></span>
 <span></span>
 <span><span class="co"># Create 30x30 rigid system</span></span>
 <span><span class="va">examples_30x30</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -576,7 +570,7 @@ while maintaining analytical depth</li>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p1</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/plot_basic-1.png" width="100%"></p>
+<p><img src="figures/plot_basic-1.png" class="r-plt" width="100%"></p>
 </div>
 <div class="section level3">
 <h3 id="advanced-network-visualization-with-clear-segment-boundaries">Advanced Network Visualization with Clear Segment Boundaries<a class="anchor" aria-label="anchor" href="#advanced-network-visualization-with-clear-segment-boundaries"></a>
@@ -602,7 +596,7 @@ while maintaining analytical depth</li>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p2</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/plot_custom-1.png" width="100%"></p>
+<p><img src="figures/plot_custom-1.png" class="r-plt" width="100%"></p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Also create a subset visualization focusing on the largest segments</span></span>
@@ -637,7 +631,7 @@ showing both incoming and outgoing flows:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p3</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/ego_plot-1.png" width="100%"></p>
+<p><img src="figures/ego_plot-1.png" class="r-plt" width="100%"></p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Show ego network statistics</span></span>
@@ -671,10 +665,10 @@ showing both incoming and outgoing flows:</p>
 <span></span>
 <span><span class="co"># Display individual plots with improved spacing</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">stair_plots</span><span class="op">$</span><span class="va">`Level 2`</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/stair_plot-1.png" width="100%"></p>
+<p><img src="figures/stair_plot-1.png" class="r-plt" width="100%"></p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">stair_plots</span><span class="op">$</span><span class="va">`Level 3`</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/stair_plot-2.png" width="100%"></p>
+<p><img src="figures/stair_plot-2.png" class="r-plt" width="100%"></p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Provide numerical summary of segmentation progression</span></span>
@@ -848,10 +842,10 @@ Visualizations<a class="anchor" aria-label="anchor" href="#comparing-mobility-re
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p_rigid</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/compare_plots-1.png" width="100%"></p>
+<p><img src="figures/compare_plots-1.png" class="r-plt" width="100%"></p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p_fluid</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/compare_plots-2.png" width="100%"></p>
+<p><img src="figures/compare_plots-2.png" class="r-plt" width="100%"></p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Add network density comparison</span></span>
@@ -896,7 +890,7 @@ Visualizations<a class="anchor" aria-label="anchor" href="#comparing-mobility-re
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">dendro_plot</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/dendrogram_plot-1.png" width="100%"></p>
+<p><img src="figures/dendrogram_plot-1.png" class="r-plt" width="100%"></p>
 </div>
 <div class="section level4">
 <h4 id="quality-assessment-visualization">Quality Assessment Visualization<a class="anchor" aria-label="anchor" href="#quality-assessment-visualization"></a>
@@ -912,7 +906,7 @@ Visualizations<a class="anchor" aria-label="anchor" href="#comparing-mobility-re
 <span>  show_labels <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  label_size <span class="op">=</span> <span class="fl">3</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/quality_plots-1.png" width="100%"></p>
+<p><img src="figures/quality_plots-1.png" class="r-plt" width="100%"></p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">quality_overview</span><span class="op">)</span></span>
@@ -936,7 +930,7 @@ Visualizations<a class="anchor" aria-label="anchor" href="#comparing-mobility-re
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cohesion_plot</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/quality_plots-2.png" width="100%"></p>
+<p><img src="figures/quality_plots-2.png" class="r-plt" width="100%"></p>
 </div>
 </div>
 <div class="section level3">
@@ -987,7 +981,7 @@ input:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">auto_plot</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/segment_naming_basic-1.png" width="100%"></p>
+<p><img src="figures/segment_naming_basic-1.png" class="r-plt" width="100%"></p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Example 2: Concatenation strategy - joins names with separator</span></span>
@@ -1001,7 +995,7 @@ input:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">concat_plot</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/segment_naming_basic-2.png" width="100%"></p>
+<p><img src="figures/segment_naming_basic-2.png" class="r-plt" width="100%"></p>
 </div>
 <div class="section level4">
 <h4 id="advanced-custom-naming-with-data-frames">Advanced Custom Naming with Data Frames<a class="anchor" aria-label="anchor" href="#advanced-custom-naming-with-data-frames"></a>
@@ -1054,7 +1048,7 @@ using a data.frame:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">custom_plot</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/segment_naming_custom-1.png" width="100%"></p>
+<p><img src="figures/segment_naming_custom-1.png" class="r-plt" width="100%"></p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Show how this works across different plot types</span></span>
@@ -1071,7 +1065,7 @@ using a data.frame:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">ego_custom</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/segment_naming_custom-2.png" width="100%"></p>
+<p><img src="figures/segment_naming_custom-2.png" class="r-plt" width="100%"></p>
 </div>
 <div class="section level4">
 <h4 id="partial-custom-naming">Partial Custom Naming<a class="anchor" aria-label="anchor" href="#partial-custom-naming"></a>
@@ -1098,7 +1092,7 @@ using default strategies:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">partial_plot</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/segment_naming_partial-1.png" width="100%"></p>
+<p><img src="figures/segment_naming_partial-1.png" class="r-plt" width="100%"></p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\\nPartial custom naming allows focus on analytically important categories\\n"</span><span class="op">)</span></span>
@@ -1124,10 +1118,10 @@ using default strategies:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">multilevel_plots</span><span class="op">$</span><span class="va">`Level 2`</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/segment_naming_multilevel-1.png" width="100%"></p>
+<p><img src="figures/segment_naming_multilevel-1.png" class="r-plt" width="100%"></p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">multilevel_plots</span><span class="op">$</span><span class="va">`Level 3`</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/segment_naming_multilevel-2.png" width="100%"></p>
+<p><img src="figures/segment_naming_multilevel-2.png" class="r-plt" width="100%"></p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Show progression of segmentation with meaningful names</span></span>
@@ -1721,692 +1715,46 @@ properties</li>
 </div>
 </div>
 <div class="section level2">
-<h2 id="auto-tuning-functionality">Auto-Tuning Functionality<a class="anchor" aria-label="anchor" href="#auto-tuning-functionality"></a>
+<h2 id="advanced-features">Advanced Features<a class="anchor" aria-label="anchor" href="#advanced-features"></a>
 </h2>
-<p>The moneca package includes comprehensive auto-tuning capabilities
-that automatically optimize the <code>small.cell.reduction</code>
-parameter for improved clustering results. This feature eliminates
-manual parameter selection and can significantly improve clustering
-quality.</p>
 <div class="section level3">
-<h3 id="why-auto-tuning">Why Auto-Tuning?<a class="anchor" aria-label="anchor" href="#why-auto-tuning"></a>
+<h3 id="fast-implementation-with-moneca_fast">Fast Implementation with moneca_fast()<a class="anchor" aria-label="anchor" href="#fast-implementation-with-moneca_fast"></a>
 </h3>
-<p>The <code>small.cell.reduction</code> parameter controls how small
-mobility cells are handled during clustering. Finding the optimal value
-manually can be:</p>
-<ul>
-<li>
-<strong>Time-consuming</strong>: Requires testing multiple
-values</li>
-<li>
-<strong>Subjective</strong>: Different users might choose different
-values</li>
-<li>
-<strong>Data-dependent</strong>: Optimal values vary by dataset
-characteristics</li>
-<li>
-<strong>Quality-affecting</strong>: Poor parameter choice reduces
-clustering performance</li>
-</ul>
-</div>
-<div class="section level3">
-<h3 id="auto-tuning-methods">Auto-Tuning Methods<a class="anchor" aria-label="anchor" href="#auto-tuning-methods"></a>
-</h3>
+<p>For large datasets or when computational speed is important, moneca
+provides a fast implementation that produces identical results to the
+standard algorithm:</p>
 <div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Generate test data for auto-tuning demonstration</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">456</span><span class="op">)</span></span>
-<span><span class="va">mobility_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_mobility_data.html">generate_mobility_data</a></span><span class="op">(</span></span>
-<span>  n_classes <span class="op">=</span> <span class="fl">6</span>,</span>
-<span>  immobility_strength <span class="op">=</span> <span class="fl">0.7</span>,</span>
-<span>  class_clustering <span class="op">=</span> <span class="fl">0.8</span>,</span>
-<span>  noise_level <span class="op">=</span> <span class="fl">0.1</span>,</span>
-<span>  class_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Class_"</span>, <span class="va">LETTERS</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Standard implementation</span></span>
+<span><span class="va">seg_standard</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">basic_data</span>, segment.levels <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="st">"Original mobility matrix:"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "Original mobility matrix:"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mobility_data</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         Class_A Class_B Class_C Class_D Class_E Class_F Total</span></span>
-<span><span class="co">#&gt; Class_A     203     114      72       4       6       3   402</span></span>
-<span><span class="co">#&gt; Class_B     961    1582     896     486      39      29  3993</span></span>
-<span><span class="co">#&gt; Class_C     137     283     479     275     141      12  1327</span></span>
-<span><span class="co">#&gt; Class_D      13      84     220     346     207     114   984</span></span>
-<span><span class="co">#&gt; Class_E      10       8      88     198     385     222   911</span></span>
-<span><span class="co">#&gt; Class_F      33      29      32     386     707    1196  2383</span></span>
-<span><span class="co">#&gt; Total      1357    2100    1787    1695    1485    1576 10000</span></span>
+<span><span class="co"># Fast implementation (identical results)</span></span>
+<span><span class="va">seg_fast</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/moneca_fast.html">moneca_fast</a></span><span class="op">(</span><span class="va">basic_data</span>, segment.levels <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Method 1: Stability-based tuning (default)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n=== Stability-Based Auto-Tuning ===\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; === Stability-Based Auto-Tuning ===</span></span>
-<span><span class="va">seg_auto_stability</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/moneca.html">moneca</a></span><span class="op">(</span></span>
-<span>  <span class="va">mobility_data</span>,</span>
-<span>  segment.levels <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  auto_tune <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  tune_method <span class="op">=</span> <span class="st">"stability"</span>,</span>
-<span>  tune_verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Parallel Processing Decision: SEQUENTIAL (no packages)</span></span>
-<span><span class="co">#&gt; Reasoning: Required parallel packages not available </span></span>
-<span><span class="co">#&gt; Install required packages: install.packages(c('foreach', 'doParallel'))</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting auto-tuning for small.cell.reduction parameter...</span></span>
-<span><span class="co">#&gt; Method: stability </span></span>
-<span><span class="co">#&gt; Matrix size: 7 x 7 </span></span>
-<span><span class="co">#&gt; Parallel processing: NO </span></span>
-<span><span class="co">#&gt; Generated 20 candidate values</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Evaluating 20 candidates using optimized batch processing...</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |====                                                                  |   5%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%  |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%  |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%  |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%  |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |=======                                                               |  10%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%  |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%  |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%  |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%  |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |==========                                                            |  15%  |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |==================                                                    |  25%  |                                                                              |===================================                                   |  50%  |                                                                              |====================================================                  |  75%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |==============                                                        |  20%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |==================                                                    |  25%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |==================                                                    |  25%  |                                                                              |===================================                                   |  50%  |                                                                              |====================================================                  |  75%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |=====================                                                 |  30%  |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%  |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%  |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |==================                                                    |  25%  |                                                                              |===================================                                   |  50%  |                                                                              |====================================================                  |  75%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |========================                                              |  35%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |==================                                                    |  25%  |                                                                              |===================================                                   |  50%  |                                                                              |====================================================                  |  75%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |============================                                          |  40%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |==================                                                    |  25%  |                                                                              |===================================                                   |  50%  |                                                                              |====================================================                  |  75%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |================================                                      |  45%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |===================================                                   |  50%  |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |======================================                                |  55%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |==========================================                            |  60%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |==============================================                        |  65%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |=================================================                     |  70%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |====================================================                  |  75%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |========================================================              |  80%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |============================================================          |  85%  |                                                                              |===============================================================       |  90%  |                                                                              |==================================================================    |  95%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Batch evaluation completed</span></span>
-<span><span class="co">#&gt; - Valid results: 16 of 20 </span></span>
-<span><span class="co">#&gt; - Mean stability score: 0.651 </span></span>
-<span><span class="co">#&gt; - Mean quality score: 0.567 </span></span>
-<span><span class="co">#&gt; - Weight matrices cached: 20 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Optimal small.cell.reduction: 896 </span></span>
-<span><span class="co">#&gt; Total tuning time: 34.82 seconds</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%</span></span>
-<span><span class="co">#&gt; 50% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; 100% ready!</span></span>
-<span><span class="co">#&gt; Parallel Processing Decision: SEQUENTIAL (no packages)</span></span>
-<span><span class="co">#&gt; Reasoning: Required parallel packages not available </span></span>
-<span><span class="co">#&gt; Install required packages: install.packages(c('foreach', 'doParallel'))</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting auto-tuning for small.cell.reduction parameter...</span></span>
-<span><span class="co">#&gt; Method: stability </span></span>
-<span><span class="co">#&gt; Matrix size: 6 x 6 </span></span>
-<span><span class="co">#&gt; Parallel processing: NO </span></span>
-<span><span class="co">#&gt; Generated 20 candidate values</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Evaluating 20 candidates using optimized batch processing...</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |====                                                                  |   5%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |=======                                                               |  10%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |==========                                                            |  15%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |==============                                                        |  20%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |==================                                                    |  25%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |=====================                                                 |  30%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |========================                                              |  35%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |============================                                          |  40%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |================================                                      |  45%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |===================================                                   |  50%  |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |======================================                                |  55%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |==========================================                            |  60%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |==============================================                        |  65%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |=================================================                     |  70%  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt;   |                                                                              |====================================================                  |  75%  |                                                                              |========================================================              |  80%  |                                                                              |============================================================          |  85%  |                                                                              |===============================================================       |  90%  |                                                                              |==================================================================    |  95%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Batch evaluation completed</span></span>
-<span><span class="co">#&gt; - Valid results: 14 of 20 </span></span>
-<span><span class="co">#&gt; - Mean stability score: 0.592 </span></span>
-<span><span class="co">#&gt; - Mean quality score: 0.472 </span></span>
-<span><span class="co">#&gt; - Weight matrices cached: 20 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Optimal small.cell.reduction: 5 </span></span>
-<span><span class="co">#&gt; Total tuning time: 26.55 seconds</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%</span></span>
-<span><span class="co">#&gt; 33% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |============================                                          |  40%</span></span>
-<span><span class="co">#&gt; 50% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%</span></span>
-<span><span class="co">#&gt; 83% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; 100% ready!</span></span>
-<span></span>
-<span><span class="co"># Method 2: Quality-based tuning  </span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n=== Quality-Based Auto-Tuning ===\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; === Quality-Based Auto-Tuning ===</span></span>
-<span><span class="va">seg_auto_quality</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/moneca.html">moneca</a></span><span class="op">(</span></span>
-<span>  <span class="va">mobility_data</span>,</span>
-<span>  segment.levels <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  auto_tune <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  tune_method <span class="op">=</span> <span class="st">"quality"</span>,</span>
-<span>  tune_verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Parallel Processing Decision: SEQUENTIAL (no packages)</span></span>
-<span><span class="co">#&gt; Reasoning: Required parallel packages not available </span></span>
-<span><span class="co">#&gt; Install required packages: install.packages(c('foreach', 'doParallel'))</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting auto-tuning for small.cell.reduction parameter...</span></span>
-<span><span class="co">#&gt; Method: quality </span></span>
-<span><span class="co">#&gt; Matrix size: 7 x 7 </span></span>
-<span><span class="co">#&gt; Parallel processing: NO </span></span>
-<span><span class="co">#&gt; Generated 20 candidate values</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Evaluating 20 candidates using optimized batch processing...</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |====                                                                  |   5%  |                                                                              |=======                                                               |  10%  |                                                                              |==========                                                            |  15%  |                                                                              |==============                                                        |  20%  |                                                                              |==================                                                    |  25%  |                                                                              |=====================                                                 |  30%  |                                                                              |========================                                              |  35%  |                                                                              |============================                                          |  40%  |                                                                              |================================                                      |  45%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================                                |  55%  |                                                                              |==========================================                            |  60%  |                                                                              |==============================================                        |  65%  |                                                                              |=================================================                     |  70%  |                                                                              |====================================================                  |  75%  |                                                                              |========================================================              |  80%  |                                                                              |============================================================          |  85%  |                                                                              |===============================================================       |  90%  |                                                                              |==================================================================    |  95%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Batch evaluation completed</span></span>
-<span><span class="co">#&gt; - Valid results: 16 of 20 </span></span>
-<span><span class="co">#&gt; - Mean quality score: 0.567 </span></span>
-<span><span class="co">#&gt; - Weight matrices cached: 20 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Optimal small.cell.reduction: 0 </span></span>
-<span><span class="co">#&gt; Total tuning time: 8.44 seconds</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=========                                                             |  12%  |                                                                              |==================                                                    |  25%</span></span>
-<span><span class="co">#&gt; 33% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |==========================                                            |  38%  |                                                                              |===================================                                   |  50%</span></span>
-<span><span class="co">#&gt; 56% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |============================================                          |  62%  |                                                                              |====================================================                  |  75%</span></span>
-<span><span class="co">#&gt; 78% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |=============================================================         |  88%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; 100% ready!</span></span>
-<span><span class="co">#&gt; Parallel Processing Decision: SEQUENTIAL (no packages)</span></span>
-<span><span class="co">#&gt; Reasoning: Required parallel packages not available </span></span>
-<span><span class="co">#&gt; Install required packages: install.packages(c('foreach', 'doParallel'))</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting auto-tuning for small.cell.reduction parameter...</span></span>
-<span><span class="co">#&gt; Method: quality </span></span>
-<span><span class="co">#&gt; Matrix size: 3 x 3 </span></span>
-<span><span class="co">#&gt; Parallel processing: NO </span></span>
-<span><span class="co">#&gt; Generated 20 candidate values</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Evaluating 20 candidates using optimized batch processing...</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |====                                                                  |   5%  |                                                                              |=======                                                               |  10%  |                                                                              |==========                                                            |  15%  |                                                                              |==============                                                        |  20%  |                                                                              |==================                                                    |  25%  |                                                                              |=====================                                                 |  30%  |                                                                              |========================                                              |  35%  |                                                                              |============================                                          |  40%  |                                                                              |================================                                      |  45%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================                                |  55%  |                                                                              |==========================================                            |  60%  |                                                                              |==============================================                        |  65%  |                                                                              |=================================================                     |  70%  |                                                                              |====================================================                  |  75%  |                                                                              |========================================================              |  80%  |                                                                              |============================================================          |  85%  |                                                                              |===============================================================       |  90%  |                                                                              |==================================================================    |  95%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Batch evaluation completed</span></span>
-<span><span class="co">#&gt; - Valid results: 0 of 20 </span></span>
-<span><span class="co">#&gt; - Mean quality score: 0 </span></span>
-<span><span class="co">#&gt; - Weight matrices cached: 20 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Optimal small.cell.reduction: 0 </span></span>
-<span><span class="co">#&gt; Total tuning time: 3.24 seconds</span></span>
-<span></span>
-<span><span class="co"># Method 3: Performance-balanced tuning</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n=== Performance-Balanced Auto-Tuning ===\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; === Performance-Balanced Auto-Tuning ===</span></span>
-<span><span class="va">seg_auto_performance</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/moneca.html">moneca</a></span><span class="op">(</span></span>
-<span>  <span class="va">mobility_data</span>,</span>
-<span>  segment.levels <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  auto_tune <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  tune_method <span class="op">=</span> <span class="st">"performance"</span>,</span>
-<span>  tune_verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Parallel Processing Decision: SEQUENTIAL (no packages)</span></span>
-<span><span class="co">#&gt; Reasoning: Required parallel packages not available </span></span>
-<span><span class="co">#&gt; Install required packages: install.packages(c('foreach', 'doParallel'))</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting auto-tuning for small.cell.reduction parameter...</span></span>
-<span><span class="co">#&gt; Method: performance </span></span>
-<span><span class="co">#&gt; Matrix size: 7 x 7 </span></span>
-<span><span class="co">#&gt; Parallel processing: NO </span></span>
-<span><span class="co">#&gt; Generated 20 candidate values</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Evaluating 20 candidates using optimized batch processing...</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |====                                                                  |   5%  |                                                                              |=======                                                               |  10%  |                                                                              |==========                                                            |  15%  |                                                                              |==============                                                        |  20%  |                                                                              |==================                                                    |  25%  |                                                                              |=====================                                                 |  30%  |                                                                              |========================                                              |  35%  |                                                                              |============================                                          |  40%  |                                                                              |================================                                      |  45%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================                                |  55%  |                                                                              |==========================================                            |  60%  |                                                                              |==============================================                        |  65%  |                                                                              |=================================================                     |  70%  |                                                                              |====================================================                  |  75%  |                                                                              |========================================================              |  80%  |                                                                              |============================================================          |  85%  |                                                                              |===============================================================       |  90%  |                                                                              |==================================================================    |  95%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Batch evaluation completed</span></span>
-<span><span class="co">#&gt; - Valid results: 16 of 20 </span></span>
-<span><span class="co">#&gt; - Mean quality score: 0.567 </span></span>
-<span><span class="co">#&gt; - Weight matrices cached: 20 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Optimal small.cell.reduction: 5 </span></span>
-<span><span class="co">#&gt; Total tuning time: 8.45 seconds</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=========                                                             |  12%  |                                                                              |==================                                                    |  25%</span></span>
-<span><span class="co">#&gt; 33% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |==========================                                            |  38%  |                                                                              |===================================                                   |  50%</span></span>
-<span><span class="co">#&gt; 56% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |============================================                          |  62%  |                                                                              |====================================================                  |  75%</span></span>
-<span><span class="co">#&gt; 78% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |=============================================================         |  88%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; 100% ready!</span></span>
-<span><span class="co">#&gt; Parallel Processing Decision: SEQUENTIAL (no packages)</span></span>
-<span><span class="co">#&gt; Reasoning: Required parallel packages not available </span></span>
-<span><span class="co">#&gt; Install required packages: install.packages(c('foreach', 'doParallel'))</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Starting auto-tuning for small.cell.reduction parameter...</span></span>
-<span><span class="co">#&gt; Method: performance </span></span>
-<span><span class="co">#&gt; Matrix size: 3 x 3 </span></span>
-<span><span class="co">#&gt; Parallel processing: NO </span></span>
-<span><span class="co">#&gt; Generated 20 candidate values</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Evaluating 20 candidates using optimized batch processing...</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |====                                                                  |   5%  |                                                                              |=======                                                               |  10%  |                                                                              |==========                                                            |  15%  |                                                                              |==============                                                        |  20%  |                                                                              |==================                                                    |  25%  |                                                                              |=====================                                                 |  30%  |                                                                              |========================                                              |  35%  |                                                                              |============================                                          |  40%  |                                                                              |================================                                      |  45%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================                                |  55%  |                                                                              |==========================================                            |  60%  |                                                                              |==============================================                        |  65%  |                                                                              |=================================================                     |  70%  |                                                                              |====================================================                  |  75%  |                                                                              |========================================================              |  80%  |                                                                              |============================================================          |  85%  |                                                                              |===============================================================       |  90%  |                                                                              |==================================================================    |  95%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Batch evaluation completed</span></span>
-<span><span class="co">#&gt; - Valid results: 0 of 20 </span></span>
-<span><span class="co">#&gt; - Mean quality score: 0 </span></span>
-<span><span class="co">#&gt; - Weight matrices cached: 20 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Optimal small.cell.reduction: 0 </span></span>
-<span><span class="co">#&gt; Total tuning time: 3.2 seconds</span></span>
-<span></span>
-<span><span class="co"># Compare with manual parameter selection</span></span>
-<span><span class="va">seg_manual</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">mobility_data</span>, segment.levels <span class="op">=</span> <span class="fl">2</span>, small.cell.reduction <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=========                                                             |  12%  |                                                                              |==================                                                    |  25%</span></span>
-<span><span class="co">#&gt; 33% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |==========================                                            |  38%  |                                                                              |===================================                                   |  50%</span></span>
-<span><span class="co">#&gt; 56% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |============================================                          |  62%  |                                                                              |====================================================                  |  75%</span></span>
-<span><span class="co">#&gt; 78% ready!</span></span>
-<span><span class="co">#&gt;   |                                                                              |=============================================================         |  88%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; 100% ready!</span></span></code></pre></div>
+<span><span class="co"># Both produce the same clustering</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">seg_standard</span><span class="op">$</span><span class="va">segment.list</span>, <span class="va">seg_fast</span><span class="op">$</span><span class="va">segment.list</span><span class="op">)</span></span></code></pre></div>
+<p>The <code><a href="../reference/moneca_fast.html">moneca_fast()</a></code> function uses optimized algorithms
+while maintaining full compatibility with all visualization and analysis
+functions.</p>
 </div>
 <div class="section level3">
-<h3 id="comparison-manual-vs-auto-tuned-results">Comparison: Manual vs Auto-Tuned Results<a class="anchor" aria-label="anchor" href="#comparison-manual-vs-auto-tuned-results"></a>
+<h3 id="auto-tuning-automatic-parameter-optimization">Auto-Tuning: Automatic Parameter Optimization<a class="anchor" aria-label="anchor" href="#auto-tuning-automatic-parameter-optimization"></a>
 </h3>
+<p>The package includes auto-tuning capabilities to automatically
+optimize the <code>small.cell.reduction</code> parameter:</p>
 <div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Create comparison plots</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">gridExtra</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Manual parameter plot</span></span>
-<span><span class="va">manual_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span></span>
-<span>  <span class="va">seg_manual</span>,</span>
-<span>  title <span class="op">=</span> <span class="st">"Manual Parameter (small.cell.reduction = 5)"</span>,</span>
-<span>  node_color <span class="op">=</span> <span class="st">"segment"</span>,</span>
-<span>  node_size <span class="op">=</span> <span class="st">"total"</span>,</span>
-<span>  show_segments <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  color_palette <span class="op">=</span> <span class="st">"Set1"</span></span>
+<code class="sourceCode R"><span><span class="co"># Auto-tune using stability method (recommended)</span></span>
+<span><span class="va">seg_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/moneca.html">moneca</a></span><span class="op">(</span></span>
+<span>  <span class="va">basic_data</span>,</span>
+<span>  segment.levels <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  auto_tune <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Auto-tuned stability plot  </span></span>
-<span><span class="va">stability_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span></span>
-<span>  <span class="va">seg_auto_stability</span>,</span>
-<span>  title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Auto-Tuned (Stability Method)\nOptimal parameter: "</span>, </span>
-<span>                <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">seg_auto_stability</span>, <span class="st">"auto_tune_result"</span><span class="op">)</span><span class="op">$</span><span class="va">best_parameter</span><span class="op">)</span>,</span>
-<span>  node_color <span class="op">=</span> <span class="st">"segment"</span>, </span>
-<span>  node_size <span class="op">=</span> <span class="st">"total"</span>,</span>
-<span>  show_segments <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  color_palette <span class="op">=</span> <span class="st">"Set2"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Auto-tuned quality plot</span></span>
-<span><span class="va">quality_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span></span>
-<span>  <span class="va">seg_auto_quality</span>,</span>
-<span>  title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Auto-Tuned (Quality Method)\nOptimal parameter: "</span>,</span>
-<span>                <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">seg_auto_quality</span>, <span class="st">"auto_tune_result"</span><span class="op">)</span><span class="op">$</span><span class="va">best_parameter</span><span class="op">)</span>,</span>
-<span>  node_color <span class="op">=</span> <span class="st">"segment"</span>,</span>
-<span>  node_size <span class="op">=</span> <span class="st">"total"</span>, </span>
-<span>  show_segments <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  color_palette <span class="op">=</span> <span class="st">"Set3"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Performance-balanced plot</span></span>
-<span><span class="va">performance_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span></span>
-<span>  <span class="va">seg_auto_performance</span>,</span>
-<span>  title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Auto-Tuned (Performance Method)\nOptimal parameter: "</span>,</span>
-<span>                <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">seg_auto_performance</span>, <span class="st">"auto_tune_result"</span><span class="op">)</span><span class="op">$</span><span class="va">best_parameter</span><span class="op">)</span>,</span>
-<span>  node_color <span class="op">=</span> <span class="st">"segment"</span>,</span>
-<span>  node_size <span class="op">=</span> <span class="st">"total"</span>,</span>
-<span>  show_segments <span class="op">=</span> <span class="cn">TRUE</span>, </span>
-<span>  color_palette <span class="op">=</span> <span class="st">"Dark2"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Arrange plots</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">grid.arrange</a></span><span class="op">(</span><span class="va">manual_plot</span>, <span class="va">stability_plot</span>, <span class="va">quality_plot</span>, <span class="va">performance_plot</span>, </span>
-<span>             ncol <span class="op">=</span> <span class="fl">2</span>, nrow <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/auto_tuning_comparison-1.png" width="100%"></p>
-</div>
-<div class="section level3">
-<h3 id="advanced-auto-tuning-methods">Advanced Auto-Tuning Methods<a class="anchor" aria-label="anchor" href="#advanced-auto-tuning-methods"></a>
-</h3>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Pareto optimization - balances multiple objectives</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n=== Pareto Multi-Objective Optimization ===\n"</span><span class="op">)</span></span>
-<span><span class="va">seg_pareto</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/moneca.html">moneca</a></span><span class="op">(</span></span>
-<span>  <span class="va">mobility_data</span>,</span>
-<span>  segment.levels <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  auto_tune <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  tune_method <span class="op">=</span> <span class="st">"pareto"</span>,</span>
-<span>  tune_verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="st">"Pareto optimization results:"</span><span class="op">)</span></span>
-<span><span class="va">pareto_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">seg_pareto</span>, <span class="st">"auto_tune_result"</span><span class="op">)</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">pareto_result</span><span class="op">$</span><span class="va">pareto_front</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pareto_result</span><span class="op">$</span><span class="va">pareto_front</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="co"># Cross-validation based tuning</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n=== Cross-Validation Based Tuning ===\n"</span><span class="op">)</span> </span>
-<span><span class="va">seg_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/moneca.html">moneca</a></span><span class="op">(</span></span>
-<span>  <span class="va">mobility_data</span>,</span>
-<span>  segment.levels <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  auto_tune <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  tune_method <span class="op">=</span> <span class="st">"cross_validation"</span>,</span>
-<span>  tune_verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="auto-tuning-parameters-reference">Auto-Tuning Parameters Reference<a class="anchor" aria-label="anchor" href="#auto-tuning-parameters-reference"></a>
-</h3>
-<table class="table">
-<colgroup>
-<col width="27%">
-<col width="32%">
-<col width="22%">
-<col width="17%">
-</colgroup>
-<thead><tr class="header">
-<th>Parameter</th>
-<th>Description</th>
-<th>Default</th>
-<th>Notes</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>auto_tune</code></td>
-<td>Enable auto-tuning</td>
-<td><code>FALSE</code></td>
-<td>Set to <code>TRUE</code> to activate</td>
-</tr>
-<tr class="even">
-<td><code>tune_method</code></td>
-<td>Tuning method</td>
-<td><code>"stability"</code></td>
-<td>See methods below</td>
-</tr>
-<tr class="odd">
-<td><code>tune_verbose</code></td>
-<td>Show detailed output</td>
-<td><code>FALSE</code></td>
-<td>Set to <code>TRUE</code> for progress info</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="auto-tuning-methods-explained">Auto-Tuning Methods Explained<a class="anchor" aria-label="anchor" href="#auto-tuning-methods-explained"></a>
-</h3>
-<div class="section level4">
-<h4 id="stability-method-stability">1. Stability Method (<code>"stability"</code>)<a class="anchor" aria-label="anchor" href="#stability-method-stability"></a>
-</h4>
-<ul>
-<li>
-<strong>Best for</strong>: General purpose, robust clustering</li>
-<li>
-<strong>How it works</strong>: Bootstrap sampling to assess
-consistency</li>
-<li>
-<strong>Advantages</strong>: Reliable, works well with most
-datasets</li>
-<li>
-<strong>Use when</strong>: You want robust, generalizable
-results</li>
-</ul>
-</div>
-<div class="section level4">
-<h4 id="quality-method-quality">2. Quality Method (<code>"quality"</code>)<a class="anchor" aria-label="anchor" href="#quality-method-quality"></a>
-</h4>
-<ul>
-<li>
-<strong>Best for</strong>: Maximizing clustering performance</li>
-<li>
-<strong>How it works</strong>: Optimizes silhouette score and
-modularity</li>
-<li>
-<strong>Advantages</strong>: Highest clustering quality</li>
-<li>
-<strong>Use when</strong>: Quality is more important than speed</li>
-</ul>
-</div>
-<div class="section level4">
-<h4 id="performance-method-performance">3. Performance Method (<code>"performance"</code>)<a class="anchor" aria-label="anchor" href="#performance-method-performance"></a>
-</h4>
-<ul>
-<li>
-<strong>Best for</strong>: Balancing quality and computational
-efficiency</li>
-<li>
-<strong>How it works</strong>: Weighted combination of quality and
-speed metrics</li>
-<li>
-<strong>Advantages</strong>: Good compromise for large datasets</li>
-<li>
-<strong>Use when</strong>: You need reasonable results quickly</li>
-</ul>
-</div>
-<div class="section level4">
-<h4 id="pareto-method-pareto">4. Pareto Method (<code>"pareto"</code>)<a class="anchor" aria-label="anchor" href="#pareto-method-pareto"></a>
-</h4>
-<ul>
-<li>
-<strong>Best for</strong>: Understanding trade-offs between
-objectives</li>
-<li>
-<strong>How it works</strong>: Multi-objective optimization with
-Pareto frontier</li>
-<li>
-<strong>Advantages</strong>: Shows all optimal trade-offs</li>
-<li>
-<strong>Use when</strong>: You want to explore different
-quality/speed combinations</li>
-</ul>
-</div>
-<div class="section level4">
-<h4 id="cross-validation-method-cross_validation">5. Cross-Validation Method (<code>"cross_validation"</code>)<a class="anchor" aria-label="anchor" href="#cross-validation-method-cross_validation"></a>
-</h4>
-<ul>
-<li>
-<strong>Best for</strong>: Conservative parameter selection</li>
-<li>
-<strong>How it works</strong>: K-fold cross-validation with
-stability assessment</li>
-<li>
-<strong>Advantages</strong>: Reduces overfitting risk</li>
-<li>
-<strong>Use when</strong>: Dataset is small or you’re concerned
-about overfitting</li>
-</ul>
-</div>
-</div>
-<div class="section level3">
-<h3 id="auto-tuning-visualization">Auto-Tuning Visualization<a class="anchor" aria-label="anchor" href="#auto-tuning-visualization"></a>
-</h3>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># The auto-tuning process generates diagnostic information</span></span>
-<span><span class="va">tuning_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">seg_auto_stability</span>, <span class="st">"auto_tune_result"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">tuning_result</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Auto-tuning summary:\n"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Method:"</span>, <span class="va">tuning_result</span><span class="op">$</span><span class="va">method</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Best parameter:"</span>, <span class="va">tuning_result</span><span class="op">$</span><span class="va">best_parameter</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Best score:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">tuning_result</span><span class="op">$</span><span class="va">best_score</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Evaluation time:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">tuning_result</span><span class="op">$</span><span class="va">evaluation_time</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"seconds\n"</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Plot tuning results if available</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">tuning_result</span><span class="op">$</span><span class="va">all_results</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">results_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">tuning_result</span><span class="op">$</span><span class="va">all_results</span><span class="op">)</span></span>
-<span>    </span>
-<span>    <span class="va">tuning_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">results_df</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">parameter</span>, y <span class="op">=</span> <span class="va">score</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>      <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span>color <span class="op">=</span> <span class="st">"steelblue"</span>, size <span class="op">=</span> <span class="fl">1.2</span><span class="op">)</span> <span class="op">+</span></span>
-<span>      <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>color <span class="op">=</span> <span class="st">"steelblue"</span>, size <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">+</span></span>
-<span>      <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">results_df</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.max</a></span><span class="op">(</span><span class="va">results_df</span><span class="op">$</span><span class="va">score</span><span class="op">)</span>, <span class="op">]</span>,</span>
-<span>                 color <span class="op">=</span> <span class="st">"red"</span>, size <span class="op">=</span> <span class="fl">5</span>, shape <span class="op">=</span> <span class="fl">16</span><span class="op">)</span> <span class="op">+</span></span>
-<span>      <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="va">tuning_result</span><span class="op">$</span><span class="va">best_parameter</span>, </span>
-<span>                 linetype <span class="op">=</span> <span class="st">"dashed"</span>, color <span class="op">=</span> <span class="st">"red"</span>, alpha <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span> <span class="op">+</span></span>
-<span>      <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Auto-Tuning Parameter Search Results"</span>,</span>
-<span>           subtitle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Best parameter:"</span>, <span class="va">tuning_result</span><span class="op">$</span><span class="va">best_parameter</span>, </span>
-<span>                           <span class="st">"| Score:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">tuning_result</span><span class="op">$</span><span class="va">best_score</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>           x <span class="op">=</span> <span class="st">"Small Cell Reduction Parameter"</span>,</span>
-<span>           y <span class="op">=</span> <span class="st">"Stability Score"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>      <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>      <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">14</span>, hjust <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span>,</span>
-<span>            plot.subtitle <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">12</span>, hjust <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span>
-<span>    </span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">tuning_plot</span><span class="op">)</span></span>
-<span>  <span class="op">}</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="best-practices-for-auto-tuning">Best Practices for Auto-Tuning<a class="anchor" aria-label="anchor" href="#best-practices-for-auto-tuning"></a>
-</h3>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Start with stability method</strong>: It provides reliable
-results for most datasets</li>
-<li>
-<strong>Use quality method for publication</strong>: When clustering
-quality is paramount</li>
-<li>
-<strong>Consider performance method for large datasets</strong>:
-Balances quality and speed</li>
-<li>
-<strong>Set seed for reproducibility</strong>: Ensures consistent
-results across runs</li>
-<li>
-<strong>Check auto-tuning results</strong>: Examine the selected
-parameter and scores</li>
-<li>
-<strong>Validate with multiple methods</strong>: Compare results
-across different tuning approaches</li>
-</ol>
-</div>
-<div class="section level3">
-<h3 id="when-to-use-manual-parameters">When to Use Manual Parameters<a class="anchor" aria-label="anchor" href="#when-to-use-manual-parameters"></a>
-</h3>
-<p>Auto-tuning is not always necessary or appropriate:</p>
-<ul>
-<li>
-<strong>Known optimal parameters</strong>: If you already know good
-parameters for your domain</li>
-<li>
-<strong>Computational constraints</strong>: When auto-tuning would
-be too slow</li>
-<li>
-<strong>Specific requirements</strong>: When you need exact control
-over the clustering process</li>
-<li>
-<strong>Legacy compatibility</strong>: When reproducing previous
-analyses exactly</li>
-</ul>
+<span><span class="co"># View the selected parameter</span></span>
+<span><span class="va">auto_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">seg_tuned</span>, <span class="st">"auto_tune_result"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Optimal parameter:"</span>, <span class="va">auto_result</span><span class="op">$</span><span class="va">best_parameter</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
+<p>For most applications, the default auto-tuning settings work well.
+Advanced users can explore different tuning methods through the
+<code><a href="../reference/auto_tune_small_cell_reduction.html">auto_tune_small_cell_reduction()</a></code> function.</p>
 </div>
 <div class="section level3">
 <h3 id="performance-considerations">Performance Considerations<a class="anchor" aria-label="anchor" href="#performance-considerations"></a>
@@ -2416,19 +1764,14 @@ analyses exactly</li>
 <strong>Large matrices</strong> (&gt;50x50) may require increased
 computation time</li>
 <li>
-<strong>Progress bars</strong> show optimization progress for large
-datasets<br>
-</li>
+<strong>Use moneca_fast()</strong> for improved performance on large
+datasets</li>
 <li>
 <strong>Memory usage</strong> grows with number of levels and matrix
 size</li>
 <li>
-<strong>Auto-tuning adds overhead</strong>: Plan for 2-10x longer
-computation time</li>
-<li>
-<strong>Performance tuning</strong>: Use
-<code>tune_method = "performance"</code> for faster results on large
-datasets</li>
+<strong>Auto-tuning adds overhead</strong>: Consider using manual
+parameters if speed is critical</li>
 </ol>
 </div>
 </div>
@@ -2464,7 +1807,7 @@ documentation</li>
 <li>Check the package website for updates and examples</li>
 <li>Report issues on the GitHub repository</li>
 </ul>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Session information for reproducibility</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.5.2 (2025-10-31)</span></span>
@@ -2488,25 +1831,25 @@ documentation</li>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices datasets  utils     methods   base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] gridExtra_2.3 moneca_0.9.2 </span></span>
+<span><span class="co">#&gt; [1] moneca_1.0.0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
 <span><span class="co">#&gt;  [1] viridis_0.6.5      sass_0.4.10        generics_0.1.4     tidyr_1.3.1       </span></span>
-<span><span class="co">#&gt;  [5] renv_1.1.4         digest_0.6.37      magrittr_2.0.4     evaluate_1.0.5    </span></span>
+<span><span class="co">#&gt;  [5] renv_1.1.4         digest_0.6.39      magrittr_2.0.4     evaluate_1.0.5    </span></span>
 <span><span class="co">#&gt;  [9] grid_4.5.2         RColorBrewer_1.1-3 fastmap_1.2.0      jsonlite_2.0.0    </span></span>
-<span><span class="co">#&gt; [13] toOrdinal_1.3-0.0  ggrepel_0.9.6      brio_1.1.5         purrr_1.2.0       </span></span>
-<span><span class="co">#&gt; [17] viridisLite_0.4.2  scales_1.4.0       tweenr_2.0.3       textshaping_1.0.4 </span></span>
-<span><span class="co">#&gt; [21] jquerylib_0.1.4    cli_3.6.5          crayon_1.5.3       rlang_1.1.6       </span></span>
-<span><span class="co">#&gt; [25] graphlayouts_1.2.2 polyclip_1.10-7    tidygraph_1.3.1    withr_3.0.2       </span></span>
-<span><span class="co">#&gt; [29] cachem_1.1.0       yaml_2.3.10        parallel_4.5.2     tools_4.5.2       </span></span>
-<span><span class="co">#&gt; [33] memoise_2.0.1      dplyr_1.1.4        ggplot2_4.0.0      vctrs_0.6.5       </span></span>
+<span><span class="co">#&gt; [13] toOrdinal_1.3-0.0  ggrepel_0.9.6      brio_1.1.5         gridExtra_2.3     </span></span>
+<span><span class="co">#&gt; [17] purrr_1.2.0        viridisLite_0.4.2  scales_1.4.0       tweenr_2.0.3      </span></span>
+<span><span class="co">#&gt; [21] textshaping_1.0.4  jquerylib_0.1.4    cli_3.6.5          crayon_1.5.3      </span></span>
+<span><span class="co">#&gt; [25] rlang_1.1.6        graphlayouts_1.2.2 polyclip_1.10-7    tidygraph_1.3.1   </span></span>
+<span><span class="co">#&gt; [29] withr_3.0.2        cachem_1.1.0       yaml_2.3.10        tools_4.5.2       </span></span>
+<span><span class="co">#&gt; [33] memoise_2.0.1      dplyr_1.1.4        ggplot2_4.0.1      vctrs_0.6.5       </span></span>
 <span><span class="co">#&gt; [37] R6_2.6.1           lifecycle_1.0.4    fs_1.6.6           MASS_7.3-65       </span></span>
 <span><span class="co">#&gt; [41] ragg_1.5.0         ggraph_2.2.2       pkgconfig_2.0.3    desc_1.4.3        </span></span>
-<span><span class="co">#&gt; [45] pkgdown_2.1.3      pillar_1.11.1      bslib_0.9.0        gtable_0.3.6      </span></span>
+<span><span class="co">#&gt; [45] pkgdown_2.2.0      pillar_1.11.1      bslib_0.9.0        gtable_0.3.6      </span></span>
 <span><span class="co">#&gt; [49] glue_1.8.0         Rcpp_1.1.0         ggforce_0.5.0      systemfonts_1.3.1 </span></span>
 <span><span class="co">#&gt; [53] xfun_0.54          tibble_3.3.0       tidyselect_1.2.1   knitr_1.50        </span></span>
 <span><span class="co">#&gt; [57] farver_2.1.2       htmltools_0.5.8.1  igraph_2.2.1       labeling_0.4.3    </span></span>
-<span><span class="co">#&gt; [61] rmarkdown_2.30     testthat_3.2.3     compiler_4.5.2     S7_0.2.0</span></span></code></pre></div>
+<span><span class="co">#&gt; [61] rmarkdown_2.30     testthat_3.3.0     compiler_4.5.2     S7_0.2.1</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -2520,7 +1863,7 @@ documentation</li>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

@@ -1,0 +1,8 @@
+# Enhanced Auto-Tuning Framework for MONECA Small Cell Reduction Parameter
+
+This module provides comprehensive automatic parameter tuning for the
+small.cell.reduction parameter in MONECA algorithms. It implements
+stability-based, quality-based, and performance-aware tuning methods
+with advanced optimization features including Pareto frontier analysis,
+cross-validation, Bayesian optimization, and performance optimization
+using data.table for enhanced speed.

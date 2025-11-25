@@ -11,7 +11,7 @@ segment cohesion, size, network properties, and mobility patterns."></head><body
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,14 +23,12 @@ segment cohesion, size, network properties, and mobility patterns."></head><body
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/moneca-introduction.html">Introduction to moneca: Mobility Network Clustering Analysis</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-news" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">News</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-news"><li><h6 class="dropdown-header" data-toc-skip>Releases</h6></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-08">Version 0.8</a></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-07">Version 0.7</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-100">Version 1.0.0</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-09">Version 0.9</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../news/index.html">Changelog</a></li>
   </ul></li>
@@ -254,16 +252,9 @@ column in the output that can be used by plotting functions.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         share.of.total Segment segment_label</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Class 5              1     4.1     Segment 1</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Identify high-quality segments (high cohesion, reasonable size)</span></span></span>
-<span class="r-in"><span><span class="va">good_segments</span> <span class="op">&lt;-</span> <span class="va">quality_full</span><span class="op">[</span><span class="va">quality_full</span><span class="op">[</span>,<span class="st">"2 : within.mobility"</span><span class="op">]</span> <span class="op">&gt;</span> <span class="fl">0.7</span> <span class="op">&amp;</span> </span></span>
-<span class="r-in"><span>                             <span class="va">quality_full</span><span class="op">[</span>,<span class="st">"2 : Nodes"</span><span class="op">]</span> <span class="op">&gt;</span> <span class="fl">1</span>, <span class="op">]</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in `[.data.frame`(quality_full, , "2 : within.mobility"):</span> undefined columns selected</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Visualize segment quality</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># Visualize segment quality</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="plot_segment_quality.html">plot_segment_quality</a></span><span class="op">(</span><span class="va">seg</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># Or with custom segment naming</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="plot_segment_quality.html">plot_segment_quality</a></span><span class="op">(</span><span class="va">seg</span>, segment_naming <span class="op">=</span> <span class="va">custom_names</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
@@ -277,7 +268,7 @@ column in the output that can be used by plotting functions.</p></dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

@@ -13,7 +13,7 @@ strategies for aggregated segments."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,14 +25,12 @@ strategies for aggregated segments."></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/moneca-introduction.html">Introduction to moneca: Mobility Network Clustering Analysis</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-news" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">News</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-news"><li><h6 class="dropdown-header" data-toc-skip>Releases</h6></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-08">Version 0.8</a></li>
-    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-07">Version 0.7</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-100">Version 1.0.0</a></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-09">Version 0.9</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../news/index.html">Changelog</a></li>
   </ul></li>
@@ -148,44 +146,15 @@ or "Technical_Specialists" based on segment composition, avoiding generic terms.
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Generate data and run analysis</span></span></span>
-<span class="r-in"><span><span class="va">mob_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="generate_mobility_data.html">generate_mobility_data</a></span><span class="op">(</span>n_classes <span class="op">=</span> <span class="fl">6</span>, seed <span class="op">=</span> <span class="fl">42</span>,</span></span>
-<span class="r-in"><span>  class_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Upper_Class"</span>, <span class="st">"Professional"</span>, <span class="st">"Manager"</span>, </span></span>
-<span class="r-in"><span>                  <span class="st">"Skilled_Worker"</span>, <span class="st">"Service_Worker"</span>, <span class="st">"Manual_Worker"</span><span class="op">)</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># Generate data and run analysis</span></span></span>
+<span class="r-in"><span><span class="va">mob_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="generate_mobility_data.html">generate_mobility_data</a></span><span class="op">(</span>n_classes <span class="op">=</span> <span class="fl">6</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">seg</span> <span class="op">&lt;-</span> <span class="fu"><a href="moneca.html">moneca</a></span><span class="op">(</span><span class="va">mob_data</span>, segment.levels <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 29% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 57% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 86% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |======================================================================| 100%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 100% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 100% ready!</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Get enhanced membership with automatic naming</span></span></span>
 <span class="r-in"><span><span class="va">enhanced</span> <span class="op">&lt;-</span> <span class="fu">segment.membership.enhanced</span><span class="op">(</span><span class="va">seg</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">enhanced</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             name membership segment_label</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    Upper_Class        4.1        Worker</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   Professional        4.1        Worker</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3        Manager        4.1        Worker</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 Skilled_Worker        4.1        Worker</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Service_Worker        4.1        Worker</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  Manual_Worker        4.1        Worker</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Use concatenation strategy</span></span></span>
-<span class="r-in"><span><span class="va">concat_membership</span> <span class="op">&lt;-</span> <span class="fu">segment.membership.enhanced</span><span class="op">(</span><span class="va">seg</span>, </span></span>
-<span class="r-in"><span>                                                naming_strategy <span class="op">=</span> <span class="st">"concat"</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Use custom names for specific segments</span></span></span>
-<span class="r-in"><span><span class="va">custom_names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"2.1"</span> <span class="op">=</span> <span class="st">"Blue_Collar"</span>, <span class="st">"3.1"</span> <span class="op">=</span> <span class="st">"All_Classes"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">custom_membership</span> <span class="op">&lt;-</span> <span class="fu">segment.membership.enhanced</span><span class="op">(</span><span class="va">seg</span>, </span></span>
-<span class="r-in"><span>                                                naming_strategy <span class="op">=</span> <span class="st">"custom"</span>,</span></span>
-<span class="r-in"><span>                                                custom_names <span class="op">=</span> <span class="va">custom_names</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
@@ -198,7 +167,7 @@ or "Technical_Specialists" based on segment composition, avoiding generic terms.
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>
