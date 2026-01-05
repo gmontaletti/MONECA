@@ -157,7 +157,7 @@ rr_matrix_tuned <- weight.matrix(mob_table, auto_tune = TRUE,
 #> - Weight matrices cached: 20 
 #> 
 #> Optimal small.cell.reduction: 0 
-#> Total tuning time: 10.8 seconds
+#> Total tuning time: 8.01 seconds
 #> Selected optimal small.cell.reduction: 0
 
 # Check tuning results
