@@ -6,7 +6,7 @@ Description: Creates weighted networks from mobility tables and uses cliques to
     and quality metrics for assessing segmentation performance. Maintained fork
     of the original MONECA package with streamlined API and enhanced documentation.
 URL: https://gmontaletti.github.io/MONECA/, https://github.com/gmontaletti/MONECA
-Version: 1.0.0
+Version: 1.0.1
 Maintainer: Giampaolo Montaletti <giampaolo.montaletti@gmail.com>
 Authors@R: c(
     person("Giampaolo", "Montaletti",
