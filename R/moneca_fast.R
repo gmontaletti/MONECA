@@ -5,7 +5,7 @@
 #'
 #' @param mx A mobility table (square matrix) with row and column totals in the last
 #'   row/column. Row names should identify the categories/classes.
-#' @param segment.levels Integer specifying the number of hierarchical segmentation 
+#' @param segment.levels Integer specifying the number of hierarchical segmentation
 #'   levels to compute. Default is 3.
 #' @param cut.off Numeric threshold for the minimum relative risk to be considered
 #'   a significant tie. Default is 1.
@@ -44,41 +44,60 @@
 #' @return An object of class "moneca" with the same structure as the original moneca() function.
 #'
 #' @seealso \code{\link{moneca}} for the original implementation
-#' 
+#'
 #' @export
-moneca_fast <- function(mx = mx,
-                       segment.levels = 3,
-                       cut.off = 1,
-                       mode = "symmetric",
-                       delete.upper.tri = TRUE,
-                       small.cell.reduction = 0,
-                       use.sparse = FALSE,
-                       min.density = 0,
-                       max.clique.size = NULL,
-                       progress = TRUE,
-                       auto_tune = FALSE,
-                       tune_method = "stability",
-                       tune_verbose = FALSE,
-                       use_maximal_cliques = FALSE) {
-  
-  # Convert to sparse matrix if requested and Matrix package is available
-  if (use.sparse && requireNamespace("Matrix", quietly = TRUE)) {
-    if (!inherits(mx, "sparseMatrix")) {
-      mx <- Matrix::Matrix(mx, sparse = TRUE)
-    }
-  } else if (!is.matrix(mx)) {
+moneca_fast <- function(
+  mx = mx,
+  segment.levels = 3,
+  cut.off = 1,
+  mode = "symmetric",
+  delete.upper.tri = TRUE,
+  small.cell.reduction = 0,
+  use.sparse = FALSE,
+  min.density = 0,
+  max.clique.size = NULL,
+  progress = TRUE,
+  auto_tune = FALSE,
+  tune_method = "stability",
+  tune_verbose = FALSE,
+  use_maximal_cliques = FALSE
+) {
+  # Auto-enable sparse for large matrices (n > 50) unless explicitly set
+  if (!is.matrix(mx)) {
     mx <- as.matrix(mx)
   }
-  
+  if (
+    use.sparse || (nrow(mx) > 50 && requireNamespace("Matrix", quietly = TRUE))
+  ) {
+    if (
+      !inherits(mx, "sparseMatrix") &&
+        requireNamespace("Matrix", quietly = TRUE)
+    ) {
+      mx <- Matrix::Matrix(mx, sparse = TRUE)
+    }
+  }
+
   # Fast weight matrix calculation with caching
-  weight.matrix.fast <- function(mx, cut.off = 1, symmetric = TRUE, diagonal = NULL, small.cell.reduction = 0) {
+  weight.matrix.fast <- function(
+    mx,
+    cut.off = 1,
+    symmetric = TRUE,
+    diagonal = NULL,
+    small.cell.reduction = 0
+  ) {
     # Input validation
-    if (is.null(mx)) stop("Input cannot be NULL")
-    
+    if (is.null(mx)) {
+      stop("Input cannot be NULL")
+    }
+
     l <- nrow(mx)
-    if (l < 2) stop("Matrix must have at least 2 rows and columns")
-    if (nrow(mx) != ncol(mx)) stop("Matrix must be square")
-    
+    if (l < 2) {
+      stop("Matrix must have at least 2 rows and columns")
+    }
+    if (nrow(mx) != ncol(mx)) {
+      stop("Matrix must be square")
+    }
+
     # Use vectorized operations
     o.r.s <- mx[-l, l]
     o.c.s <- mx[l, -l]
@@ -86,38 +105,44 @@ moneca_fast <- function(mx = mx,
     row.share <- o.r.s / total.total
     col.share <- o.c.s / total.total
     total.mobility <- sum(mx[-l, -l])
-    
+
     # Vectorized expected calculation
     mx.1_exp <- outer(row.share, col.share) * total.mobility
-    
+
     mx.red <- mx[-l, -l]
     if (small.cell.reduction > 0) {
       mx.red[mx.red < small.cell.reduction] <- 0
     }
-    
+
     mx.1_net <- mx.red / mx.1_exp
     mx.1i <- as.matrix(mx.1_net)
-    
+
     if (symmetric) {
       mx.1i <- mx.1i + t(mx.1i)
     }
-    
+
     mx.1i[mx.1i < cut.off] <- NA
-    
+
     if (is.null(diagonal)) {
       diag(mx.1i) <- NA
     }
-    
+
     return(mx.1i)
   }
-  
+
   # Optimized segment finding - matches original algorithm exactly
   # Key optimizations:
   # 1. Pre-sort edges instead of repeated max() searches
   # 2. Fast clique membership test using node-to-clique lookup
   # 3. Efficient progress bar updates
-  find.segments.fast <- function(mat, graph, cut.off = 1, mode = "symmetric", delete.upper.tri = TRUE, progress = TRUE) {
-
+  find.segments.fast <- function(
+    mat,
+    graph,
+    cut.off = 1,
+    mode = "symmetric",
+    delete.upper.tri = TRUE,
+    progress = TRUE
+  ) {
     n <- nrow(mat)
 
     # Early stopping using strength-based density
@@ -177,67 +202,90 @@ moneca_fast <- function(mx = mx,
     names(group) <- rownames(mat)
 
     # Build efficient clique lookup (node -> cliques containing it)
-    node_to_cliques <- vector("list", n)
-    for (i in seq_len(n)) node_to_cliques[[i]] <- integer(0)
+    # Pre-allocate with known sizes to reduce GC pressure
+    node_clique_count <- integer(n)
     for (ci in seq_along(cliques)) {
       for (node in cliques[[ci]]) {
-        node_to_cliques[[node]] <- c(node_to_cliques[[node]], ci)
+        node_clique_count[node] <- node_clique_count[node] + 1L
+      }
+    }
+    node_to_cliques <- vector("list", n)
+    for (i in seq_len(n)) {
+      node_to_cliques[[i]] <- integer(node_clique_count[i])
+    }
+    node_clique_pos <- integer(n)
+    for (ci in seq_along(cliques)) {
+      for (node in cliques[[ci]]) {
+        node_clique_pos[node] <- node_clique_pos[node] + 1L
+        node_to_cliques[[node]][node_clique_pos[node]] <- ci
       }
     }
 
-    # Fast clique membership test (replaces nested loop in original)
+    # Fast clique membership test using node-to-clique lookup
     clique.test <- function(potential.clique) {
-      if (length(potential.clique) < 2) return(TRUE)
+      if (length(potential.clique) < 2) {
+        return(TRUE)
+      }
       candidates <- node_to_cliques[[potential.clique[1]]]
-      if (length(candidates) == 0) return(FALSE)
+      if (length(candidates) == 0L) {
+        return(FALSE)
+      }
       for (i in 2:length(potential.clique)) {
-        candidates <- intersect(candidates, node_to_cliques[[potential.clique[i]]])
-        if (length(candidates) == 0) return(FALSE)
+        candidates <- candidates[
+          candidates %in% node_to_cliques[[potential.clique[i]]]
+        ]
+        if (length(candidates) == 0L) return(FALSE)
       }
       TRUE
     }
 
-    # Count edges above cutoff
-    loop.length <- sum(mat > cut.off, na.rm = TRUE)
+    # OPTIMIZATION: Pre-sort edges instead of repeated max() searches
+    edge_idx <- which(!is.na(mat) & mat > cut.off, arr.ind = TRUE)
 
-    if (loop.length == 0) {
+    if (nrow(edge_idx) == 0L) {
       return(list(
         membership = as.factor(rep(1, n)),
         cliques = list(1:n)
       ))
     }
 
-    # OPTIMIZATION: Pre-sort edges instead of repeated max() searches
-    # This is the key performance improvement
-    edge_idx <- which(!is.na(mat) & mat > cut.off, arr.ind = TRUE)
     edge_weights <- mat[edge_idx]
     edge_order <- order(edge_weights, decreasing = TRUE)
     sorted_edges <- edge_idx[edge_order, , drop = FALSE]
+    n_edges <- nrow(sorted_edges)
 
     if (progress) {
-      pb <- txtProgressBar(min = 1, max = max(loop.length, 2), style = 3)
+      pb <- txtProgressBar(min = 1, max = max(n_edges, 2), style = 3)
     }
 
     # Process edges in pre-sorted order (matches original logic exactly)
-    for (i in seq_len(nrow(sorted_edges))) {
-      if (progress) setTxtProgressBar(pb, i)
+    for (i in seq_len(n_edges)) {
+      if (progress) {
+        setTxtProgressBar(pb, i)
+      }
 
       max.ind <- sorted_edges[i, ]
       group.candidates <- group[max.ind]
       candidate <- max.ind
 
+      # OPTIMIZATION: Skip if both nodes already in same non-zero group
+      if (
+        all(group.candidates != 0) && group.candidates[1] == group.candidates[2]
+      ) {
+        next
+      }
+
       # Original algorithm logic preserved exactly
       if (sum(group.candidates) == 0) {
-        # Both nodes unassigned - create new group with iteration number
         group[max.ind] <- i
       } else {
-        # At least one node has a group
         group.candidates <- group.candidates[group.candidates != 0]
         group.members <- which(group %in% group.candidates)
         group.size <- table(group[group.members])
-        group.assigned <- as.numeric(names(group.size))[which.max(group.size)[1]]
+        group.assigned <- as.numeric(names(group.size))[which.max(group.size)[
+          1
+        ]]
 
-        # Test if merged group forms valid clique
         potential.clique <- unique(sort(c(group.members, candidate)))
 
         if (clique.test(potential.clique)) {
@@ -246,7 +294,9 @@ moneca_fast <- function(mx = mx,
       }
     }
 
-    if (progress) close(pb)
+    if (progress) {
+      close(pb)
+    }
 
     # Handle unassigned nodes (matches original)
     sub <- group[group == 0]
@@ -257,14 +307,16 @@ moneca_fast <- function(mx = mx,
     # Create clique list (matches original format)
     l <- levels(g)
     ud.list <- list()
-    for (i in seq_along(l)) ud.list[[i]] <- which(g == l[i])
+    for (i in seq_along(l)) {
+      ud.list[[i]] <- which(g == l[i])
+    }
 
     list(
       membership = g,
       cliques = ud.list
     )
   }
-  
+
   # Fast segment matrix aggregation
   segment.matrix.fast <- function(mx, segments) {
     # Use standard aggregation
@@ -283,26 +335,38 @@ moneca_fast <- function(mx = mx,
 
     return(mx.2g)
   }
-  
+
   # Optimized level.down function
   level.down.fast <- function(level.current, level.below) {
     # Remove isolates
     lengths <- lengths(level.current)
     level.current <- level.current[lengths > 1]
-    
-    if (length(level.current) == 0) return(list())
-    
+
+    if (length(level.current) == 0) {
+      return(list())
+    }
+
     # Vectorized operation
     ud <- lapply(level.current, function(d) unlist(level.below[d]))
     return(ud)
   }
-  
-  # Main segmentation function
-  make.segments.fast <- function(mx, cut.off = 1, mode = mode, delete.upper.tri = delete.upper.tri,
-                                small.cell.reduction = small.cell.reduction) {
 
-    mx.1i <- weight.matrix(mx, cut.off, small.cell.reduction = small.cell.reduction,
-                           auto_tune = auto_tune, tune_method = tune_method, tune_verbose = tune_verbose)
+  # Main segmentation function
+  make.segments.fast <- function(
+    mx,
+    cut.off = 1,
+    mode = mode,
+    delete.upper.tri = delete.upper.tri,
+    small.cell.reduction = small.cell.reduction
+  ) {
+    mx.1i <- weight.matrix(
+      mx,
+      cut.off,
+      small.cell.reduction = small.cell.reduction,
+      auto_tune = auto_tune,
+      tune_method = tune_method,
+      tune_verbose = tune_verbose
+    )
 
     # Create graph
     mx.1i.graph <- mx.1i
@@ -331,45 +395,54 @@ moneca_fast <- function(mx = mx,
       ))
     }
 
-    clust.1 <- find.segments.fast(mx.1i, gra.1ii, cut.off = cut.off, progress = progress)
+    clust.1 <- find.segments.fast(
+      mx.1i,
+      gra.1ii,
+      cut.off = cut.off,
+      progress = progress
+    )
 
     return(clust.1)
   }
-  
+
   # Create segments function (optimized)
   create.segments.fast <- function(out.put, mx) {
     seg.list <- list()
     seg.list[[1]] <- as.list(1:(nrow(mx) - 1))
-    
-    if (length(out.put) == 0) return(seg.list)
-    
+
+    if (length(out.put) == 0) {
+      return(seg.list)
+    }
+
     level.current <- out.put[[1]]$segments$cliques
     lengths <- lengths(level.current)
     seg.list[[2]] <- level.current[lengths > 1]
-    
+
     actual.levels <- min(segment.levels, length(out.put))
-    
+
     if (actual.levels > 1) {
       for (n in 2:actual.levels) {
-        if (n > length(out.put)) break
-        
+        if (n > length(out.put)) {
+          break
+        }
+
         level.current <- out.put[[n]]$segments$cliques
-        
+
         # Optimized level down calculation
         for (i in seq_len(n - 1)) {
           level.below <- out.put[[n - i]]$segments$cliques
           level.current <- level.down.fast(level.current, level.below)
         }
-        
+
         if (length(level.current) > 0) {
           seg.list[[n + 1]] <- level.current
         }
       }
     }
-    
+
     return(seg.list)
   }
-  
+
   # Main algorithm
   mat.list <- list()
   mat.list[[1]] <- mx
@@ -384,22 +457,22 @@ moneca_fast <- function(mx = mx,
 
   mx.2g <- segment.matrix.fast(mx, segments)
   mat.list[[2]] <- mx.2g
-  
+
   out.put <- list()
   out.put[[1]] <- list(segments = segments, mat = mx.2g)
-  
+
   # Early stopping if only one segment
   if (length(segments$cliques) <= 1) {
     segment.list <- create.segments.fast(out.put, mx)
     out <- list(
-      segment.list = segment.list, 
-      mat.list = mat.list, 
+      segment.list = segment.list,
+      mat.list = mat.list,
       small.cell.reduction = small.cell.reduction
     )
     class(out) <- "moneca"
     return(out)
   }
-  
+
   # Continue segmentation
   if (segment.levels > 1) {
     for (i in 2:segment.levels) {
@@ -421,26 +494,29 @@ moneca_fast <- function(mx = mx,
       }
     }
   }
-  
+
   # Create final segments
   segment.list <- create.segments.fast(out.put, mx)
-  
+
   # Create output
   out <- list(
-    segment.list = segment.list, 
-    mat.list = mat.list, 
+    segment.list = segment.list,
+    mat.list = mat.list,
     small.cell.reduction = small.cell.reduction
   )
-  
+
   class(out) <- "moneca"
-  
+
   return(out)
 }
 
 #' Export fast moneca functions for use in package
 #' @keywords internal
 moneca_graph_from_adjacency <- function(...) {
-  if (exists(".moneca_env") && exists("moneca_graph_from_adjacency", envir = .moneca_env)) {
+  if (
+    exists(".moneca_env") &&
+      exists("moneca_graph_from_adjacency", envir = .moneca_env)
+  ) {
     .moneca_env$moneca_graph_from_adjacency(...)
   } else {
     # Fallback to igraph function
