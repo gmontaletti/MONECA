@@ -36,12 +36,14 @@ get_test_data <- function(size = "small", seed = 42) {
 #' @param noise_level Amount of noise (default 0.1)
 #' @param seed Random seed (default 123)
 #' @return A mobility matrix with totals row/column
-get_custom_test_data <- function(n_classes = 5,
-                                 n_total = 1000,
-                                 immobility_strength = 0.7,
-                                 class_clustering = 0.7,
-                                 noise_level = 0.1,
-                                 seed = 123) {
+get_custom_test_data <- function(
+  n_classes = 5,
+  n_total = 1000,
+  immobility_strength = 0.7,
+  class_clustering = 0.7,
+  noise_level = 0.1,
+  seed = 123
+) {
   generate_mobility_data(
     n_classes = n_classes,
     n_total = n_total,
@@ -57,8 +59,10 @@ get_custom_test_data <- function(n_classes = 5,
 #' @param class_names Character vector of class names
 #' @param seed Random seed (default 123)
 #' @return A mobility matrix with custom row/column names
-get_named_test_data <- function(class_names = c("Upper", "Middle", "Lower"),
-                                seed = 123) {
+get_named_test_data <- function(
+  class_names = c("Upper", "Middle", "Lower"),
+  seed = 123
+) {
   generate_mobility_data(
     n_classes = length(class_names),
     class_names = class_names,
@@ -114,10 +118,11 @@ get_fully_connected_data <- function(n_classes = 5) {
 #'
 #' @return A minimal 2x2 mobility matrix
 get_minimal_test_data <- function() {
-  min_data <- matrix(c(10, 2, 12,
-                      1, 10, 11,
-                      11, 12, 23),
-                    nrow = 3, byrow = TRUE)
+  min_data <- matrix(
+    c(10, 2, 12, 1, 10, 11, 11, 12, 23),
+    nrow = 3,
+    byrow = TRUE
+  )
   rownames(min_data) <- colnames(min_data) <- c("A", "B", "Total")
   min_data
 }
@@ -131,11 +136,21 @@ get_minimal_test_data <- function() {
 #' @return A test matrix
 create_simple_test_matrix <- function(n_classes = 3, with_totals = TRUE) {
   if (n_classes == 3) {
-    test_matrix <- matrix(c(
-      50, 10, 5,
-      15, 60, 10,
-      8, 12, 40
-    ), nrow = 3, byrow = TRUE)
+    test_matrix <- matrix(
+      c(
+        50,
+        10,
+        5,
+        15,
+        60,
+        10,
+        8,
+        12,
+        40
+      ),
+      nrow = 3,
+      byrow = TRUE
+    )
   } else {
     test_matrix <- matrix(
       runif(n_classes^2, min = 5, max = 50),
@@ -166,23 +181,53 @@ create_simple_test_matrix <- function(n_classes = 3, with_totals = TRUE) {
 #' @return An adjacency matrix
 create_test_adjacency <- function(n = 3, type = "simple") {
   if (type == "simple") {
-    adj_matrix <- matrix(c(
-      0, 1, 0,
-      1, 0, 1,
-      0, 1, 0
-    ), nrow = 3, byrow = TRUE)
+    adj_matrix <- matrix(
+      c(
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0
+      ),
+      nrow = 3,
+      byrow = TRUE
+    )
   } else if (type == "directed") {
-    adj_matrix <- matrix(c(
-      0, 1, 0,
-      0, 0, 1,
-      1, 0, 0
-    ), nrow = 3, byrow = TRUE)
+    adj_matrix <- matrix(
+      c(
+        0,
+        1,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0
+      ),
+      nrow = 3,
+      byrow = TRUE
+    )
   } else if (type == "weighted") {
-    adj_matrix <- matrix(c(
-      0, 2.5, 0,
-      1.2, 0, 3.8,
-      0, 0.7, 0
-    ), nrow = 3, byrow = TRUE)
+    adj_matrix <- matrix(
+      c(
+        0,
+        2.5,
+        0,
+        1.2,
+        0,
+        3.8,
+        0,
+        0.7,
+        0
+      ),
+      nrow = 3,
+      byrow = TRUE
+    )
   } else {
     stop("type must be 'simple', 'directed', or 'weighted'")
   }
@@ -230,7 +275,10 @@ validate_mobility_matrix <- function(mx) {
   expect_equal(calculated_col_totals, actual_col_totals)
 
   # Check grand total
-  expect_equal(sum(mx[1:n_classes, 1:n_classes]), mx[n_classes + 1, n_classes + 1])
+  expect_equal(
+    sum(mx[1:n_classes, 1:n_classes]),
+    mx[n_classes + 1, n_classes + 1]
+  )
 
   invisible(TRUE)
 }
@@ -245,19 +293,127 @@ validate_mobility_matrix <- function(mx) {
 #' @return TRUE if equivalent, otherwise throws error
 expect_moneca_equivalent <- function(result1, result2, info = NULL) {
   # Check structure
-  expect_equal(length(result1$segment.list), length(result2$segment.list),
-               info = paste(info, "- same number of levels"))
+  expect_equal(
+    length(result1$segment.list),
+    length(result2$segment.list),
+    info = paste(info, "- same number of levels")
+  )
 
   # Check segment counts at each level
   for (level in seq_along(result1$segment.list)) {
-    expect_equal(length(result1$segment.list[[level]]),
-                 length(result2$segment.list[[level]]),
-                 info = paste(info, sprintf("- Level %d segment count", level)))
+    expect_equal(
+      length(result1$segment.list[[level]]),
+      length(result2$segment.list[[level]]),
+      info = paste(info, sprintf("- Level %d segment count", level))
+    )
   }
 
   # Check exact segment membership
-  expect_equal(result1$segment.list, result2$segment.list,
-               info = paste(info, "- segment lists should be identical"))
+  expect_equal(
+    result1$segment.list,
+    result2$segment.list,
+    info = paste(info, "- segment lists should be identical")
+  )
+
+  invisible(TRUE)
+}
+
+# 6. Large Data Generators (for density reduction tests) -----
+
+#' Generate large mobility data for density reduction testing
+#'
+#' @param n_classes Number of classes (default 60)
+#' @param n_total Total observations (default 30000)
+#' @param seed Random seed (default 123)
+#' @return A large mobility matrix with totals
+get_large_test_data <- function(n_classes = 60, n_total = 30000, seed = 123) {
+  generate_mobility_data(
+    n_classes = n_classes,
+    n_total = n_total,
+    immobility_strength = 0.5,
+    class_clustering = 0.3,
+    noise_level = 0.2,
+    seed = seed
+  )
+}
+
+#' Generate medium-large mobility data for quick density tests
+#'
+#' @param n_classes Number of classes (default 30)
+#' @param n_total Total observations (default 10000)
+#' @param seed Random seed (default 456)
+#' @return A medium-large mobility matrix
+get_medium_large_test_data <- function(
+  n_classes = 30,
+  n_total = 10000,
+  seed = 456
+) {
+  generate_mobility_data(
+    n_classes = n_classes,
+    n_total = n_total,
+    immobility_strength = 0.6,
+    class_clustering = 0.3,
+    noise_level = 0.15,
+    seed = seed
+  )
+}
+
+#' Generate very large mobility data (for stress testing)
+#'
+#' @param n_classes Number of classes (default 100)
+#' @param n_total Total observations (default 50000)
+#' @param seed Random seed (default 789)
+#' @return A very large mobility matrix
+get_very_large_test_data <- function(
+  n_classes = 100,
+  n_total = 50000,
+  seed = 789
+) {
+  generate_mobility_data(
+    n_classes = n_classes,
+    n_total = n_total,
+    immobility_strength = 0.4,
+    class_clustering = 0.25,
+    noise_level = 0.25,
+    seed = seed
+  )
+}
+
+#' Validate density_reduced object structure
+#'
+#' @param reduced A density_reduced object
+#' @return TRUE if valid, otherwise throws error
+validate_density_reduced <- function(reduced) {
+  expect_s3_class(reduced, "density_reduced")
+  expect_true(inherits(reduced, "matrix"))
+  expect_true(!is.null(attr(reduced, "method")))
+  expect_true(!is.null(attr(reduced, "normalization")))
+  expect_true(!is.null(attr(reduced, "k")))
+  expect_true(!is.null(attr(reduced, "original_dims")))
+  expect_true(!is.null(attr(reduced, "original_total")))
+  expect_true(!is.null(attr(reduced, "reduced_total")))
+
+  # Check matrix structure
+  n <- nrow(reduced) - 1
+  expect_equal(nrow(reduced), ncol(reduced), info = "Matrix should be square")
+
+  # Check totals consistency
+  core_mx <- reduced[1:n, 1:n]
+  expect_equal(
+    rowSums(core_mx),
+    reduced[1:n, n + 1],
+    info = "Row totals should match"
+  )
+  expect_equal(
+    colSums(core_mx),
+    reduced[n + 1, 1:n],
+    info = "Column totals should match"
+  )
+  expect_equal(
+    sum(core_mx),
+    reduced[n + 1, n + 1],
+    info = "Grand total should match"
+  )
 
   invisible(TRUE)
 }

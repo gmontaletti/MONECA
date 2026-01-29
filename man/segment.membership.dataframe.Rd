@@ -9,15 +9,15 @@ segment.membership.dataframe(moneca_results, names = TRUE)
 \arguments{
 \item{moneca_results}{A moneca object returned by \code{\link{moneca}} or \code{moneca_fast}.}
 
-\item{names}{Logical indicating whether to generate descriptive labels for each level 
-(default TRUE). When TRUE, creates additional columns with segment labels showing 
+\item{names}{Logical indicating whether to generate descriptive labels for each level
+(default TRUE). When TRUE, creates additional columns with segment labels showing
 the representative node name and count of other members.}
 }
 \value{
 A dataframe with:
   \itemize{
     \item name: The name of the row from the original matrix
-    \item index: The index of the row in the original matrix  
+    \item index: The index of the row in the original matrix
     \item level_X: For each segmentation level X (excluding level 1), the segment
       assignment using progressive numbering (001, 002, etc.)
     \item name_level_X: (when names=TRUE) Descriptive labels for each level showing

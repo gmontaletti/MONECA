@@ -38,7 +38,7 @@ internal segment edges. Default includes all levels.}
   \item "top.in": Keep only the top incoming edges per node
 }}
 
-\item{top}{Integer specifying how many top edges to keep when using 
+\item{top}{Integer specifying how many top edges to keep when using
 "top.out" or "top.in" methods. Default is 3.}
 
 \item{diagonal}{Controls diagonal values. If NULL (default), diagonal is zeroed.}

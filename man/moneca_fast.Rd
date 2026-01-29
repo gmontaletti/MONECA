@@ -42,7 +42,7 @@ moneca_fast(
 \item{mx}{A mobility table (square matrix) with row and column totals in the last
 row/column. Row names should identify the categories/classes.}
 
-\item{segment.levels}{Integer specifying the number of hierarchical segmentation 
+\item{segment.levels}{Integer specifying the number of hierarchical segmentation
 levels to compute. Default is 3.}
 
 \item{cut.off}{Numeric threshold for the minimum relative risk to be considered
@@ -64,12 +64,12 @@ fidelity). Set to 0.01 or higher for early stopping optimization on sparse graph
 
 \item{progress}{Logical indicating whether to show progress bars. Default is TRUE.}
 
-\item{auto_tune}{Logical indicating whether to automatically tune the 
+\item{auto_tune}{Logical indicating whether to automatically tune the
 small.cell.reduction parameter. When TRUE, uses optimization methods to
 select the best value. Default is FALSE.}
 
 \item{tune_method}{Character string specifying the auto-tuning method when
-auto_tune is TRUE. Options are "stability" (default), "quality", or 
+auto_tune is TRUE. Options are "stability" (default), "quality", or
 "performance". See \code{\link{auto_tune_small_cell_reduction}} for details.}
 
 \item{tune_verbose}{Logical indicating whether to print verbose messages
@@ -93,8 +93,8 @@ An object of class "moneca" containing:
 An object of class "moneca" with the same structure as the original moneca() function.
 }
 \description{
-Memory-optimized version of the main function for performing hierarchical clustering 
-analysis on mobility tables. MONECA creates weighted networks from mobility data and 
+Memory-optimized version of the main function for performing hierarchical clustering
+analysis on mobility tables. MONECA creates weighted networks from mobility data and
 uses cliques to identify discrete and nested clusters of positions with high internal mobility.
 
 An optimized version of the moneca algorithm with improved performance for large datasets.
@@ -151,7 +151,7 @@ seg <- moneca_fast(mobility_data, segment.levels = 3)
 print(seg)
 
 # Run with auto-tuning for optimal parameters
-seg_tuned <- moneca_fast(mobility_data, segment.levels = 3, 
+seg_tuned <- moneca_fast(mobility_data, segment.levels = 3,
                          auto_tune = TRUE, tune_method = "stability")
 print(seg_tuned)
 
@@ -166,7 +166,7 @@ plot_moneca_ggraph(seg, node_color = "segment", title = "MONECA Clustering")
 
 }
 \references{
-Toubøl, J., & Larsen, A. G. (2017). Mapping the Social Class Structure: 
+Toubøl, J., & Larsen, A. G. (2017). Mapping the Social Class Structure:
 From Occupational Mobility to Social Class Categories Using Network Analysis.
 Sociology, 51(6), 1257-1276.
 }

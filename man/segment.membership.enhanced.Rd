@@ -34,7 +34,7 @@ Format: list("level.segment" = "Custom Name"), e.g., list("2.1" = "Blue Collar")
 \item{separator}{Character string used to separate names when concatenating.
 Default is " + ".}
 
-\item{max_concat_length}{Maximum number of names to concatenate before 
+\item{max_concat_length}{Maximum number of names to concatenate before
 switching to pattern-based naming. Default is 2.}
 
 \item{pattern_rules}{Enhanced pattern rules list with priorities and semantic
@@ -52,9 +52,9 @@ A data frame with three columns:
   }
 }
 \description{
-Returns segment membership information with an additional column containing 
-meaningful segment names derived from the constituent nodes. This function 
-extends \code{\link{segment.membership}} by adding intelligent naming 
+Returns segment membership information with an additional column containing
+meaningful segment names derived from the constituent nodes. This function
+extends \code{\link{segment.membership}} by adding intelligent naming
 strategies for aggregated segments.
 }
 \details{
@@ -68,7 +68,7 @@ The function applies different naming strategies based on segment composition:
 
 The enhanced pattern recognition system uses weighted scoring to identify
 occupational hierarchies, industry sectors, and employment types. It creates
-semantically meaningful names like "Executive_Leadership", "Professional_Services", 
+semantically meaningful names like "Executive_Leadership", "Professional_Services",
 or "Technical_Specialists" based on segment composition, avoiding generic terms.
 }
 \examples{

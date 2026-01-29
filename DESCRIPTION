@@ -44,7 +44,9 @@ Suggests:
   rmarkdown,
   testthat (>= 3.0.0),
   Matrix,
-  viridis
+  viridis,
+  irlba (>= 2.3.0),
+  RcppML (>= 0.3.0)
 License: GPL-3
 Date: 2025-11-25
 RoxygenNote: 7.3.2
