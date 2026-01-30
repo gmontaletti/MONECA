@@ -40,34 +40,103 @@ if (length(missing_packages) > 0) {
 
 # 1. Introduzione
 
-## 1.1 Problema: matrici di grandi dimensioni
+## 1.1 Il problema: densità elevata e complessità computazionale
 
 L'algoritmo MONECA analizza tabelle di mobilità attraverso reti ponderate e cliques per identificare cluster di posizioni con elevata mobilità interna. Questo approccio funziona in modo efficace per matrici con 10-50 categorie, dove i pattern di mobilità sono sufficientemente chiari e il rumore nei dati non oscura le strutture sottostanti.
 
+### 1.1.1 Cos'è la densità di una matrice
+
+La **densità** di una matrice è la proporzione di celle con valori diversi da zero rispetto al totale delle celle:
+
+$$\text{Densità} = \frac{\text{Numero di celle non-zero}}{n \times n}$$
+
+Ad esempio, una matrice 80×80 ha 6.400 celle. Se 4.000 celle contengono valori positivi, la densità è 62.5% (e la sparsità è 37.5%).
+
+### 1.1.2 Come MONECA costruisce la rete
+
+MONECA costruisce una rete pesata dalla matrice di mobilità attraverso due passaggi:
+
+1. **Calcolo dei rischi relativi**: internamente, `moneca()` chiama `weight.matrix()` per calcolare il rischio relativo (RR) di ogni cella: $RR = \frac{osservato}{atteso}$
+
+2. **Filtraggio con cut.off**: per default, `weight.matrix()` usa `cut.off = 1`, mantenendo solo le celle con $RR \geq 1$ (mobilità pari o superiore alle aspettative). Le altre celle vengono escluse dalla rete.
+
+La rete risultante ha:
+- Ogni **categoria** come **nodo**
+- Ogni **cella con RR >= 1** come **arco** tra due nodi
+
+### 1.1.3 Due concetti di densità
+
+È importante distinguere due concetti di densità:
+
+1. **Densità dei conteggi**: proporzione di celle con conteggi > 0 nella matrice originale
+2. **Densità della rete**: proporzione di celle con RR >= 1 dopo il calcolo dei rischi relativi
+
+La **densità della rete** è ciò che determina il numero di archi nel grafo analizzato da MONECA. Il filtraggio interno con `cut.off = 1` è già molto efficace nel ridurre questa densità.
+
+**Esempio tipico:**
+- Densità conteggi: ~80% (molte celle con almeno un'osservazione)
+- Densità rete: ~10-15% (poche celle con mobilità sopra le aspettative)
+
+### 1.1.4 Perché la densità della rete incide sui tempi di calcolo
+
+L'algoritmo cerca **cliques** (sottografi completi) nella rete. Il problema computazionale è che il numero di cliques potenziali cresce in modo **combinatoriale** con il numero di archi:
+
+- Più celle con RR >= 1 → più archi nella rete
+- Più archi → più cliques potenziali da esaminare
+- Il tempo di calcolo può crescere esponenzialmente
+
+### 1.1.5 Problemi delle matrici di grandi dimensioni
+
 Quando si lavora con matrici di mobilità di grandi dimensioni (60+ categorie), emergono problemi specifici:
 
-1. **Rumore statistico**: con un numero elevato di categorie, molte celle contengono poche osservazioni, producendo stime instabili delle probabilità di transizione.
+1. **Rumore statistico**: con un numero elevato di categorie, molte celle contengono poche osservazioni, producendo stime instabili dei rischi relativi
 
-2. **Sparsità**: la matrice diventa progressivamente più sparsa, con molte celle vuote o con conteggi molto bassi.
+2. **Falsi positivi nella rete**: celle con pochi conteggi possono avere RR >= 1 per caso, creando archi "rumorosi" nella rete
 
-3. **Complessità computazionale**: il numero di potenziali cliques cresce in modo combinatoriale, rendendo l'analisi computazionalmente onerosa.
+3. **Esplosione combinatoriale**: più archi nella rete significa più cliques potenziali, con tempi di calcolo che possono diventare proibitivi
 
-4. **Difficoltà interpretativa**: cluster troppo granulari possono riflettere rumore piuttosto che pattern di mobilità sostantivi.
+4. **Difficoltà interpretativa**: cluster basati su connessioni deboli (rumore) possono oscurare i pattern di mobilità sostantivi
 
-## 1.2 Soluzione: preprocessing tramite riduzione dimensionale
+## 1.2 Soluzione: preprocessing con reduce_density()
 
-La funzione `reduce_density()` affronta questi problemi attraverso un preprocessing della matrice che:
+La funzione `reduce_density()` opera sui **conteggi** della matrice **prima** che MONECA calcoli i rischi relativi. L'obiettivo è rimuovere il rumore statistico per ottenere rischi relativi più stabili.
 
-- **Riduce il rumore**: estrae i pattern dominanti di mobilità filtrando le fluttuazioni casuali
-- **Preserva la struttura**: mantiene le relazioni di mobilità più forti e sistematiche
-- **Migliora la scalabilità**: produce matrici più compatte e computazionalmente gestibili
-- **Facilita l'interpretazione**: enfatizza le strutture di mobilità più rilevanti
-
-Il processo di riduzione della densità si inserisce nel workflow MONECA come fase di preprocessing:
+**Workflow:**
 
 ```
-matrice_grezza -> reduce_density() -> weight.matrix() -> moneca()
+matrice_grezza -> reduce_density() -> moneca()
+                                        ↓
+                              (internamente chiama weight.matrix)
 ```
+
+**Importante:** `reduce_density()` non agisce direttamente sulla densità della rete (celle con RR >= 1), ma modifica i conteggi. L'effetto sulla rete dipende da come questa modifica influenza il calcolo dei rischi relativi.
+
+### 1.2.1 Effetto dei due metodi sulla densità della rete
+
+Entrambi i metodi (SVD e NMF) utilizzano un approccio basato su filtro:
+
+**Approccio unificato (SVD e NMF):**
+
+- Calcolano una ricostruzione a basso rango della matrice
+- Usano i valori di ricostruzione come **criterio di filtro** per identificare celle significative
+- **Preservano i valori originali** delle celle che superano la soglia (nessuna distorsione)
+- **Azzerano** le celle considerate rumore (valori di ricostruzione sotto la soglia)
+- **Riducono** efficacemente la densità della rete
+
+**Differenze tra SVD e NMF:**
+
+- **SVD**: più veloce, usa varianza spiegata per selezionare k automaticamente
+- **NMF**: componenti interpretabili come pattern latenti di mobilità, richiede `RcppML`
+- Entrambi usano il parametro `filter_quantile` per controllare la selezione delle celle
+
+### 1.2.2 Quando usare reduce_density()
+
+Il filtraggio interno di MONECA (`cut.off = 1`) è già efficace nel ridurre la densità della rete. L'uso di `reduce_density()` è utile quando:
+
+1. **La matrice è molto grande** (100+ categorie) e il calcolo è lento
+2. **Si vuole rimuovere rumore statistico** prima del calcolo dei rischi relativi
+3. **Si vogliono preservare i conteggi originali** delle celle significative (entrambi i metodi preservano i valori originali)
+4. **Si vuole ridurre la densità della rete** in modo controllato tramite il parametro `filter_quantile`
 
 # 2. Fondamenti Matematici
 
@@ -101,18 +170,31 @@ dove $U_k$, $\Sigma_k$, e $V_k$ contengono solo le prime $k$ colonne/righe.
 - La varianza spiegata dalla componente $i$ è proporzionale a $\sigma_i^2$
 - La varianza cumulativa spiegata dalle prime $k$ componenti è: $\frac{\sum_{i=1}^{k} \sigma_i^2}{\sum_{i=1}^{n} \sigma_i^2}$
 
-### 2.1.3 Vantaggi e limitazioni della SVD
+### 2.1.3 Come la SVD riduce la densità
+
+Nella funzione `reduce_density()`, la SVD utilizza un approccio di **filtraggio** simile a NMF:
+
+1. **Ricostruzione a basso rango**: usando solo $k$ componenti, si ottiene una matrice ricostruita che rappresenta i pattern dominanti
+2. **Clipping dei negativi**: eventuali valori negativi prodotti dalla ricostruzione vengono impostati a zero per il calcolo della soglia
+3. **Selezione via quantile**: le celle con valori di ricostruzione sotto una certa soglia (determinata dal parametro `filter_quantile`) vengono considerate rumore
+4. **Preservazione dei valori originali**: per le celle identificate come significative, vengono mantenuti i *valori originali* della matrice, non i valori ricostruiti
+
+Il risultato è una matrice con meno celle non-zero: le connessioni deboli (rumore) vengono azzerate, mentre le connessioni forti (segnale) mantengono i loro valori originali intatti.
+
+### 2.1.4 Vantaggi e limitazioni della SVD
 
 **Vantaggi:**
 
 - Computazionalmente efficiente (libreria `irlba` per SVD troncata)
 - Soluzione ottimale per approssimazione a basso rango
 - Varianza spiegata facilmente interpretabile
+- Preserva i valori originali delle celle significative (approccio filtro)
+- Parametro `filter_quantile` regolabile per controllare la selezione
 
 **Limitazioni:**
 
-- Può produrre valori negativi (problematico per conteggi)
-- Non preserva automaticamente la non-negatività delle matrici di mobilità
+- Il processo di filtraggio si basa su valori di ricostruzione che possono includere negativi (corretti prima del calcolo della soglia)
+- La selezione del quantile può richiedere calibrazione per casi specifici
 
 ## 2.2 Fattorizzazione a Matrici Non-Negative (NMF)
 
@@ -145,13 +227,28 @@ A differenza della SVD, che sostituisce i valori originali con una ricostruzione
 
 Questo approccio offre un vantaggio rispetto alla ricostruzione diretta: i conteggi nella matrice risultante sono esattamente quelli osservati nei dati originali, senza distorsioni introdotte dalla ricostruzione. Le celle considerate rumore vengono semplicemente azzerate.
 
-### 2.2.3 Algoritmo di ottimizzazione
+### 2.2.3 Come la NMF riduce la densità
+
+La NMF riduce la densità attraverso un approccio di **filtraggio selettivo**:
+
+1. **Analisi dei pattern latenti**: la decomposizione $WH$ identifica $k$ pattern dominanti di mobilità
+2. **Valutazione delle celle**: ogni cella riceve un "punteggio di ricostruzione" che indica quanto contribuisce ai pattern identificati
+3. **Separazione segnale/rumore**: le celle con punteggi bassi contribuiscono poco ai pattern dominanti e sono considerate rumore
+4. **Azzeramento del rumore**: le celle sotto la soglia `filter_quantile` vengono impostate a zero
+
+Il risultato è una matrice più sparsa dove:
+- Le celle significative mantengono i loro **valori originali** (nessuna distorsione)
+- Le celle rumorose sono **azzerate** (rimosse dalla rete)
+
+Questo riduce il numero di archi nella rete MONECA, accelerando il calcolo delle cliques.
+
+### 2.2.4 Algoritmo di ottimizzazione
 
 La NMF non ha una soluzione analitica chiusa. L'algoritmo standard minimizza la distanza tra $M$ e $WH$ attraverso aggiornamenti iterativi.
 
 La funzione `reduce_density()` utilizza il pacchetto `RcppML`, che implementa algoritmi efficienti di NMF.
 
-### 2.2.4 Vantaggi e limitazioni della NMF (approccio filtro)
+### 2.2.5 Vantaggi e limitazioni della NMF (approccio filtro)
 
 **Vantaggi:**
 
@@ -232,15 +329,15 @@ reduce_density(
 
 **`method`**: metodo di riduzione dimensionale da utilizzare.
 
-- `"svd"` (default): Singular Value Decomposition. Veloce, efficiente in memoria, produce valori continui. Consigliata come prima scelta.
-- `"nmf"`: Non-negative Matrix Factorization. Utilizza la ricostruzione NMF come filtro per identificare celle significative, ma preserva i valori originali (nessuna distorsione). Richiede il pacchetto `RcppML`.
+- `"svd"` (default): Singular Value Decomposition. Veloce, efficiente in memoria, usa la varianza spiegata per selezionare k automaticamente. Consigliata come prima scelta.
+- `"nmf"`: Non-negative Matrix Factorization. Componenti interpretabili come pattern latenti di mobilità. Richiede il pacchetto `RcppML`.
 
-**`filter_quantile`**: parametro specifico per il metodo NMF. Controlla la proporzione di celle da mantenere.
+**`filter_quantile`**: parametro che si applica a entrambi i metodi (SVD e NMF). Controlla la proporzione di celle da mantenere.
 
-- `"auto"` (default): selezione automatica basata sul rilevamento del gomito (elbow) sui valori di ricostruzione NMF ordinati
+- `"auto"` (default): selezione automatica basata sul rilevamento del gomito (elbow) sui valori di ricostruzione ordinati
 - numerico (0-1): proporzione di celle da mantenere. Es. `0.75` mantiene il 75% delle celle con i valori di ricostruzione più alti
 
-**Nota importante**: A differenza della SVD che utilizza direttamente la matrice ricostruita, il metodo NMF usa i valori di ricostruzione solo per *identificare* quali celle sono significative (segnale vs rumore), ma restituisce i *valori originali* per quelle celle. Questo preserva l'interpretabilità dei conteggi senza introdurre distorsioni.
+**Nota importante**: Entrambi i metodi (SVD e NMF) usano i valori di ricostruzione solo per *identificare* quali celle sono significative (segnale vs rumore), ma restituiscono i *valori originali* per quelle celle. Questo preserva l'interpretabilità dei conteggi senza introdurre distorsioni.
 
 **`normalization`**: trasformazione pre-processing da applicare.
 
@@ -284,7 +381,7 @@ La funzione restituisce un oggetto di classe `"density_reduced"` (eredita da `"m
 - **`normalization`**: metodo di normalizzazione applicato
 - **`k`**: numero di componenti mantenute
 - **`variance_explained`**: proporzione di varianza spiegata (solo per SVD)
-- **`filter_quantile`**: quantile di filtro utilizzato (solo per NMF) - indica la proporzione di celle mantenute basata sui valori di ricostruzione
+- **`filter_quantile`**: quantile di filtro utilizzato (entrambi i metodi) - indica la proporzione di celle mantenute basata sui valori di ricostruzione
 - **`threshold_applied`**: valore di soglia applicato (se presente)
 - **`original_dims`**: dimensioni della matrice originale (senza totali)
 - **`original_total`**: totale delle osservazioni originali
@@ -301,8 +398,8 @@ La funzione esegue i seguenti passaggi:
 3. **Selezione componenti**: quando `k = "auto"`, usa varianza spiegata con rilevamento del gomito
 4. **Riduzione dimensionale**: applica SVD o NMF per estrarre pattern dominanti
 5. **Ricostruzione**: ricostruisce la matrice dalle componenti ridotte
-6. **Post-processing**: tronca valori negativi, scala per preservare il totale, arrotonda a interi
-7. **Soglia opzionale**: imposta valori bassi a zero se richiesto
+6. **Filtraggio**: usa i valori di ricostruzione come soglia per identificare celle significative. Le celle con valori di ricostruzione sotto la soglia (`filter_quantile`) vengono azzerate. I valori originali vengono preservati per le celle che passano il filtro.
+7. **Soglia opzionale**: imposta valori bassi a zero se richiesto (threshold aggiuntivo)
 8. **Ricalcolo totali**: aggiorna riga e colonna dei totali
 
 # 4. Esempi Pratici
@@ -438,7 +535,7 @@ cat("  Varianza spiegata =",
 
 La NMF utilizza un approccio diverso dalla SVD: invece di sostituire i valori con una ricostruzione, la NMF identifica le celle significative e preserva i valori originali.
 
-```{r example_nmf, eval=requireNamespace("RcppML", quietly = TRUE)}
+```{r example_nmf, eval=all(sapply(c("ggplot2", "irlba", "RcppML"), requireNamespace, quietly = TRUE))}
 # Riduzione con NMF - selezione automatica del quantile
 reduced_nmf <- reduce_density(
   large_data,
@@ -463,7 +560,7 @@ L'output verbose mostra informazioni sul processo di filtraggio:
 
 **Specifica manuale del quantile:**
 
-```{r example_nmf_manual, eval=requireNamespace("RcppML", quietly = TRUE)}
+```{r example_nmf_manual, eval=all(sapply(c("ggplot2", "irlba", "RcppML"), requireNamespace, quietly = TRUE))}
 # Riduzione con quantile specificato manualmente
 reduced_nmf_75 <- reduce_density(
   large_data,
@@ -628,58 +725,63 @@ plot_moneca_dendrogram(
 **Utilizzare `reduce_density()` quando:**
 
 - La matrice ha 60+ categorie
-- La sparsità supera il 30-40%
-- Molte celle hanno conteggi bassi (< 10)
+- La densità è elevata (molte celle non-zero, sparsità < 60-70%)
+- Molte celle hanno conteggi bassi (< 10) che rappresentano rumore statistico
 - L'analisi MONECA diretta produce cluster instabili o troppo frammentati
-- L'analisi MONECA è computazionalmente troppo lenta
+- L'analisi MONECA è computazionalmente troppo lenta a causa del numero di connessioni
 
 **Non utilizzare `reduce_density()` quando:**
 
 - La matrice ha meno di 30 categorie (l'algoritmo standard funziona bene)
-- La matrice è già densa con conteggi elevati per cella
+- La matrice è già molto sparsa (poche celle non-zero, tutte con conteggi robusti)
 - Si vuole preservare esattamente ogni singola osservazione
 
 ## 6.2 Scelta del metodo: SVD vs NMF
+
+Entrambi i metodi ora utilizzano un approccio di filtraggio che preserva i valori originali delle celle significative.
 
 ### 6.2.1 Quando usare SVD
 
 **Vantaggi:**
 
 - Più veloce (importante per matrici molto grandi)
-- Soluzione ottimale per approssimazione a basso rango
+- Selezione automatica di k basata su varianza spiegata
 - Metriche chiare (varianza spiegata)
 - Implementazione efficiente con `irlba`
+- Preserva i valori originali dei conteggi (approccio filtro)
 
 **Svantaggi:**
 
-- Può produrre valori negativi (corretti in post-processing)
-- Componenti possono essere meno interpretabili
+- La ricostruzione può produrre valori negativi (corretti in pre-processing per il calcolo della soglia)
+- Componenti possono essere meno interpretabili rispetto a NMF
 
 **Raccomandazione:** utilizzare SVD come metodo di default per la maggior parte dei casi.
 
-### 6.2.2 Quando usare NMF (approccio filtro)
+### 6.2.2 Quando usare NMF
 
 **Vantaggi:**
 
-- Preserva i valori originali dei conteggi (nessuna distorsione)
-- Utilizza NMF per rilevamento intelligente del rumore basato sui pattern latenti
+- Preserva i valori originali dei conteggi (approccio filtro, come SVD)
+- Componenti interpretabili come pattern latenti di mobilità
+- Vincolo di non-negatività naturale per dati di conteggio
 - Il parametro `filter_quantile` può essere regolato per controllare la selezione
-- Risultati più interpretabili: i valori nella matrice sono esattamente i conteggi osservati
 
 **Svantaggi:**
 
 - Più lenta (ottimizzazione iterativa)
 - Richiede `seed` per riproducibilità
 - Nessuna metrica diretta di varianza spiegata
-- La selezione del quantile può richiedere calibrazione
+- Richiede il pacchetto `RcppML`
 
-**Raccomandazione:** utilizzare NMF quando si desidera preservare i valori originali dei conteggi ed evitare distorsioni. Il metodo NMF è particolarmente utile quando l'interpretabilità dei conteggi è prioritaria rispetto a una ricostruzione "smooth" dei dati.
+**Raccomandazione:** utilizzare NMF quando l'interpretabilità delle componenti latenti è importante, o quando si lavora con dati dove il vincolo di non-negatività è teoricamente rilevante.
 
-**Regolazione del `filter_quantile`:**
+### 6.2.3 Regolazione del `filter_quantile` (entrambi i metodi)
+
+Il parametro `filter_quantile` controlla quante celle vengono mantenute. Si applica sia a SVD che a NMF:
 
 - Valori più alti (es. 0.80-0.90) mantengono più celle, riducono meno il rumore
 - Valori più bassi (es. 0.50-0.70) mantengono meno celle, rimozione più aggressiva del rumore
-- `"auto"` seleziona il quantile basandosi sul punto di gomito dei valori di ricostruzione
+- `"auto"` (default) seleziona il quantile basandosi sul punto di gomito dei valori di ricostruzione
 
 ## 6.3 Scelta della normalizzazione
 
@@ -1179,7 +1281,7 @@ head(membership)
 
 **Fattorizzazione**: decomposizione di una matrice nel prodotto di matrici più semplici.
 
-**Filter quantile**: parametro del metodo NMF che controlla la proporzione di celle da mantenere basandosi sui valori di ricostruzione NMF. Valori più alti mantengono più celle; la selezione automatica usa il rilevamento del gomito (elbow detection).
+**Filter quantile**: parametro di entrambi i metodi (SVD e NMF) che controlla la proporzione di celle da mantenere basandosi sui valori di ricostruzione. Valori più alti mantengono più celle; la selezione automatica usa il rilevamento del gomito (elbow detection).
 
 **Matrice core**: matrice di mobilità escludendo riga e colonna dei totali marginali.
 

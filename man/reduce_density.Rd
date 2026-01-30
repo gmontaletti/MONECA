@@ -13,7 +13,8 @@ reduce_density(
   threshold = NULL,
   threshold_type = c("sd", "percentile"),
   verbose = FALSE,
-  seed = NULL
+  seed = NULL,
+  filter_quantile = "auto"
 )
 }
 \arguments{
@@ -63,6 +64,18 @@ Default is \code{FALSE}.}
 
 \item{seed}{Optional integer for reproducibility. Particularly important
 for NMF which uses random initialization.}
+
+\item{filter_quantile}{Controls the quantile threshold for filtering. Applies
+to both SVD and NMF methods. Can be:
+\itemize{
+  \item \code{"auto"} (default): Automatically selects threshold via elbow
+    detection on reconstruction values
+  \item Numeric (0-1): Keep cells with reconstruction values above this
+    quantile. E.g., 0.75 keeps top 75% of cells by reconstruction strength.
+}
+Both SVD and NMF use reconstruction values as a filter to identify
+significant cells, then return the original values for those cells. This
+preserves count interpretability while reducing network density.}
 }
 \value{
 An object of class \code{"density_reduced"} (inherits from matrix)
@@ -72,6 +85,7 @@ An object of class \code{"density_reduced"} (inherits from matrix)
     \item{normalization}{The normalization method used}
     \item{k}{Number of components retained}
     \item{variance_explained}{Proportion of variance explained (SVD only)}
+    \item{filter_quantile}{The filter quantile used to select cells}
     \item{threshold_applied}{The threshold value applied (if any)}
     \item{original_dims}{Dimensions of the original core matrix}
   }
@@ -94,15 +108,18 @@ The function implements a pipeline for reducing noise in large mobility matrices
   \item \strong{Dimensionality Reduction}: Applies SVD or NMF to extract
     dominant patterns
   \item \strong{Reconstruction}: Reconstructs matrix from reduced components
-  \item \strong{Post-processing}: Clips negatives, scales to preserve total,
-    rounds to integers
-  \item \strong{Thresholding}: Optionally sets low values to zero
+  \item \strong{Filtering}: Uses reconstruction values as a filter to identify
+    significant cells. Cells with reconstruction values below the threshold
+    (based on \code{filter_quantile}) are set to zero. Original cell values
+    are preserved for cells that pass the filter.
+  \item \strong{Thresholding}: Optionally applies additional thresholding
   \item \strong{Totals}: Recalculates row/column totals
 }
 
 For SVD, the reconstruction is \eqn{M \approx U_k \Sigma_k V_k^T} where k
 components are retained. For NMF, the factorization is \eqn{M \approx W H}
-with non-negative factors.
+with non-negative factors. Both methods use reconstruction values to filter
+cells while preserving original counts for retained cells.
 }
 \section{Dependencies}{
 

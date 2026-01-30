@@ -56,17 +56,17 @@ NULL
 #'   Default is \code{FALSE}.
 #' @param seed Optional integer for reproducibility. Particularly important
 #'   for NMF which uses random initialization.
-#' @param filter_quantile For NMF method only: controls the quantile threshold
-#'   for filtering. Can be:
+#' @param filter_quantile Controls the quantile threshold for filtering. Applies
+#'   to both SVD and NMF methods. Can be:
 #'   \itemize{
 #'     \item \code{"auto"} (default): Automatically selects threshold via elbow
-#'       detection on NMF reconstruction values
-#'     \item Numeric (0-1): Keep cells with NMF reconstruction values above this
+#'       detection on reconstruction values
+#'     \item Numeric (0-1): Keep cells with reconstruction values above this
 #'       quantile. E.g., 0.75 keeps top 75% of cells by reconstruction strength.
 #'   }
-#'   Unlike SVD which uses reconstruction directly, NMF uses reconstruction
-#'   values as a filter to identify significant cells, then returns the original
-#'   values for those cells. This preserves count interpretability.
+#'   Both SVD and NMF use reconstruction values as a filter to identify
+#'   significant cells, then return the original values for those cells. This
+#'   preserves count interpretability while reducing network density.
 #'
 #' @return An object of class \code{"density_reduced"} (inherits from matrix)
 #'   with the following attributes:
@@ -75,6 +75,7 @@ NULL
 #'     \item{normalization}{The normalization method used}
 #'     \item{k}{Number of components retained}
 #'     \item{variance_explained}{Proportion of variance explained (SVD only)}
+#'     \item{filter_quantile}{The filter quantile used to select cells}
 #'     \item{threshold_applied}{The threshold value applied (if any)}
 #'     \item{original_dims}{Dimensions of the original core matrix}
 #'   }
@@ -92,15 +93,18 @@ NULL
 #'   \item \strong{Dimensionality Reduction}: Applies SVD or NMF to extract
 #'     dominant patterns
 #'   \item \strong{Reconstruction}: Reconstructs matrix from reduced components
-#'   \item \strong{Post-processing}: Clips negatives, scales to preserve total,
-#'     rounds to integers
-#'   \item \strong{Thresholding}: Optionally sets low values to zero
+#'   \item \strong{Filtering}: Uses reconstruction values as a filter to identify
+#'     significant cells. Cells with reconstruction values below the threshold
+#'     (based on \code{filter_quantile}) are set to zero. Original cell values
+#'     are preserved for cells that pass the filter.
+#'   \item \strong{Thresholding}: Optionally applies additional thresholding
 #'   \item \strong{Totals}: Recalculates row/column totals
 #' }
 #'
 #' For SVD, the reconstruction is \eqn{M \approx U_k \Sigma_k V_k^T} where k
 #' components are retained. For NMF, the factorization is \eqn{M \approx W H}
-#' with non-negative factors.
+#' with non-negative factors. Both methods use reconstruction values to filter
+#' cells while preserving original counts for retained cells.
 #'
 #' @section Dependencies:
 #' \itemize{
@@ -274,7 +278,7 @@ reduce_density <- function(
 
   # 5. Perform dimensionality reduction -----
   if (method == "svd") {
-    reduced_mx <- perform_svd_reduction(normalized_mx, k, verbose)
+    reconstructed <- perform_svd_reduction(normalized_mx, k, verbose)
     if (is.null(variance_explained)) {
       # Calculate variance explained for user-specified k
       svd_result <- perform_svd(normalized_mx, k)
@@ -282,24 +286,49 @@ reduce_density <- function(
       variance_explained <- sum(svd_result$d[1:k]^2) / total_var
     }
 
-    # 6a. Post-processing for SVD -----
-    # Clip negative values (can occur with SVD + normalization)
-    reduced_mx[reduced_mx < 0] <- 0
+    # 6a. Post-processing for SVD: Use as filter (like NMF) -----
+    # SVD reconstruction values are used to identify significant cells,
+    # but original values are preserved (no distortion)
 
-    # For normalized matrices, we need to back-transform
-    if (normalization != "none") {
-      # Scale to match original total
-      current_total <- sum(reduced_mx)
-      if (current_total > 0) {
-        reduced_mx <- reduced_mx * (original_total / current_total)
-      }
+    recon <- reconstructed
+    # Clip negative values for threshold calculation
+    recon[recon < 0] <- 0
+
+    # Determine filter quantile (auto or manual)
+    actual_quantile <- filter_quantile
+    if (identical(filter_quantile, "auto")) {
+      actual_quantile <- select_filter_quantile_auto(recon, verbose)
     }
 
-    # Round to integers
-    reduced_mx <- round(reduced_mx)
+    # Calculate threshold from reconstruction values
+    nonzero_recon <- recon[recon > 0]
+    if (length(nonzero_recon) > 0) {
+      # threshold is the value below which we discard
+      # (1 - actual_quantile) gives the proportion to discard
+      filter_threshold <- quantile(nonzero_recon, probs = 1 - actual_quantile)
 
-    # Ensure no negative values after rounding
-    reduced_mx[reduced_mx < 0] <- 0
+      # Apply filter: keep original values where reconstruction is significant
+      reduced_mx <- core_mx # Use original counts (no distortion)
+      reduced_mx[recon < filter_threshold] <- 0
+
+      if (verbose) {
+        n_cells_kept <- sum(recon >= filter_threshold)
+        n_cells_total <- sum(recon > 0)
+        message(sprintf(
+          "SVD filter: keeping %d/%d cells (%.1f%%) with reconstruction >= %.4f",
+          n_cells_kept,
+          n_cells_total,
+          100 * actual_quantile,
+          filter_threshold
+        ))
+      }
+    } else {
+      warning(
+        "SVD reconstruction produced all zeros; returning original matrix"
+      )
+      reduced_mx <- core_mx
+      actual_quantile <- NA
+    }
   } else if (method == "nmf") {
     # NMF returns list with reconstruction and original
     nmf_result <- perform_nmf_reduction(normalized_mx, k, verbose, seed)
@@ -386,10 +415,8 @@ reduce_density <- function(
   attr(final_mx, "original_dims") <- c(n, n)
   attr(final_mx, "original_total") <- original_total
   attr(final_mx, "reduced_total") <- grand_total
-  # Store filter_quantile for NMF method
-  if (method == "nmf") {
-    attr(final_mx, "filter_quantile") <- actual_quantile
-  }
+  # Store filter_quantile for both SVD and NMF methods (both use filter approach)
+  attr(final_mx, "filter_quantile") <- actual_quantile
 
   if (verbose) {
     message(sprintf(
@@ -778,9 +805,9 @@ print.density_reduced <- function(x, ...) {
   }
 
   filt_q <- attr(x, "filter_quantile")
-  if (!is.null(filt_q)) {
+  if (!is.null(filt_q) && !is.na(filt_q)) {
     cat(sprintf(
-      "Filter quantile: %.1f%% (NMF keeps top cells)\n",
+      "Filter quantile: %.1f%% (keeps top cells by reconstruction)\n",
       filt_q * 100
     ))
   }

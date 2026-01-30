@@ -16,9 +16,10 @@ perform_nmf_reduction(mx, k, verbose = FALSE, seed = NULL)
 \item{seed}{Random seed}
 }
 \value{
-Reconstructed matrix
+List with reconstructed matrix and original (non-negative) matrix
 }
 \description{
-Applies Non-negative Matrix Factorization and reconstructs.
+Applies Non-negative Matrix Factorization and returns both reconstruction
+and original matrix for use as a filter.
 }
 \keyword{internal}
