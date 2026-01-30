@@ -1,0 +1,1200 @@
+---
+title: "Riduzione della Densità per Matrici di Mobilità di Grandi Dimensioni"
+author: "Giampaolo Montaletti"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+    fig_width: 8
+    fig_height: 6
+vignette: >
+  %\VignetteIndexEntry{Riduzione della Densità per Matrici di Mobilità di Grandi Dimensioni}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "figures/density-",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 8,
+  dpi = 150,
+  out.width = "100%"
+)
+
+# Verifica dei pacchetti necessari
+required_packages <- c("ggplot2", "irlba", "RcppML")
+missing_packages <- required_packages[!sapply(required_packages, requireNamespace, quietly = TRUE)]
+
+if (length(missing_packages) > 0) {
+  knitr::opts_chunk$set(eval = FALSE)
+  message("Alcuni pacchetti richiesti non sono disponibili: ", paste(missing_packages, collapse = ", "))
+  message("Gli esempi di codice non verranno eseguiti.")
+}
+```
+
+# 1. Introduzione
+
+## 1.1 Problema: matrici di grandi dimensioni
+
+L'algoritmo MONECA analizza tabelle di mobilità attraverso reti ponderate e cliques per identificare cluster di posizioni con elevata mobilità interna. Questo approccio funziona in modo efficace per matrici con 10-50 categorie, dove i pattern di mobilità sono sufficientemente chiari e il rumore nei dati non oscura le strutture sottostanti.
+
+Quando si lavora con matrici di mobilità di grandi dimensioni (60+ categorie), emergono problemi specifici:
+
+1. **Rumore statistico**: con un numero elevato di categorie, molte celle contengono poche osservazioni, producendo stime instabili delle probabilità di transizione.
+
+2. **Sparsità**: la matrice diventa progressivamente più sparsa, con molte celle vuote o con conteggi molto bassi.
+
+3. **Complessità computazionale**: il numero di potenziali cliques cresce in modo combinatoriale, rendendo l'analisi computazionalmente onerosa.
+
+4. **Difficoltà interpretativa**: cluster troppo granulari possono riflettere rumore piuttosto che pattern di mobilità sostantivi.
+
+## 1.2 Soluzione: preprocessing tramite riduzione dimensionale
+
+La funzione `reduce_density()` affronta questi problemi attraverso un preprocessing della matrice che:
+
+- **Riduce il rumore**: estrae i pattern dominanti di mobilità filtrando le fluttuazioni casuali
+- **Preserva la struttura**: mantiene le relazioni di mobilità più forti e sistematiche
+- **Migliora la scalabilità**: produce matrici più compatte e computazionalmente gestibili
+- **Facilita l'interpretazione**: enfatizza le strutture di mobilità più rilevanti
+
+Il processo di riduzione della densità si inserisce nel workflow MONECA come fase di preprocessing:
+
+```
+matrice_grezza -> reduce_density() -> weight.matrix() -> moneca()
+```
+
+# 2. Fondamenti Matematici
+
+## 2.1 Decomposizione ai Valori Singolari (SVD)
+
+La Singular Value Decomposition (SVD) è una tecnica di fattorizzazione matriciale che decompone una matrice $M$ (dimensioni $n \times n$) nel prodotto di tre matrici:
+
+$$M = U \Sigma V^T$$
+
+dove:
+
+- $U$: matrice ortogonale $n \times n$ (vettori singolari sinistri)
+- $\Sigma$: matrice diagonale $n \times n$ con valori singolari $\sigma_1 \geq \sigma_2 \geq \ldots \geq \sigma_n \geq 0$
+- $V^T$: matrice ortogonale $n \times n$ trasposta (vettori singolari destri)
+
+### 2.1.1 Interpretazione geometrica
+
+I valori singolari $\sigma_i$ rappresentano l'importanza delle diverse componenti nella struttura della matrice. I primi valori singolari catturano la maggior parte della variabilità, mentre gli ultimi corrispondono principalmente a rumore.
+
+### 2.1.2 Riduzione dimensionale tramite SVD troncata
+
+La SVD troncata a $k$ componenti ($k < n$) ricostruisce la matrice mantenendo solo le prime $k$ componenti:
+
+$$M_k = U_k \Sigma_k V_k^T$$
+
+dove $U_k$, $\Sigma_k$, e $V_k$ contengono solo le prime $k$ colonne/righe.
+
+**Proprietà della SVD troncata:**
+
+- Fornisce la migliore approssimazione a basso rango di $M$ in termini di norma di Frobenius
+- La varianza spiegata dalla componente $i$ è proporzionale a $\sigma_i^2$
+- La varianza cumulativa spiegata dalle prime $k$ componenti è: $\frac{\sum_{i=1}^{k} \sigma_i^2}{\sum_{i=1}^{n} \sigma_i^2}$
+
+### 2.1.3 Vantaggi e limitazioni della SVD
+
+**Vantaggi:**
+
+- Computazionalmente efficiente (libreria `irlba` per SVD troncata)
+- Soluzione ottimale per approssimazione a basso rango
+- Varianza spiegata facilmente interpretabile
+
+**Limitazioni:**
+
+- Può produrre valori negativi (problematico per conteggi)
+- Non preserva automaticamente la non-negatività delle matrici di mobilità
+
+## 2.2 Fattorizzazione a Matrici Non-Negative (NMF)
+
+La Non-negative Matrix Factorization (NMF) decompone una matrice non-negativa $M$ nel prodotto di due matrici non-negative:
+
+$$M \approx W H$$
+
+dove:
+
+- $W$: matrice $n \times k$ (matrice delle basi)
+- $H$: matrice $k \times n$ (matrice dei coefficienti)
+- Tutte le entrate di $W$ e $H$ sono $\geq 0$
+
+### 2.2.1 Interpretazione per dati di mobilità
+
+La NMF ha un'interpretazione naturale per matrici di mobilità:
+
+- $W$: rappresenta $k$ pattern di mobilità latenti (profili di origine)
+- $H$: rappresenta i pesi di questi pattern per ciascuna destinazione
+- Il vincolo di non-negatività preserva l'interpretabilità dei conteggi
+
+### 2.2.2 NMF come filtro nella funzione reduce_density()
+
+A differenza della SVD, che sostituisce i valori originali con una ricostruzione a basso rango, nella funzione `reduce_density()` la NMF viene utilizzata come **filtro** per identificare celle significative:
+
+1. **Calcolo della ricostruzione**: La decomposizione $WH$ produce una matrice ricostruita che rappresenta i pattern dominanti di mobilità
+2. **Identificazione delle celle significative**: I valori di ricostruzione indicano quanto una cella contribuisce ai pattern latenti identificati dalla NMF
+3. **Selezione via quantile**: Le celle con valori di ricostruzione sotto una certa soglia (determinata dal parametro `filter_quantile`) vengono considerate rumore
+4. **Preservazione dei valori originali**: Per le celle identificate come significative, vengono mantenuti i *valori originali* della matrice, non i valori ricostruiti
+
+Questo approccio offre un vantaggio rispetto alla ricostruzione diretta: i conteggi nella matrice risultante sono esattamente quelli osservati nei dati originali, senza distorsioni introdotte dalla ricostruzione. Le celle considerate rumore vengono semplicemente azzerate.
+
+### 2.2.3 Algoritmo di ottimizzazione
+
+La NMF non ha una soluzione analitica chiusa. L'algoritmo standard minimizza la distanza tra $M$ e $WH$ attraverso aggiornamenti iterativi.
+
+La funzione `reduce_density()` utilizza il pacchetto `RcppML`, che implementa algoritmi efficienti di NMF.
+
+### 2.2.4 Vantaggi e limitazioni della NMF (approccio filtro)
+
+**Vantaggi:**
+
+- Preserva i valori originali dei conteggi (nessuna distorsione)
+- Utilizza NMF per rilevamento intelligente del rumore
+- Componenti interpretabili per identificare pattern significativi
+- Parametro `filter_quantile` regolabile per controllare la selezione
+
+**Limitazioni:**
+
+- Più lenta della SVD (ottimizzazione iterativa)
+- Richiede inizializzazione casuale (necessario specificare `seed` per riproducibilità)
+- Non ha una metrica diretta di "varianza spiegata"
+- La selezione del quantile può richiedere calibrazione per casi specifici
+
+## 2.3 Normalizzazioni pre-processing
+
+Prima di applicare SVD o NMF, è possibile trasformare la matrice di mobilità per enfatizzare aspetti specifici.
+
+### 2.3.1 Nessuna normalizzazione (`normalization = "none"`)
+
+Utilizza i conteggi grezzi. Adatta quando:
+
+- Le dimensioni marginali non introducono distorsioni sistematiche
+- Si vuole preservare l'informazione sulle frequenze assolute
+- La matrice è già ragionevolmente bilanciata
+
+### 2.3.2 Residui di Pearson (`normalization = "pearson"`)
+
+Standardizza per gli effetti marginali calcolando i residui di Pearson:
+
+$$r_{ij} = \frac{O_{ij} - E_{ij}}{\sqrt{E_{ij}}}$$
+
+dove $O_{ij}$ sono i conteggi osservati e $E_{ij} = \frac{(totale\_riga_i)(totale\_colonna_j)}{totale\_complessivo}$ sono i conteggi attesi sotto indipendenza.
+
+**Utilizzo:** enfatizza deviazioni dal modello di indipendenza, utile quando le distribuzioni marginali sono eterogenee.
+
+### 2.3.3 PPMI - Positive Pointwise Mutual Information (`normalization = "ppmi"`)
+
+Calcola la mutua informazione puntuale positiva:
+
+$$PPMI_{ij} = \max\left(0, \log_2\frac{P(i,j)}{P(i)P(j)}\right)$$
+
+dove:
+
+- $P(i,j) = \frac{conteggio_{ij}}{totale}$ (probabilità congiunta)
+- $P(i) = \frac{totale\_riga_i}{totale}$ (probabilità marginale origine)
+- $P(j) = \frac{totale\_colonna_j}{totale}$ (probabilità marginale destinazione)
+
+**Interpretazione:** valori positivi indicano mobilità superiore a quanto atteso per caso; valori zero indicano mobilità sotto le aspettative o assente.
+
+**Utilizzo:** enfatizza connessioni di mobilità sorprendenti rispetto alla casualità, utile per identificare cluster basati su affinità strutturali piuttosto che su frequenze assolute.
+
+# 3. La Funzione `reduce_density()`
+
+## 3.1 Sintassi e parametri
+
+```{r eval=FALSE}
+reduce_density(
+  mx,
+  method = c("svd", "nmf"),
+  normalization = c("none", "pearson", "ppmi"),
+  k = "auto",
+  variance_target = 0.75,
+  threshold = NULL,
+  threshold_type = c("sd", "percentile"),
+  verbose = FALSE,
+  seed = NULL,
+  filter_quantile = "auto"
+)
+```
+
+### 3.1.1 Parametri obbligatori
+
+**`mx`**: matrice di mobilità in formato standard moneca (con riga e colonna dei totali). Deve essere quadrata e contenere almeno 4 categorie (5 righe inclusi i totali).
+
+### 3.1.2 Parametri del metodo di riduzione
+
+**`method`**: metodo di riduzione dimensionale da utilizzare.
+
+- `"svd"` (default): Singular Value Decomposition. Veloce, efficiente in memoria, produce valori continui. Consigliata come prima scelta.
+- `"nmf"`: Non-negative Matrix Factorization. Utilizza la ricostruzione NMF come filtro per identificare celle significative, ma preserva i valori originali (nessuna distorsione). Richiede il pacchetto `RcppML`.
+
+**`filter_quantile`**: parametro specifico per il metodo NMF. Controlla la proporzione di celle da mantenere.
+
+- `"auto"` (default): selezione automatica basata sul rilevamento del gomito (elbow) sui valori di ricostruzione NMF ordinati
+- numerico (0-1): proporzione di celle da mantenere. Es. `0.75` mantiene il 75% delle celle con i valori di ricostruzione più alti
+
+**Nota importante**: A differenza della SVD che utilizza direttamente la matrice ricostruita, il metodo NMF usa i valori di ricostruzione solo per *identificare* quali celle sono significative (segnale vs rumore), ma restituisce i *valori originali* per quelle celle. Questo preserva l'interpretabilità dei conteggi senza introdurre distorsioni.
+
+**`normalization`**: trasformazione pre-processing da applicare.
+
+- `"none"` (default): nessuna normalizzazione, utilizza conteggi grezzi
+- `"pearson"`: residui di Pearson, standardizza per effetti marginali
+- `"ppmi"`: Positive Pointwise Mutual Information, enfatizza mobilità sopra il caso
+
+### 3.1.3 Parametri per la selezione delle componenti
+
+**`k`**: numero di componenti da mantenere.
+
+- `"auto"` (default): selezione automatica basata su varianza spiegata e rilevamento del gomito (elbow)
+- intero positivo: specifica manualmente il numero di componenti (tipicamente 15-25 per matrici 60+)
+
+**`variance_target`**: valore numerico (0-1) che specifica la varianza cumulativa target quando `k = "auto"`. Default `0.75` (75%). Valori più alti mantengono più dettaglio ma anche più rumore.
+
+### 3.1.4 Parametri di post-processing
+
+**`threshold`**: soglia opzionale per aumentare la sparsità.
+
+- `NULL` (default): nessuna soglia applicata
+- `"auto"`: soglia automatica (media + 1 deviazione standard)
+- numerico: valori sotto questa soglia vengono impostati a zero
+
+**`threshold_type`**: interpretazione della soglia numerica.
+
+- `"sd"` (default): numero di deviazioni standard sopra la media
+- `"percentile"`: soglia percentile (0-100)
+
+### 3.1.5 Parametri di controllo
+
+**`verbose`**: logico. Se `TRUE`, stampa informazioni sul progresso dell'elaborazione. Default `FALSE`.
+
+**`seed`**: intero opzionale per garantire riproducibilità. Particolarmente importante per NMF che usa inizializzazione casuale.
+
+## 3.2 Valore restituito
+
+La funzione restituisce un oggetto di classe `"density_reduced"` (eredita da `"matrix"`) con i seguenti attributi:
+
+- **`method`**: metodo di riduzione utilizzato ("svd" o "nmf")
+- **`normalization`**: metodo di normalizzazione applicato
+- **`k`**: numero di componenti mantenute
+- **`variance_explained`**: proporzione di varianza spiegata (solo per SVD)
+- **`filter_quantile`**: quantile di filtro utilizzato (solo per NMF) - indica la proporzione di celle mantenute basata sui valori di ricostruzione
+- **`threshold_applied`**: valore di soglia applicato (se presente)
+- **`original_dims`**: dimensioni della matrice originale (senza totali)
+- **`original_total`**: totale delle osservazioni originali
+- **`reduced_total`**: totale delle osservazioni dopo riduzione
+
+L'oggetto può essere stampato direttamente per visualizzare un riepilogo delle operazioni eseguite.
+
+## 3.3 Pipeline di elaborazione
+
+La funzione esegue i seguenti passaggi:
+
+1. **Validazione input**: verifica formato matrice ed estrae la matrice core (escludendo riga/colonna totali)
+2. **Normalizzazione**: applica opzionalmente trasformazioni PPMI o residui di Pearson
+3. **Selezione componenti**: quando `k = "auto"`, usa varianza spiegata con rilevamento del gomito
+4. **Riduzione dimensionale**: applica SVD o NMF per estrarre pattern dominanti
+5. **Ricostruzione**: ricostruisce la matrice dalle componenti ridotte
+6. **Post-processing**: tronca valori negativi, scala per preservare il totale, arrotonda a interi
+7. **Soglia opzionale**: imposta valori bassi a zero se richiesto
+8. **Ricalcolo totali**: aggiorna riga e colonna dei totali
+
+# 4. Esempi Pratici
+
+## 4.1 Preparazione dei dati di esempio
+
+```{r load_library}
+# Carica il pacchetto
+library(moneca)
+library(ggplot2)
+```
+
+```{r generate_large_data}
+# Genera una matrice di mobilità di grandi dimensioni (80 classi)
+set.seed(123)
+large_data <- generate_mobility_data(
+  n_classes = 80,
+  n_total = 100000,
+  immobility_strength = 0.65,
+  class_clustering = 0.25,
+  noise_level = 0.15,
+  class_names = paste0("C", sprintf("%02d", 1:80)),
+  seed = 123
+)
+
+# Informazioni sulla matrice
+cat("Dimensioni matrice:", dim(large_data), "\n")
+cat("Totale osservazioni:", large_data[81, 81], "\n")
+cat("Celle non-zero:", sum(large_data[1:80, 1:80] > 0), "su", 80*80, "\n")
+cat("Sparsità:", round(100 * sum(large_data[1:80, 1:80] == 0) / (80*80), 1), "%\n")
+```
+
+## 4.2 Visualizzazione dello scree plot
+
+Prima di applicare la riduzione, è utile visualizzare la varianza spiegata per componente per capire quante componenti sono necessarie.
+
+```{r scree_plot}
+# Crea lo scree plot
+p_scree <- plot_scree(
+  large_data,
+  max_components = 40,
+  variance_target = 0.75,
+  show_elbow = TRUE,
+  title = "Scree Plot: Varianza Spiegata per Componente"
+)
+
+print(p_scree)
+```
+
+**Interpretazione dello scree plot:**
+
+- **Barre blu**: varianza spiegata da ciascuna componente individuale
+- **Linea rossa**: varianza cumulativa spiegata
+- **Linea tratteggiata orizzontale**: target di varianza (75% in questo caso)
+- **Linea verticale rossa**: numero di componenti necessarie per raggiungere il target
+- **Linea verticale verde**: punto di gomito rilevato automaticamente
+
+Lo scree plot mostra che le prime componenti catturano la maggior parte della varianza, mentre le componenti successive contribuiscono progressivamente meno. Il punto di gomito indica dove il beneficio marginale di aggiungere componenti diventa trascurabile.
+
+## 4.3 Esempio 1: Riduzione base con SVD e selezione automatica di k
+
+```{r example_basic}
+# Riduzione base con parametri di default
+reduced_basic <- reduce_density(
+  large_data,
+  method = "svd",
+  normalization = "none",
+  k = "auto",
+  variance_target = 0.75,
+  verbose = TRUE,
+  seed = 42
+)
+
+# Visualizza il risultato
+print(reduced_basic)
+```
+
+**Cosa è successo:**
+
+1. La funzione ha estratto la matrice core 80×80 (escludendo i totali)
+2. Ha calcolato la SVD per determinare automaticamente k
+3. Ha selezionato il numero di componenti che spiegano il 75% della varianza
+4. Ha ricostruito la matrice mantenendo solo queste componenti
+5. Ha arrotondato i valori a interi e ricalcolato i totali
+
+**Interpretazione del risultato:**
+
+- Il numero di componenti selezionate (k) bilancia la preservazione della struttura con la riduzione del rumore
+- La percentuale di varianza spiegata indica quanto della variabilità originale è stata mantenuta
+- La percentuale di osservazioni mantenute mostra l'effetto dell'arrotondamento e della rimozione di rumore
+
+## 4.4 Esempio 2: Riduzione con normalizzazione PPMI
+
+La normalizzazione PPMI è utile quando si vogliono enfatizzare le connessioni di mobilità che superano le aspettative casuali, indipendentemente dalla frequenza assoluta.
+
+```{r example_ppmi}
+# Riduzione con PPMI
+reduced_ppmi <- reduce_density(
+  large_data,
+  method = "svd",
+  normalization = "ppmi",
+  k = "auto",
+  variance_target = 0.80,  # Target più alto per preservare più struttura
+  verbose = TRUE,
+  seed = 42
+)
+
+print(reduced_ppmi)
+```
+
+**Confronto con la riduzione base:**
+
+```{r compare_ppmi}
+# Confronta le dimensioni ridotte
+cat("Riduzione base (none):\n")
+cat("  k =", attr(reduced_basic, "k"), "\n")
+cat("  Varianza spiegata =",
+    round(attr(reduced_basic, "variance_explained") * 100, 1), "%\n\n")
+
+cat("Riduzione PPMI:\n")
+cat("  k =", attr(reduced_ppmi, "k"), "\n")
+cat("  Varianza spiegata =",
+    round(attr(reduced_ppmi, "variance_explained") * 100, 1), "%\n")
+```
+
+**Differenze attese:**
+
+- La normalizzazione PPMI trasforma i dati prima della SVD, enfatizzando pattern di co-occorrenza
+- Il numero di componenti necessarie potrebbe differire
+- La matrice ricostruita enfatizza mobilità "sorprendente" rispetto al caso
+
+## 4.5 Esempio 3: Riduzione con NMF (approccio filtro)
+
+La NMF utilizza un approccio diverso dalla SVD: invece di sostituire i valori con una ricostruzione, la NMF identifica le celle significative e preserva i valori originali.
+
+```{r example_nmf, eval=requireNamespace("RcppML", quietly = TRUE)}
+# Riduzione con NMF - selezione automatica del quantile
+reduced_nmf <- reduce_density(
+  large_data,
+  method = "nmf",
+  normalization = "none",
+  k = 20,  # Specifica k manualmente per NMF
+  filter_quantile = "auto",  # Selezione automatica via elbow detection
+  verbose = TRUE,
+  seed = 42
+)
+
+print(reduced_nmf)
+```
+
+**Come funziona l'approccio NMF filtro:**
+
+L'output verbose mostra informazioni sul processo di filtraggio:
+
+- "Auto quantile selection: keep top X% of cells" indica la proporzione di celle selezionate automaticamente
+- "NMF filter: keeping N/M cells (X%)" mostra quante celle sono state mantenute
+- I valori nella matrice risultante sono i **conteggi originali**, non valori ricostruiti
+
+**Specifica manuale del quantile:**
+
+```{r example_nmf_manual, eval=requireNamespace("RcppML", quietly = TRUE)}
+# Riduzione con quantile specificato manualmente
+reduced_nmf_75 <- reduce_density(
+  large_data,
+  method = "nmf",
+  k = 20,
+  filter_quantile = 0.75,  # Mantieni il 75% delle celle più significative
+  verbose = TRUE,
+  seed = 42
+)
+
+# Il filter_quantile viene salvato come attributo
+cat("Filter quantile utilizzato:", attr(reduced_nmf_75, "filter_quantile"), "\n")
+```
+
+**Note sulla NMF:**
+
+- Richiede il pacchetto `RcppML` (`install.packages("RcppML")`)
+- Preserva i valori originali dei conteggi (nessuna distorsione)
+- Il parametro `filter_quantile` controlla la selezione: valori più alti mantengono più celle
+- L'argomento `seed` è essenziale per la riproducibilità
+- Specificare `k` manualmente è spesso preferibile per NMF
+
+## 4.6 Esempio 4: Riduzione con soglia per aumentare la sparsità
+
+L'applicazione di una soglia può rimuovere ulteriormente valori bassi che potrebbero rappresentare rumore.
+
+```{r example_threshold}
+# Riduzione con soglia automatica
+reduced_sparse <- reduce_density(
+  large_data,
+  method = "svd",
+  k = "auto",
+  variance_target = 0.75,
+  threshold = "auto",  # Soglia automatica: media + 1 SD
+  verbose = TRUE,
+  seed = 42
+)
+
+print(reduced_sparse)
+
+# Confronta la sparsità
+sparsity_original <- sum(large_data[1:80, 1:80] == 0) / (80*80)
+sparsity_basic <- sum(reduced_basic[1:80, 1:80] == 0) / (80*80)
+sparsity_sparse <- sum(reduced_sparse[1:80, 1:80] == 0) / (80*80)
+
+cat("\nConfronto sparsità:\n")
+cat("  Originale:", round(sparsity_original * 100, 1), "%\n")
+cat("  Riduzione base:", round(sparsity_basic * 100, 1), "%\n")
+cat("  Con soglia:", round(sparsity_sparse * 100, 1), "%\n")
+```
+
+**Effetto della soglia:**
+
+- La soglia rimuove valori bassi che possono rappresentare rumore
+- Aumenta la sparsità della matrice
+- Può migliorare l'identificazione di cluster nella successiva analisi MONECA
+
+## 4.7 Esempio 5: Riduzione con soglia personalizzata
+
+```{r example_custom_threshold}
+# Soglia basata su deviazioni standard
+reduced_sd <- reduce_density(
+  large_data,
+  method = "svd",
+  k = "auto",
+  threshold = 1.5,  # 1.5 deviazioni standard sopra la media
+  threshold_type = "sd",
+  verbose = TRUE,
+  seed = 42
+)
+
+# Soglia basata su percentile
+reduced_percentile <- reduce_density(
+  large_data,
+  method = "svd",
+  k = "auto",
+  threshold = 25,  # Mantieni solo valori sopra il 25° percentile
+  threshold_type = "percentile",
+  verbose = TRUE,
+  seed = 42
+)
+
+cat("Soglia SD:", attr(reduced_sd, "threshold_applied"), "\n")
+cat("Soglia percentile:", attr(reduced_percentile, "threshold_applied"), "\n")
+```
+
+# 5. Integrazione con il Workflow MONECA
+
+## 5.1 Pipeline completa: da riduzione ad analisi
+
+```{r complete_workflow}
+# 1. Riduzione della densità
+reduced <- reduce_density(
+  large_data,
+  method = "svd",
+  normalization = "none",
+  k = "auto",
+  variance_target = 0.75,
+  verbose = FALSE,
+  seed = 42
+)
+
+# 2. Analisi MONECA sulla matrice ridotta
+seg <- moneca(
+  reduced,
+  segment.levels = 3,
+  small.cell.reduction = 200
+)
+
+# 3. Visualizza i risultati
+print(seg)
+```
+
+## 5.2 Confronto: con e senza riduzione
+
+```{r comparison_workflow, fig.height=6}
+# Analisi senza riduzione (potrebbe essere computazionalmente onerosa)
+# NOTA: con 80 classi, questo può richiedere molto tempo
+# seg_original <- moneca(large_data, segment.levels = 3)
+
+# Analisi con riduzione (già calcolata)
+seg_reduced <- seg
+
+# Visualizza la qualità dei segmenti
+quality_reduced <- segment.quality(seg_reduced)
+print(quality_reduced)
+```
+
+## 5.3 Visualizzazione della rete ridotta
+
+```{r network_plot, fig.width=12, fig.height=10}
+# Visualizza la rete al primo livello di segmentazione
+plot_moneca_ggraph(
+  seg_reduced,
+  level = 1,
+  layout = "fr",
+  node_color = "segment",
+  node_size = "mobility",
+  edge_width_range = c(0.3, 2),
+  node_size_range = c(3, 10),
+  show_labels = FALSE,  # Troppe etichette con 80 nodi
+  title = "Rete di Mobilità dopo Riduzione della Densità (Livello 1)"
+)
+```
+
+## 5.4 Visualizzazione dendrogramma
+
+```{r dendrogram_plot, fig.width=12, fig.height=8}
+# Dendrogramma gerarchico
+plot_moneca_dendrogram(
+  seg_reduced,
+  layout = "rectangular",
+  label_size = 2.5,
+  title = "Struttura Gerarchica dei Segmenti"
+)
+```
+
+# 6. Guida alla Scelta dei Parametri
+
+## 6.1 Quando usare reduce_density()
+
+**Utilizzare `reduce_density()` quando:**
+
+- La matrice ha 60+ categorie
+- La sparsità supera il 30-40%
+- Molte celle hanno conteggi bassi (< 10)
+- L'analisi MONECA diretta produce cluster instabili o troppo frammentati
+- L'analisi MONECA è computazionalmente troppo lenta
+
+**Non utilizzare `reduce_density()` quando:**
+
+- La matrice ha meno di 30 categorie (l'algoritmo standard funziona bene)
+- La matrice è già densa con conteggi elevati per cella
+- Si vuole preservare esattamente ogni singola osservazione
+
+## 6.2 Scelta del metodo: SVD vs NMF
+
+### 6.2.1 Quando usare SVD
+
+**Vantaggi:**
+
+- Più veloce (importante per matrici molto grandi)
+- Soluzione ottimale per approssimazione a basso rango
+- Metriche chiare (varianza spiegata)
+- Implementazione efficiente con `irlba`
+
+**Svantaggi:**
+
+- Può produrre valori negativi (corretti in post-processing)
+- Componenti possono essere meno interpretabili
+
+**Raccomandazione:** utilizzare SVD come metodo di default per la maggior parte dei casi.
+
+### 6.2.2 Quando usare NMF (approccio filtro)
+
+**Vantaggi:**
+
+- Preserva i valori originali dei conteggi (nessuna distorsione)
+- Utilizza NMF per rilevamento intelligente del rumore basato sui pattern latenti
+- Il parametro `filter_quantile` può essere regolato per controllare la selezione
+- Risultati più interpretabili: i valori nella matrice sono esattamente i conteggi osservati
+
+**Svantaggi:**
+
+- Più lenta (ottimizzazione iterativa)
+- Richiede `seed` per riproducibilità
+- Nessuna metrica diretta di varianza spiegata
+- La selezione del quantile può richiedere calibrazione
+
+**Raccomandazione:** utilizzare NMF quando si desidera preservare i valori originali dei conteggi ed evitare distorsioni. Il metodo NMF è particolarmente utile quando l'interpretabilità dei conteggi è prioritaria rispetto a una ricostruzione "smooth" dei dati.
+
+**Regolazione del `filter_quantile`:**
+
+- Valori più alti (es. 0.80-0.90) mantengono più celle, riducono meno il rumore
+- Valori più bassi (es. 0.50-0.70) mantengono meno celle, rimozione più aggressiva del rumore
+- `"auto"` seleziona il quantile basandosi sul punto di gomito dei valori di ricostruzione
+
+## 6.3 Scelta della normalizzazione
+
+### 6.3.1 `normalization = "none"` (default)
+
+**Quando usare:**
+
+- La matrice è ragionevolmente bilanciata
+- Non ci sono grandi differenze nelle dimensioni marginali
+- Si vogliono preservare le frequenze assolute
+
+**Consigliata come prima scelta** per la maggior parte delle applicazioni.
+
+### 6.3.2 `normalization = "pearson"`
+
+**Quando usare:**
+
+- Le distribuzioni marginali sono molto eterogenee (alcune classi molto più grandi di altre)
+- Si vuole standardizzare per effetti di dimensione
+- Si vogliono identificare deviazioni dal modello di indipendenza
+
+**Attenzione:** può amplificare il rumore in celle con conteggi attesi bassi.
+
+### 6.3.3 `normalization = "ppmi"`
+
+**Quando usare:**
+
+- Si vogliono enfatizzare connessioni "sorprendenti" rispetto al caso
+- La mobilità assoluta è meno importante della mobilità relativa
+- Si lavora con matrici molto sparse
+
+**Attenzione:** elimina informazioni sulle frequenze assolute; utile per enfatizzare pattern strutturali.
+
+## 6.4 Scelta del numero di componenti (k)
+
+### 6.4.1 Selezione automatica (`k = "auto"`)
+
+**Vantaggi:**
+
+- Bilancia varianza spiegata e parsimonia
+- Usa sia il criterio della varianza target che il rilevamento del gomito
+- Adatta per esplorazioni iniziali
+
+**Parametro chiave: `variance_target`**
+
+- `0.60-0.70`: riduzione aggressiva, mantiene solo strutture molto dominanti
+- `0.75` (default): buon compromesso per la maggior parte dei casi
+- `0.80-0.90`: riduzione conservativa, preserva più dettaglio
+
+**Raccomandazione:** iniziare con `k = "auto"` e `variance_target = 0.75`, poi esplorare visualizzando lo scree plot.
+
+### 6.4.2 Selezione manuale
+
+**Quando specificare k manualmente:**
+
+- Dopo aver esaminato lo scree plot
+- Per NMF (dove la varianza spiegata non è disponibile)
+- Quando si ha conoscenza a priori del numero appropriato di dimensioni latenti
+
+**Linee guida per k:**
+
+- Matrici 60-100 categorie: tipicamente k = 15-25
+- Matrici 100-200 categorie: tipicamente k = 20-35
+- Regola empirica: k ≈ 20-30% del numero di categorie originali
+
+## 6.5 Uso della soglia (threshold)
+
+### 6.5.1 Nessuna soglia (`threshold = NULL`)
+
+**Default raccomandato:** lasciare che la riduzione dimensionale faccia il suo lavoro senza post-processing aggiuntivo.
+
+### 6.5.2 Soglia automatica (`threshold = "auto"`)
+
+**Quando usare:**
+
+- La matrice ricostruita contiene ancora molti valori molto bassi
+- Si vuole aumentare ulteriormente la sparsità
+- I cluster MONECA risultano troppo densi
+
+**Effetto:** rimuove valori sotto media + 1 SD.
+
+### 6.5.3 Soglia personalizzata
+
+**Tipo `"sd"`:**
+
+- `threshold = 0.5`: rimozione conservativa
+- `threshold = 1.0`: rimozione moderata
+- `threshold = 1.5-2.0`: rimozione aggressiva
+
+**Tipo `"percentile"`:**
+
+- `threshold = 10-20`: mantiene valori sopra il 10-20° percentile
+- `threshold = 25`: mantiene il 75% dei valori più alti
+- `threshold = 50`: mantiene solo la metà superiore
+
+**Raccomandazione:** esplorare prima senza soglia; applicare solo se necessario dopo ispezione dei risultati.
+
+## 6.6 Workflow esplorativo consigliato
+
+```{r workflow_example, eval=FALSE}
+# 1. Visualizza lo scree plot per capire la struttura della varianza
+plot_scree(large_data, max_components = 40, variance_target = 0.75)
+
+# 2. Prova la riduzione base con parametri di default
+reduced_default <- reduce_density(
+  large_data,
+  method = "svd",
+  k = "auto",
+  verbose = TRUE,
+  seed = 42
+)
+
+# 3. Confronta con target di varianza diversi
+reduced_conservative <- reduce_density(
+  large_data,
+  variance_target = 0.85,
+  verbose = TRUE,
+  seed = 42
+)
+
+# 4. Prova normalizzazioni diverse se le distribuzioni marginali sono problematiche
+reduced_ppmi <- reduce_density(
+  large_data,
+  normalization = "ppmi",
+  verbose = TRUE,
+  seed = 42
+)
+
+# 5. Esegui MONECA su ciascuna versione e confronta la qualità
+seg_default <- moneca(reduced_default, segment.levels = 3)
+seg_conservative <- moneca(reduced_conservative, segment.levels = 3)
+seg_ppmi <- moneca(reduced_ppmi, segment.levels = 3)
+
+# 6. Confronta le metriche di qualità
+quality_default <- segment.quality(seg_default)
+quality_conservative <- segment.quality(seg_conservative)
+quality_ppmi <- segment.quality(seg_ppmi)
+```
+
+# 7. Diagnosi e Risoluzione Problemi
+
+## 7.1 Problemi comuni
+
+### 7.1.1 "Package 'RcppML' is required for NMF"
+
+**Problema:** si è scelto `method = "nmf"` ma il pacchetto RcppML non è installato.
+
+**Soluzione:**
+
+```{r eval=FALSE}
+install.packages("RcppML")
+```
+
+### 7.1.2 Risultati non riproducibili con NMF
+
+**Problema:** eseguendo due volte la stessa chiamata con NMF si ottengono risultati leggermente diversi.
+
+**Causa:** NMF usa inizializzazione casuale.
+
+**Soluzione:** specificare sempre l'argomento `seed`:
+
+```{r eval=FALSE}
+reduced <- reduce_density(large_data, method = "nmf", k = 20, seed = 42)
+```
+
+### 7.1.2b NMF mantiene troppe o troppo poche celle
+
+**Problema:** con il metodo NMF, la percentuale di celle mantenute è troppo alta (poco filtraggio) o troppo bassa (perdita eccessiva di dati).
+
+**Causa:** il parametro `filter_quantile` automatico potrebbe non essere ottimale per i dati specifici.
+
+**Soluzioni:**
+
+```{r eval=FALSE}
+# Se troppo poche celle mantenute, aumenta filter_quantile
+reduced <- reduce_density(large_data, method = "nmf", k = 20,
+                          filter_quantile = 0.85,  # Mantieni più celle
+                          seed = 42)
+
+# Se troppe celle mantenute (poco filtraggio), riduci filter_quantile
+reduced <- reduce_density(large_data, method = "nmf", k = 20,
+                          filter_quantile = 0.50,  # Filtraggio più aggressivo
+                          seed = 42)
+
+# Verifica il quantile effettivamente utilizzato
+cat("Filter quantile:", attr(reduced, "filter_quantile"), "\n")
+```
+
+### 7.1.3 Riduzione troppo aggressiva (troppe osservazioni perse)
+
+**Problema:** la percentuale di osservazioni mantenute è troppo bassa (< 80%).
+
+**Possibili cause:**
+
+- `k` troppo basso (troppo poche componenti)
+- `variance_target` troppo basso
+- Normalizzazione inadeguata per i dati
+
+**Soluzioni:**
+
+```{r eval=FALSE}
+# Aumenta il target di varianza
+reduced <- reduce_density(large_data, variance_target = 0.85)
+
+# Oppure specifica k manualmente più alto
+reduced <- reduce_density(large_data, k = 30)
+
+# Oppure prova senza normalizzazione
+reduced <- reduce_density(large_data, normalization = "none")
+```
+
+### 7.1.4 Riduzione troppo conservativa (poca riduzione del rumore)
+
+**Problema:** la matrice ridotta è ancora troppo simile all'originale, con molto rumore residuo.
+
+**Soluzioni:**
+
+```{r eval=FALSE}
+# Riduci il target di varianza
+reduced <- reduce_density(large_data, variance_target = 0.65)
+
+# Oppure applica una soglia
+reduced <- reduce_density(large_data, threshold = "auto")
+
+# Oppure usa PPMI per enfatizzare pattern strutturali
+reduced <- reduce_density(large_data, normalization = "ppmi")
+```
+
+### 7.1.5 Cluster MONECA instabili dopo riduzione
+
+**Problema:** l'analisi MONECA sulla matrice ridotta produce cluster inconsistenti o poco interpretabili.
+
+**Possibili cause:**
+
+- Riduzione troppo aggressiva ha rimosso strutture importanti
+- Parametri di riduzione non adatti ai dati
+- `small.cell.reduction` in `moneca()` troppo alto o troppo basso
+
+**Soluzioni:**
+
+```{r eval=FALSE}
+# Prova riduzione più conservativa
+reduced <- reduce_density(large_data, variance_target = 0.85)
+
+# Aggiusta small.cell.reduction in moneca()
+seg <- moneca(reduced, small.cell.reduction = 100)  # Valore più basso
+
+# Prova normalizzazione diversa
+reduced <- reduce_density(large_data, normalization = "pearson")
+```
+
+## 7.2 Validazione dei risultati
+
+### 7.2.1 Confronta distribuzioni marginali
+
+```{r eval=FALSE}
+# Confronta totali di riga prima e dopo
+original_row_totals <- large_data[1:80, 81]
+reduced_row_totals <- reduced[1:80, 81]
+
+cor(original_row_totals, reduced_row_totals)  # Dovrebbe essere > 0.95
+
+# Visualizza
+plot(original_row_totals, reduced_row_totals,
+     xlab = "Totali originali",
+     ylab = "Totali ridotti",
+     main = "Confronto totali di riga")
+abline(0, 1, col = "red")
+```
+
+### 7.2.2 Confronta struttura di correlazione
+
+```{r eval=FALSE}
+# Calcola matrici di correlazione
+cor_original <- cor(large_data[1:80, 1:80])
+cor_reduced <- cor(reduced[1:80, 1:80])
+
+# Confronta
+cor(as.vector(cor_original), as.vector(cor_reduced))  # Dovrebbe essere alto
+```
+
+### 7.2.3 Confronta risultati MONECA
+
+```{r eval=FALSE}
+# Analizza sia originale che ridotta
+seg_original <- moneca(large_data, segment.levels = 3)
+seg_reduced <- moneca(reduced, segment.levels = 3)
+
+# Confronta qualità
+quality_original <- segment.quality(seg_original)
+quality_reduced <- segment.quality(seg_reduced)
+
+# Confronta membership
+# (richiede analisi più dettagliata della concordanza tra segmentazioni)
+```
+
+# 8. Considerazioni Teoriche e Limitazioni
+
+## 8.1 Assunzioni sottostanti
+
+La riduzione della densità tramite SVD o NMF assume che:
+
+1. **La matrice di mobilità ha una struttura a basso rango**: i pattern di mobilità sono generati da un numero limitato di dimensioni latenti sottostanti.
+
+2. **Il rumore è additivo e relativamente omogeneo**: le fluttuazioni casuali sono sovrapposte ai pattern sistematici.
+
+3. **Le prime componenti catturano segnale, le ultime catturano rumore**: questa assunzione è generalmente valida ma non sempre garantita.
+
+## 8.2 Limitazioni
+
+### 8.2.1 Perdita di informazione
+
+La riduzione dimensionale comporta sempre perdita di informazione. Anche con `variance_target = 0.90`, il 10% della variabilità originale viene scartato. Se questa variabilità contiene pattern sostantivi piuttosto che rumore, l'analisi successiva può essere compromessa.
+
+### 8.2.2 Arrotondamento
+
+La ricostruzione produce valori continui che vengono arrotondati a interi per compatibilità con MONECA. L'arrotondamento introduce ulteriori approssimazioni e può alterare sottilmente la struttura della matrice.
+
+### 8.2.3 Modificazione delle distribuzioni marginali
+
+Sebbene il processo cerchi di preservare i totali marginali attraverso il rescaling, le distribuzioni marginali possono essere alterate, specialmente con riduzione aggressiva o normalizzazioni non-triviali.
+
+### 8.2.4 Sensibilità ai parametri
+
+I risultati dipendono dalle scelte di:
+
+- Metodo (SVD vs NMF)
+- Normalizzazione
+- Numero di componenti (k)
+- Soglia
+
+Non esiste un insieme di parametri "ottimale" universale; la scelta dipende dai dati specifici e dagli obiettivi analitici.
+
+## 8.3 Validazione raccomandata
+
+Prima di procedere con l'analisi MONECA completa su dati ridotti:
+
+1. **Confronta statistiche descrittive** (totali, medie, varianze) tra matrice originale e ridotta
+2. **Visualizza lo scree plot** per valutare se k è appropriato
+3. **Esamina la percentuale di osservazioni mantenute** (idealmente > 85%)
+4. **Confronta risultati MONECA** tra versioni con parametri di riduzione diversi
+5. **Verifica la stabilità dei cluster** identificati
+
+## 8.4 Alternative e complementi
+
+### 8.4.1 Aggregazione a priori
+
+Se le categorie hanno una struttura gerarchica nota (es. professioni ISCO a diversi livelli di dettaglio), aggregare a priori a un livello più grossolano può essere preferibile alla riduzione dimensionale.
+
+### 8.4.2 Selezione di sottoinsiemi
+
+Se solo un sottoinsieme di categorie è di interesse sostantivo, escludere a priori le categorie irrilevanti può ridurre la complessità senza le approssimazioni della riduzione dimensionale.
+
+### 8.4.3 Uso combinato
+
+`reduce_density()` può essere usata insieme a queste alternative:
+
+- Aggregare prima a un livello medio-grossolano (es. 100 → 60 categorie)
+- Applicare `reduce_density()` al risultato (60 → riduzione a basso rango)
+- Procedere con MONECA
+
+# 9. Riferimenti e Approfondimenti
+
+## 9.1 Metodi matematici
+
+**Singular Value Decomposition (SVD):**
+
+- Golub, G. H., & Van Loan, C. F. (2013). *Matrix Computations* (4th ed.). Johns Hopkins University Press.
+- Halko, N., Martinsson, P. G., & Tropp, J. A. (2011). Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions. *SIAM Review*, 53(2), 217-288.
+
+**Non-negative Matrix Factorization (NMF):**
+
+- Lee, D. D., & Seung, H. S. (1999). Learning the parts of objects by non-negative matrix factorization. *Nature*, 401(6755), 788-791.
+- DeBruine, Z. J., Melcher, K., & Triche, T. J. (2021). Fast and robust non-negative matrix factorization for single-cell experiments. *arXiv preprint* arXiv:2104.00166.
+
+**Positive Pointwise Mutual Information (PPMI):**
+
+- Church, K. W., & Hanks, P. (1990). Word association norms, mutual information, and lexicography. *Computational Linguistics*, 16(1), 22-29.
+- Bullinaria, J. A., & Levy, J. P. (2007). Extracting semantic representations from word co-occurrence statistics: A computational study. *Behavior Research Methods*, 39(3), 510-526.
+
+## 9.2 Applicazioni alla mobilità sociale
+
+**Analisi di matrici di mobilità:**
+
+- Touboel, J., & Larsen, A. G. (2017). Mobility Network Clustering Analysis. In *Research in Social Stratification and Mobility* (Vol. 47).
+
+**Dimensionality reduction in mobility research:**
+
+- Breen, R. (Ed.). (2004). *Social Mobility in Europe*. Oxford University Press.
+- Erikson, R., & Goldthorpe, J. H. (1992). *The Constant Flux: A Study of Class Mobility in Industrial Societies*. Clarendon Press.
+
+## 9.3 Pacchetti R utilizzati
+
+**Core computational packages:**
+
+- `irlba`: Baglama, J., & Reichel, L. (2005). Augmented implicitly restarted Lanczos bidiagonalization methods. *SIAM Journal on Scientific Computing*, 27(1), 19-42.
+- `RcppML`: DeBruine, Z. J. (2021). RcppML: Rcpp Machine Learning Library. R package.
+
+**Visualization:**
+
+- `ggplot2`: Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer-Verlag New York.
+- `ggraph`: Pedersen, T. L. (2021). ggraph: An Implementation of Grammar of Graphics for Graphs and Networks. R package.
+
+# 10. Conclusioni
+
+La funzione `reduce_density()` rappresenta un utile strumento di preprocessing per l'analisi MONECA di matrici di mobilità di grandi dimensioni. La riduzione dimensionale tramite SVD o NMF permette di:
+
+- Filtrare il rumore statistico preservando i pattern dominanti di mobilità
+- Migliorare la scalabilità computazionale dell'analisi
+- Facilitare l'identificazione di cluster stabili e interpretabili
+
+**Raccomandazioni finali:**
+
+1. Utilizzare `reduce_density()` per matrici con 60+ categorie caratterizzate da sparsità e rumore
+2. Iniziare con parametri di default (`method = "svd"`, `k = "auto"`, `variance_target = 0.75`)
+3. Esplorare lo scree plot prima di scegliere k manualmente
+4. Validare i risultati confrontando con la matrice originale
+5. Documentare i parametri utilizzati per garantire riproducibilità
+
+L'integrazione di `reduce_density()` nel workflow MONECA estende l'applicabilità dell'algoritmo a contesti con granularità molto elevata, mantenendo l'interpretabilità e l'efficacia dell'approccio basato su cliques.
+
+# Appendice A: Codice Completo per Analisi Esempio
+
+```{r appendix_code, eval=FALSE}
+# Carica librerie
+library(moneca)
+library(ggplot2)
+
+# 1. Genera dati di grandi dimensioni
+large_data <- generate_mobility_data(
+  n_classes = 80,
+  n_total = 100000,
+  immobility_strength = 0.65,
+  class_clustering = 0.25,
+  seed = 123
+)
+
+# 2. Visualizza scree plot
+plot_scree(large_data, max_components = 40, variance_target = 0.75)
+
+# 3. Applica riduzione della densità
+reduced <- reduce_density(
+  large_data,
+  method = "svd",
+  normalization = "none",
+  k = "auto",
+  variance_target = 0.75,
+  threshold = NULL,
+  verbose = TRUE,
+  seed = 42
+)
+
+# 4. Analisi MONECA
+seg <- moneca(
+  reduced,
+  segment.levels = 3,
+  small.cell.reduction = 200
+)
+
+# 5. Valuta qualità
+quality <- segment.quality(seg)
+print(quality)
+
+# 6. Visualizza rete
+plot_moneca_ggraph(
+  seg,
+  level = 1,
+  layout = "fr",
+  node_color = "segment",
+  node_size = "mobility",
+  show_labels = FALSE,
+  title = "Rete di Mobilità Ridotta - Livello 1"
+)
+
+# 7. Visualizza dendrogramma
+plot_moneca_dendrogram(
+  seg,
+  layout = "rectangular",
+  label_size = 2.5,
+  title = "Struttura Gerarchica"
+)
+
+# 8. Estrai membership
+membership <- segment.membership.dataframe(seg)
+head(membership)
+```
+
+# Appendice B: Glossario
+
+**Clique**: sottografo completo in cui ogni coppia di nodi è connessa da un arco. MONECA identifica cliques come cluster di posizioni con elevata mobilità interna.
+
+**Componente**: direzione di variazione nella decomposizione matriciale. Le prime componenti catturano i pattern dominanti.
+
+**Densità**: proporzione di celle non-zero in una matrice. Matrici sparse hanno bassa densità.
+
+**Elbow point** (punto di gomito): punto in un grafico varianza-componenti dove il beneficio marginale di aggiungere componenti diminuisce bruscamente.
+
+**Fattorizzazione**: decomposizione di una matrice nel prodotto di matrici più semplici.
+
+**Filter quantile**: parametro del metodo NMF che controlla la proporzione di celle da mantenere basandosi sui valori di ricostruzione NMF. Valori più alti mantengono più celle; la selezione automatica usa il rilevamento del gomito (elbow detection).
+
+**Matrice core**: matrice di mobilità escludendo riga e colonna dei totali marginali.
+
+**Normalizzazione**: trasformazione dei dati per rimuovere effetti sistematici o rendere confrontabili scale diverse.
+
+**Rango**: dimensione dello spazio generato dalle righe (o colonne) di una matrice. Approssimazione a basso rango mantiene solo le direzioni più importanti.
+
+**Residui**: differenza tra valori osservati e valori attesi sotto un modello di riferimento (es. indipendenza).
+
+**Scree plot**: grafico della varianza spiegata per componente, utilizzato per scegliere il numero di componenti.
+
+**Sparsità**: proporzione di celle zero in una matrice. Complementare della densità.
+
+**SVD troncata**: SVD mantenendo solo le prime k componenti, producendo un'approssimazione a basso rango.
+
+**Valori singolari**: elementi della matrice diagonale Σ nella SVD, rappresentano l'importanza delle componenti.
+
+**Varianza spiegata**: proporzione della variabilità totale catturata da un insieme di componenti.
