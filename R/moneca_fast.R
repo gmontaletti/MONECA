@@ -22,6 +22,10 @@
 #'   (faster, fewer cliques) instead of all cliques (slower, more complete enumeration).
 #'   Default is FALSE (use all cliques for algorithmic correctness). Set to TRUE for
 #'   performance optimization on very dense graphs.
+#' @param isolates Logical. If TRUE, returns additional summary information
+#'   about isolates (categories not belonging to any multi-member segment at the
+#'   final level). Isolates are grouped into a category called "altri".
+#'   Default is FALSE.
 #'
 #' @details
 #' This implementation is optimized for single-core performance using:
@@ -42,6 +46,17 @@
 #' }
 #'
 #' @return An object of class "moneca" with the same structure as the original moneca() function.
+#'   When \code{isolates = TRUE}, the returned list also includes:
+#'   \describe{
+#'     \item{isolates_summary}{A list containing:
+#'       \describe{
+#'         \item{membership}{Data frame with columns \code{name} (category name)
+#'           and \code{group} (segment name or "altri" for isolates)}
+#'         \item{mobility_matrix}{Matrix of mobility counts between groups,
+#'           including "altri" group for isolates}
+#'       }
+#'     }
+#'   }
 #'
 #' @seealso \code{\link{moneca}} for the original implementation
 #'
@@ -60,7 +75,8 @@ moneca_fast <- function(
   auto_tune = FALSE,
   tune_method = "stability",
   tune_verbose = FALSE,
-  use_maximal_cliques = FALSE
+  use_maximal_cliques = FALSE,
+  isolates = FALSE
 ) {
   # Auto-enable sparse for large matrices (n > 50) unless explicitly set
   if (!is.matrix(mx)) {
@@ -464,11 +480,74 @@ moneca_fast <- function(
   # Early stopping if only one segment
   if (length(segments$cliques) <= 1) {
     segment.list <- create.segments.fast(out.put, mx)
-    out <- list(
-      segment.list = segment.list,
-      mat.list = mat.list,
-      small.cell.reduction = small.cell.reduction
-    )
+
+    # Compute isolates_summary if requested (early stopping path)
+    isolates_summary <- NULL
+    if (isolates) {
+      n <- nrow(mx) - 1
+      category_names <- rownames(mx)[1:n]
+      if (is.null(category_names)) {
+        category_names <- as.character(1:n)
+      }
+
+      final_level <- length(segment.list)
+      final_segments <- segment.list[[final_level]]
+
+      membership <- rep("altri", n)
+      for (seg_idx in seq_along(final_segments)) {
+        seg_members <- final_segments[[seg_idx]]
+        membership[seg_members] <- paste0("Segment_", seg_idx)
+      }
+
+      membership_df <- data.frame(
+        name = category_names,
+        group = membership,
+        stringsAsFactors = FALSE
+      )
+
+      groups <- unique(membership)
+      group_factor <- factor(membership, levels = groups)
+
+      core_mx <- mx[1:n, 1:n]
+      if (inherits(core_mx, "sparseMatrix")) {
+        core_mx <- as.matrix(core_mx)
+      }
+
+      mobility_matrix <- matrix(
+        0,
+        nrow = length(groups),
+        ncol = length(groups),
+        dimnames = list(groups, groups)
+      )
+
+      for (i in seq_along(groups)) {
+        for (j in seq_along(groups)) {
+          rows_i <- which(group_factor == groups[i])
+          cols_j <- which(group_factor == groups[j])
+          mobility_matrix[i, j] <- sum(core_mx[rows_i, cols_j])
+        }
+      }
+
+      isolates_summary <- list(
+        membership = membership_df,
+        mobility_matrix = mobility_matrix
+      )
+    }
+
+    if (isolates) {
+      out <- list(
+        segment.list = segment.list,
+        mat.list = mat.list,
+        small.cell.reduction = small.cell.reduction,
+        isolates_summary = isolates_summary
+      )
+    } else {
+      out <- list(
+        segment.list = segment.list,
+        mat.list = mat.list,
+        small.cell.reduction = small.cell.reduction
+      )
+    }
     class(out) <- "moneca"
     return(out)
   }
@@ -498,12 +577,80 @@ moneca_fast <- function(
   # Create final segments
   segment.list <- create.segments.fast(out.put, mx)
 
+  # Compute isolates_summary if requested
+  isolates_summary <- NULL
+  if (isolates) {
+    # Get category names from original matrix
+    n <- nrow(mx) - 1
+    category_names <- rownames(mx)[1:n]
+    if (is.null(category_names)) {
+      category_names <- as.character(1:n)
+    }
+
+    # Get final level segments (the ones that survived)
+    final_level <- length(segment.list)
+    final_segments <- segment.list[[final_level]]
+
+    # Build membership: assign each category to its segment or "altri"
+    membership <- rep("altri", n)
+    for (seg_idx in seq_along(final_segments)) {
+      seg_members <- final_segments[[seg_idx]]
+      membership[seg_members] <- paste0("Segment_", seg_idx)
+    }
+
+    # Create membership dataframe
+    membership_df <- data.frame(
+      name = category_names,
+      group = membership,
+      stringsAsFactors = FALSE
+    )
+
+    # Create mobility matrix among groups (including "altri")
+    groups <- unique(membership)
+    group_factor <- factor(membership, levels = groups)
+
+    # Aggregate original matrix by groups
+    core_mx <- mx[1:n, 1:n]
+    if (inherits(core_mx, "sparseMatrix")) {
+      core_mx <- as.matrix(core_mx)
+    }
+
+    mobility_matrix <- matrix(
+      0,
+      nrow = length(groups),
+      ncol = length(groups),
+      dimnames = list(groups, groups)
+    )
+
+    for (i in seq_along(groups)) {
+      for (j in seq_along(groups)) {
+        rows_i <- which(group_factor == groups[i])
+        cols_j <- which(group_factor == groups[j])
+        mobility_matrix[i, j] <- sum(core_mx[rows_i, cols_j])
+      }
+    }
+
+    isolates_summary <- list(
+      membership = membership_df,
+      mobility_matrix = mobility_matrix
+    )
+  }
+
   # Create output
-  out <- list(
-    segment.list = segment.list,
-    mat.list = mat.list,
-    small.cell.reduction = small.cell.reduction
-  )
+  if (isolates) {
+    out <- list(
+      segment.list = segment.list,
+      mat.list = mat.list,
+      small.cell.reduction = small.cell.reduction,
+      isolates_summary = isolates_summary
+    )
+  } else {
+    out <- list(
+      segment.list = segment.list,
+      mat.list = mat.list,
+      small.cell.reduction = small.cell.reduction
+    )
+  }
 
   class(out) <- "moneca"
 

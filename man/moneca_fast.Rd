@@ -18,7 +18,8 @@ moneca_fast(
   auto_tune = FALSE,
   tune_method = "stability",
   tune_verbose = FALSE,
-  use_maximal_cliques = FALSE
+  use_maximal_cliques = FALSE,
+  isolates = FALSE
 )
 
 moneca_fast(
@@ -35,7 +36,8 @@ moneca_fast(
   auto_tune = FALSE,
   tune_method = "stability",
   tune_verbose = FALSE,
-  use_maximal_cliques = FALSE
+  use_maximal_cliques = FALSE,
+  isolates = FALSE
 )
 }
 \arguments{
@@ -79,6 +81,11 @@ during auto-tuning. Default is FALSE.}
 (faster, fewer cliques) instead of all cliques (slower, more complete enumeration).
 Default is FALSE (use all cliques for algorithmic correctness). Set to TRUE for
 performance optimization on very dense graphs.}
+
+\item{isolates}{Logical. If TRUE, returns additional summary information
+about isolates (categories not belonging to any multi-member segment at the
+final level). Isolates are grouped into a category called "altri".
+Default is FALSE.}
 }
 \value{
 An object of class "moneca" containing:
@@ -91,6 +98,17 @@ An object of class "moneca" containing:
   }
 
 An object of class "moneca" with the same structure as the original moneca() function.
+  When \code{isolates = TRUE}, the returned list also includes:
+  \describe{
+    \item{isolates_summary}{A list containing:
+      \describe{
+        \item{membership}{Data frame with columns \code{name} (category name)
+          and \code{group} (segment name or "altri" for isolates)}
+        \item{mobility_matrix}{Matrix of mobility counts between groups,
+          including "altri" group for isolates}
+      }
+    }
+  }
 }
 \description{
 Memory-optimized version of the main function for performing hierarchical clustering
