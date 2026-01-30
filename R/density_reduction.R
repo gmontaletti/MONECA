@@ -56,6 +56,17 @@ NULL
 #'   Default is \code{FALSE}.
 #' @param seed Optional integer for reproducibility. Particularly important
 #'   for NMF which uses random initialization.
+#' @param filter_quantile For NMF method only: controls the quantile threshold
+#'   for filtering. Can be:
+#'   \itemize{
+#'     \item \code{"auto"} (default): Automatically selects threshold via elbow
+#'       detection on NMF reconstruction values
+#'     \item Numeric (0-1): Keep cells with NMF reconstruction values above this
+#'       quantile. E.g., 0.75 keeps top 75% of cells by reconstruction strength.
+#'   }
+#'   Unlike SVD which uses reconstruction directly, NMF uses reconstruction
+#'   values as a filter to identify significant cells, then returns the original
+#'   values for those cells. This preserves count interpretability.
 #'
 #' @return An object of class \code{"density_reduced"} (inherits from matrix)
 #'   with the following attributes:
@@ -143,7 +154,8 @@ reduce_density <- function(
   threshold = NULL,
   threshold_type = c("sd", "percentile"),
   verbose = FALSE,
-  seed = NULL
+  seed = NULL,
+  filter_quantile = "auto"
 ) {
   # Match arguments
 
@@ -197,6 +209,19 @@ reduce_density <- function(
     !is.numeric(variance_target) || variance_target <= 0 || variance_target >= 1
   ) {
     stop("variance_target must be between 0 and 1 (exclusive)")
+  }
+
+  # Validate filter_quantile
+  if (!identical(filter_quantile, "auto")) {
+    if (
+      !is.numeric(filter_quantile) ||
+        filter_quantile <= 0 ||
+        filter_quantile >= 1
+    ) {
+      stop(
+        "filter_quantile must be 'auto' or a numeric value between 0 and 1 (exclusive)"
+      )
+    }
   }
 
   # 2. Extract core matrix (without totals) -----
@@ -256,29 +281,71 @@ reduce_density <- function(
       total_var <- sum(svd_result$d^2)
       variance_explained <- sum(svd_result$d[1:k]^2) / total_var
     }
+
+    # 6a. Post-processing for SVD -----
+    # Clip negative values (can occur with SVD + normalization)
+    reduced_mx[reduced_mx < 0] <- 0
+
+    # For normalized matrices, we need to back-transform
+    if (normalization != "none") {
+      # Scale to match original total
+      current_total <- sum(reduced_mx)
+      if (current_total > 0) {
+        reduced_mx <- reduced_mx * (original_total / current_total)
+      }
+    }
+
+    # Round to integers
+    reduced_mx <- round(reduced_mx)
+
+    # Ensure no negative values after rounding
+    reduced_mx[reduced_mx < 0] <- 0
   } else if (method == "nmf") {
-    reduced_mx <- perform_nmf_reduction(normalized_mx, k, verbose, seed)
+    # NMF returns list with reconstruction and original
+    nmf_result <- perform_nmf_reduction(normalized_mx, k, verbose, seed)
     variance_explained <- NULL # NMF doesn't have a clear variance interpretation
-  }
 
-  # 6. Post-processing -----
-  # Clip negative values (can occur with SVD + normalization)
-  reduced_mx[reduced_mx < 0] <- 0
+    # 6b. Post-processing for NMF: Use as filter -----
+    # NMF reconstruction values are used to identify significant cells,
+    # but original values are preserved (no distortion)
 
-  # For normalized matrices, we need to back-transform
-  if (normalization != "none") {
-    # Scale to match original total
-    current_total <- sum(reduced_mx)
-    if (current_total > 0) {
-      reduced_mx <- reduced_mx * (original_total / current_total)
+    recon <- nmf_result$reconstructed
+
+    # Determine filter quantile
+    actual_quantile <- filter_quantile
+    if (identical(filter_quantile, "auto")) {
+      actual_quantile <- select_filter_quantile_auto(recon, verbose)
+    }
+
+    # Calculate threshold from reconstruction values
+    nonzero_recon <- recon[recon > 0]
+    if (length(nonzero_recon) > 0) {
+      # threshold is the value below which we discard
+      # (1 - actual_quantile) gives the proportion to discard
+      filter_threshold <- quantile(nonzero_recon, probs = 1 - actual_quantile)
+
+      # Apply filter: keep original values where reconstruction is significant
+      reduced_mx <- core_mx # Use original counts (no distortion)
+      reduced_mx[recon < filter_threshold] <- 0
+
+      if (verbose) {
+        n_cells_kept <- sum(recon >= filter_threshold)
+        n_cells_total <- sum(recon > 0)
+        message(sprintf(
+          "NMF filter: keeping %d/%d cells (%.1f%%) with reconstruction >= %.4f",
+          n_cells_kept,
+          n_cells_total,
+          100 * actual_quantile,
+          filter_threshold
+        ))
+      }
+    } else {
+      warning(
+        "NMF reconstruction produced all zeros; returning original matrix"
+      )
+      reduced_mx <- core_mx
     }
   }
-
-  # Round to integers
-  reduced_mx <- round(reduced_mx)
-
-  # Ensure no negative values after rounding
-  reduced_mx[reduced_mx < 0] <- 0
 
   # 7. Apply threshold if requested -----
   threshold_value <- NULL
@@ -319,6 +386,10 @@ reduce_density <- function(
   attr(final_mx, "original_dims") <- c(n, n)
   attr(final_mx, "original_total") <- original_total
   attr(final_mx, "reduced_total") <- grand_total
+  # Store filter_quantile for NMF method
+  if (method == "nmf") {
+    attr(final_mx, "filter_quantile") <- actual_quantile
+  }
 
   if (verbose) {
     message(sprintf(
@@ -500,6 +571,58 @@ detect_elbow <- function(variance_per_component) {
   return(elbow)
 }
 
+#' Automatic Filter Quantile Selection for NMF
+#'
+#' Selects the filter quantile for NMF based on elbow detection on sorted
+#' reconstruction values. The elbow point marks where "signal" transitions
+#' to "noise" - cells beyond this point contribute little to the overall
+#' structure captured by NMF.
+#'
+#' @param reconstruction NMF reconstruction matrix (W * H)
+#' @param verbose Print progress messages
+#' @return Numeric quantile value (proportion to keep, e.g., 0.75 = keep top 75%)
+#' @keywords internal
+select_filter_quantile_auto <- function(reconstruction, verbose = FALSE) {
+  # Get non-zero values sorted descending
+  nonzero <- reconstruction[reconstruction > 0]
+
+  if (length(nonzero) < 10) {
+    if (verbose) {
+      message("Too few non-zero values for elbow detection, using default 0.5")
+    }
+    return(0.5)
+  }
+
+  sorted_vals <- sort(nonzero, decreasing = TRUE)
+  n <- length(sorted_vals)
+
+  # Calculate contribution of each cell (sorted from highest to lowest)
+  total_sum <- sum(sorted_vals)
+  contributions <- sorted_vals / total_sum
+
+  # Use elbow detection on contributions
+  # This finds where adding more cells gives diminishing returns
+  elbow_idx <- detect_elbow(contributions)
+
+  # Convert to quantile: elbow_idx/n gives proportion to KEEP
+  quantile_keep <- elbow_idx / n
+
+  # Apply reasonable bounds (keep at least 25%, at most 90%)
+  quantile_keep <- max(quantile_keep, 0.25)
+  quantile_keep <- min(quantile_keep, 0.90)
+
+  if (verbose) {
+    message(sprintf(
+      "Auto quantile selection: keep top %.1f%% of cells (elbow at %d/%d)",
+      quantile_keep * 100,
+      elbow_idx,
+      n
+    ))
+  }
+
+  return(quantile_keep)
+}
+
 #' Perform SVD Reduction
 #'
 #' Applies truncated SVD and reconstructs the matrix.
@@ -548,13 +671,14 @@ perform_svd <- function(mx, k) {
 
 #' Perform NMF Reduction
 #'
-#' Applies Non-negative Matrix Factorization and reconstructs.
+#' Applies Non-negative Matrix Factorization and returns both reconstruction
+#' and original matrix for use as a filter.
 #'
 #' @param mx Input matrix (should be non-negative)
 #' @param k Number of components
 #' @param verbose Print progress
 #' @param seed Random seed
-#' @return Reconstructed matrix
+#' @return List with reconstructed matrix and original (non-negative) matrix
 #' @keywords internal
 perform_nmf_reduction <- function(mx, k, verbose = FALSE, seed = NULL) {
   if (!requireNamespace("RcppML", quietly = TRUE)) {
@@ -581,7 +705,11 @@ perform_nmf_reduction <- function(mx, k, verbose = FALSE, seed = NULL) {
   # Reconstruct: W * H
   reconstructed <- nmf_result$w %*% nmf_result$h
 
-  return(reconstructed)
+  # Return both reconstruction (for filtering) and original (for values)
+  return(list(
+    reconstructed = reconstructed,
+    original = mx_nn
+  ))
 }
 
 #' Apply Threshold to Matrix
@@ -647,6 +775,14 @@ print.density_reduced <- function(x, ...) {
   var_exp <- attr(x, "variance_explained")
   if (!is.null(var_exp)) {
     cat(sprintf("Variance explained: %.1f%%\n", var_exp * 100))
+  }
+
+  filt_q <- attr(x, "filter_quantile")
+  if (!is.null(filt_q)) {
+    cat(sprintf(
+      "Filter quantile: %.1f%% (NMF keeps top cells)\n",
+      filt_q * 100
+    ))
   }
 
   threshold <- attr(x, "threshold_applied")
