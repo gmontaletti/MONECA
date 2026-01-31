@@ -60,6 +60,13 @@ reference:
     contents:
       - generate_mobility_data
 
+  - title: "Density Reduction"
+    desc: "Functions for matrix density reduction analysis"
+    contents:
+      - reduce_density
+      - plot_scree
+      - print.density_reduced
+
   - title: "Package Information"
     desc: "Package documentation and S3 methods"
     contents:
