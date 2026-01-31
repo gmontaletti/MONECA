@@ -699,8 +699,6 @@ plot_moneca_ggraph(
   layout = "fr",
   node_color = "segment",
   node_size = "mobility",
-  edge_width_range = c(0.3, 2),
-  node_size_range = c(3, 10),
   show_labels = FALSE,  # Troppe etichette con 80 nodi
   title = "Rete di Mobilità dopo Riduzione della Densità (Livello 1)"
 )
