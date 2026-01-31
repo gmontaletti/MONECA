@@ -1203,6 +1203,409 @@ La funzione `reduce_density()` rappresenta un utile strumento di preprocessing p
 
 L'integrazione di `reduce_density()` nel workflow MONECA estende l'applicabilità dell'algoritmo a contesti con granularità molto elevata, mantenendo l'interpretabilità e l'efficacia dell'approccio basato su cliques.
 
+# 11. Categorie Isolate in MONECA
+
+## 11.1 Definizione di isolato
+
+In MONECA, un **isolato** è una categoria occupazionale che non appartiene a nessun segmento multi-membro al livello finale della segmentazione. Sono le categorie "rimaste fuori" dal processo di clustering basato su cliques.
+
+### 11.1.1 Definizione matematica
+
+MONECA costruisce una rete pesata dove:
+
+- I **nodi** sono le categorie occupazionali
+- Gli **archi** collegano categorie con rischio relativo (RR) >= cut.off (default 1)
+
+I **segmenti** sono identificati come **cliques** (sottografi completi) in questa rete. Una clique è un insieme di nodi dove ogni nodo è connesso a tutti gli altri.
+
+Un nodo diventa **isolato** quando:
+
+$$\forall \text{ clique } C \text{ nel grafo}: v \notin C \text{ oppure } |C| = 1$$
+
+In altre parole, la categoria non fa parte di nessuna clique di dimensione maggiore di 1.
+
+### 11.1.2 Come vengono gestiti gli isolati nell'algoritmo
+
+Durante la discesa gerarchica, l'algoritmo rimuove i segmenti di dimensione 1:
+
+```r
+# Dal codice interno di moneca_fast
+level.down.fast <- function(level.current, level.below) {
+  # Remove isolates
+  lengths <- lengths(level.current)
+  level.current <- level.current[lengths > 1]
+  # ...
+}
+```
+
+Con il parametro `isolates = TRUE` in `moneca_fast()`, è possibile ottenere informazioni dettagliate sugli isolati:
+
+```{r isolates_example, eval=FALSE}
+seg <- moneca_fast(mobility_matrix,
+                   segment.levels = 3,
+                   isolates = TRUE)
+
+# Membership con isolati etichettati come "altri"
+print(seg$isolates_summary$membership)
+
+# Matrice di mobilità aggregata tra segmenti e "altri"
+print(seg$isolates_summary$mobility_matrix)
+```
+
+## 11.2 Cause dell'isolamento
+
+Una categoria può diventare isolata per tre ragioni principali:
+
+### 11.2.1 Pattern disperso
+
+La categoria ha mobilità distribuita uniformemente verso molte destinazioni, senza preferenze marcate.
+
+```{r dispersed_example}
+# Esempio: categoria con mobilità dispersa
+cat("Esempio di pattern DISPERSO:\n")
+cat("
+  Freelance -> Manager:     18 (RR ≈ 1.0)
+  Freelance -> Impiegato:   20 (RR ≈ 1.0)
+  Freelance -> Tecnico:     22 (RR ≈ 1.0)
+  Freelance -> Operaio:     15 (RR ≈ 1.0)
+
+  Nessuna destinazione ha RR significativamente > 1
+  → Nessun arco forte → Nessuna clique → ISOLATO
+")
+```
+
+### 11.2.2 Pattern atipico (non reciproco)
+
+La categoria ha forte mobilità verso una destinazione, ma questa non ricambia.
+
+```{r atypical_example}
+cat("Esempio di pattern ATIPICO:\n")
+cat("
+  Artista -> Cameriere:  RR = 3.5 (mobilità alta)
+  Cameriere -> Artista:  RR = 0.4 (mobilità bassa)
+
+  Con symmetric = TRUE:
+  Arco finale = (3.5 + 0.4) / 2 = 1.95
+
+  Ma Cameriere forma clique con Cuoco, Barista (non con Artista)
+  → Artista rimane ISOLATO
+")
+```
+
+### 11.2.3 Alta immobilità (pattern periferico)
+
+La categoria ha altissima immobilità (diagonale grande), con poche transizioni esterne che si disperdono.
+
+```{r peripheral_example}
+cat("Esempio di pattern PERIFERICO:\n")
+cat("
+  Agricoltore: 93% immobilità (200 su 215 restano)
+
+  Solo 15 uscite totali:
+  Agricoltore -> A: 4 (osservato << atteso → RR = 0.07)
+  Agricoltore -> B: 6 (osservato << atteso → RR = 0.08)
+  Agricoltore -> C: 5 (osservato << atteso → RR = 0.08)
+
+  Grado = 0 nel grafo → completamente ISOLATO
+")
+```
+
+## 11.3 Ruolo indiretto della diagonale
+
+La diagonale (immobilità) **non crea direttamente archi** nel grafo - viene sempre impostata a NA nella matrice dei pesi:
+
+```r
+# Dal codice di weight.matrix()
+if (is.null(diagonal)) {
+  diag(mx.1i) <- NA
+}
+```
+
+Tuttavia, la diagonale influisce **indirettamente** sui rischi relativi attraverso i marginali:
+
+$$\text{Atteso}(i,j) = \frac{\text{marginale\_riga}_i \times \text{marginale\_colonna}_j}{\text{totale}^2} \times \text{mobilità\_totale}$$
+
+Con alta immobilità:
+
+1. Marginale di riga alto (include la diagonale)
+2. Valori attesi off-diagonale più alti
+3. RR = osservato/atteso più bassi
+4. Meno probabilità di archi nel grafo
+
+## 11.4 Esempio pratico con dati simulati
+
+```{r isolates_simulation}
+library(moneca)
+
+# Creare matrice con struttura nota
+mob <- matrix(c(
+  # A      B      C      Z     Tot
+   300,   180,   120,     5,    605,  # A - clique con B,C
+   170,   350,   160,     8,    688,  # B - clique con A,C
+   115,   155,   280,     6,    556,  # C - clique con A,B
+     4,     6,     5,   200,    215,  # Z - alta immobilità, disperso
+   589,   691,   565,   219,   2064   # Tot
+), nrow = 5, byrow = TRUE)
+
+rownames(mob) <- colnames(mob) <- c("A", "B", "C", "Z", "Tot")
+
+cat("Matrice di mobilità:\n")
+print(mob)
+
+cat("\nTassi di immobilità:\n")
+for(i in 1:4) {
+  immob <- mob[i,i] / mob[i, 5] * 100
+  cat(sprintf("  %s: %.1f%%\n", rownames(mob)[i], immob))
+}
+```
+
+```{r weight_matrix_example}
+# Calcolare la matrice dei rischi relativi
+wm <- weight.matrix(mob, cut.off = 1, symmetric = TRUE)
+cat("\nMatrice dei rischi relativi (RR >= 1):\n")
+print(round(wm, 2))
+
+cat("\nInterpretazione:\n")
+cat("- A, B, C sono tutti connessi tra loro (clique)\n")
+cat("- Z non ha archi con nessuno (tutti NA) → ISOLATO\n")
+```
+
+```{r moneca_isolates}
+# Eseguire MONECA con tracciamento isolati
+seg <- moneca_fast(mob, segment.levels = 2, progress = FALSE, isolates = TRUE)
+
+cat("\nSegmenti al livello 2:\n")
+names_vec <- c("A", "B", "C", "Z")
+for(i in seq_along(seg$segment.list[[2]])) {
+  members <- names_vec[seg$segment.list[[2]][[i]]]
+  if(length(members) > 1) {
+    cat(sprintf("  Segmento %d: [%s]\n", i, paste(members, collapse = ", ")))
+  }
+}
+
+cat("\nZ è isolato perché:\n")
+cat("  1. Immobilità 93% (200/215)\n")
+cat("  2. Solo 15 uscite, distribuite uniformemente\n")
+cat("  3. RR verso tutte le destinazioni << 1\n")
+cat("  4. Grado 0 nel grafo → non può formare clique\n")
+```
+
+# 12. Impatto della Riduzione di Densità sulla Segmentazione
+
+## 12.1 Il problema: rumore e archi spuri
+
+Nelle matrici di mobilità reali, specialmente quelle di grandi dimensioni, il **rumore statistico** può creare connessioni spurie nel grafo:
+
+```
+Rumore nei dati → RR > 1 per caso → Arco spurio → Clique spuria → Segmentazione errata
+```
+
+Questo problema è particolarmente grave quando:
+
+- Molte celle hanno pochi conteggi (alta varianza)
+- La matrice è densa (molte celle non-zero)
+- I gruppi "veri" sono collegati da transizioni casuali
+
+## 12.2 Come la riduzione di densità migliora la segmentazione
+
+La funzione `reduce_density()` interviene **prima** del calcolo dei rischi relativi, azzerando le celle considerate rumore:
+
+```
+Matrice originale → reduce_density() → Matrice pulita → weight.matrix() → Grafo → MONECA
+```
+
+### 12.2.1 Effetto sul grafo
+
+| Aspetto | Senza riduzione | Con riduzione |
+|---------|-----------------|---------------|
+| Celle non-zero | Molte (rumore incluso) | Meno (solo segnale) |
+| Archi nel grafo | Molti (spuri inclusi) | Meno (più accurati) |
+| Cliques trovate | Possono essere "miste" | Più "pure" |
+| Isolati | Meno (connessi per caso) | Più (solo veri isolati) |
+
+### 12.2.2 Meccanismo matematico
+
+1. **Celle di rumore azzerate**: transizioni rare/casuali → 0
+2. **RR non calcolabile**: se numeratore = 0, la cella non contribuisce
+3. **Nessun arco spurio**: connessioni casuali rimosse
+4. **Cliques più pure**: solo categorie con mobilità strutturale reciproca
+
+## 12.3 Esempio comparativo
+
+```{r comparison_setup}
+set.seed(42)
+
+# Creare matrice con 3 gruppi + rumore
+n <- 12
+pattern_matrix <- matrix(0, n, n)
+
+# Gruppo A (1-4): alta mobilità interna
+pattern_matrix[1:4, 1:4] <- matrix(c(
+  80, 35, 30, 25,
+  32, 75, 28, 22,
+  28, 30, 70, 20,
+  22, 20, 18, 65
+), 4, 4, byrow = TRUE)
+
+# Gruppo B (5-8): alta mobilità interna
+pattern_matrix[5:8, 5:8] <- matrix(c(
+  70, 28, 25, 18,
+  25, 65, 30, 15,
+  22, 28, 60, 20,
+  15, 12, 18, 55
+), 4, 4, byrow = TRUE)
+
+# Gruppo C (9-12): alta mobilità interna
+pattern_matrix[9:12, 9:12] <- matrix(c(
+  60, 22, 20, 15,
+  20, 55, 25, 12,
+  18, 22, 50, 18,
+  12, 10, 15, 45
+), 4, 4, byrow = TRUE)
+
+# Aggiungere RUMORE tra i gruppi
+noise <- matrix(rpois(n*n, lambda = 3), n, n)
+noise[1:4, 1:4] <- 0
+noise[5:8, 5:8] <- 0
+noise[9:12, 9:12] <- 0
+
+noisy_matrix <- pattern_matrix + noise
+diag(noisy_matrix) <- diag(noisy_matrix) + sample(40:80, n)
+
+# Costruire matrice completa
+row_tots <- rowSums(noisy_matrix)
+col_tots <- colSums(noisy_matrix)
+full_matrix <- rbind(
+  cbind(noisy_matrix, row_tots),
+  c(col_tots, sum(noisy_matrix))
+)
+
+group_names <- c(paste0("A", 1:4), paste0("B", 1:4), paste0("C", 1:4))
+rownames(full_matrix) <- colnames(full_matrix) <- c(group_names, "Tot")
+
+cat("Struttura attesa:\n")
+cat("  Gruppo A: A1, A2, A3, A4\n")
+cat("  Gruppo B: B1, B2, B3, B4\n")
+cat("  Gruppo C: C1, C2, C3, C4\n")
+```
+
+```{r comparison_analysis, eval=all(sapply(c("ggplot2", "irlba"), requireNamespace, quietly = TRUE))}
+# Analisi SENZA riduzione
+wm_original <- weight.matrix(full_matrix, cut.off = 1, symmetric = TRUE)
+n_edges_original <- sum(!is.na(wm_original)) / 2
+
+seg_original <- moneca_fast(full_matrix, segment.levels = 3, progress = FALSE)
+
+# Analisi CON riduzione
+reduced_matrix <- reduce_density(full_matrix,
+                                  method = "svd",
+                                  k = 3,
+                                  filter_quantile = 0.6,
+                                  verbose = FALSE,
+                                  seed = 42)
+
+wm_reduced <- weight.matrix(reduced_matrix, cut.off = 1, symmetric = TRUE)
+n_edges_reduced <- sum(!is.na(wm_reduced)) / 2
+
+seg_reduced <- moneca_fast(reduced_matrix, segment.levels = 3, progress = FALSE)
+
+cat(sprintf("Archi nel grafo (originale): %d\n", n_edges_original))
+cat(sprintf("Archi nel grafo (ridotto):   %d\n", n_edges_reduced))
+cat(sprintf("Riduzione: %.1f%%\n", 100 * (1 - n_edges_reduced / n_edges_original)))
+```
+
+```{r comparison_segments, eval=all(sapply(c("ggplot2", "irlba"), requireNamespace, quietly = TRUE))}
+# Funzione per valutare purezza dei segmenti
+evaluate_purity <- function(seg, names_vec) {
+  level2 <- seg$segment.list[[2]]
+  results <- list()
+
+  for(i in seq_along(level2)) {
+    members <- names_vec[level2[[i]]]
+    if(length(members) > 1) {
+      groups <- unique(substr(members, 1, 1))
+      purity <- if(length(groups) == 1) "puro" else "misto"
+      results[[length(results) + 1]] <- list(
+        members = members,
+        groups = groups,
+        purity = purity
+      )
+    }
+  }
+  return(results)
+}
+
+cat("\nSegmenti al livello 2 - ORIGINALE:\n")
+orig_segs <- evaluate_purity(seg_original, group_names)
+for(s in orig_segs) {
+  status <- if(s$purity == "puro") "[OK]" else "[MIX]"
+  cat(sprintf("  %s [%s] (gruppi: %s)\n",
+              status,
+              paste(s$members, collapse = ", "),
+              paste(s$groups, collapse = ", ")))
+}
+
+cat("\nSegmenti al livello 2 - RIDOTTO:\n")
+red_segs <- evaluate_purity(seg_reduced, group_names)
+for(s in red_segs) {
+  status <- if(s$purity == "puro") "[OK]" else "[MIX]"
+  cat(sprintf("  %s [%s] (gruppi: %s)\n",
+              status,
+              paste(s$members, collapse = ", "),
+              paste(s$groups, collapse = ", ")))
+}
+
+# Calcolare purezza complessiva
+purity_orig <- sum(sapply(orig_segs, function(x) x$purity == "puro")) / length(orig_segs)
+purity_red <- sum(sapply(red_segs, function(x) x$purity == "puro")) / length(red_segs)
+
+cat(sprintf("\nPurezza segmenti (originale): %.0f%%\n", 100 * purity_orig))
+cat(sprintf("Purezza segmenti (ridotto):   %.0f%%\n", 100 * purity_red))
+```
+
+## 12.4 Raccomandazioni pratiche
+
+### 12.4.1 Quando applicare la riduzione
+
+La riduzione di densità è particolarmente utile quando:
+
+1. **Matrici grandi** (60+ categorie) con molte celle rumorose
+2. **Segmenti "misti"** nell'analisi iniziale (categorie di gruppi diversi insieme)
+3. **Troppi archi** nel grafo dei rischi relativi
+4. **Pochi isolati** quando ci si aspetterebbe di più
+
+### 12.4.2 Parametri consigliati
+
+```{r recommendations, eval=FALSE}
+# Configurazione conservativa (preserva più struttura)
+reduced <- reduce_density(mx,
+                          method = "svd",
+                          variance_target = 0.85,
+                          filter_quantile = 0.75)
+
+# Configurazione aggressiva (rimuove più rumore)
+reduced <- reduce_density(mx,
+                          method = "svd",
+                          variance_target = 0.70,
+                          filter_quantile = 0.50)
+
+# Per matrici molto dense
+reduced <- reduce_density(mx,
+                          method = "svd",
+                          variance_target = 0.75,
+                          filter_quantile = 0.60,
+                          threshold = "auto")
+```
+
+### 12.4.3 Validazione dei risultati
+
+Confrontare sempre:
+
+1. **Numero di segmenti** prima e dopo la riduzione
+2. **Purezza dei segmenti** (se si conosce la struttura attesa)
+3. **Numero di isolati** (dovrebbe aumentare se il rumore collegava gruppi)
+4. **Stabilità** (risultati simili con parametri leggermente diversi)
+
 # Appendice A: Codice Completo per Analisi Esempio
 
 ```{r appendix_code, eval=FALSE}
@@ -1283,6 +1686,10 @@ head(membership)
 
 **Filter quantile**: parametro di entrambi i metodi (SVD e NMF) che controlla la proporzione di celle da mantenere basandosi sui valori di ricostruzione. Valori più alti mantengono più celle; la selezione automatica usa il rilevamento del gomito (elbow detection).
 
+**Immobilità**: permanenza nella stessa categoria tra due osservazioni. Rappresentata dalla diagonale della matrice di mobilità. Alta immobilità può contribuire all'isolamento di una categoria.
+
+**Isolato**: categoria che non appartiene a nessun segmento multi-membro nella segmentazione MONECA. Può derivare da pattern disperso (mobilità uniforme), atipico (non reciproco), o periferico (alta immobilità con poche uscite).
+
 **Matrice core**: matrice di mobilità escludendo riga e colonna dei totali marginali.
 
 **Normalizzazione**: trasformazione dei dati per rimuovere effetti sistematici o rendere confrontabili scale diverse.
@@ -1300,3 +1707,9 @@ head(membership)
 **Valori singolari**: elementi della matrice diagonale Σ nella SVD, rappresentano l'importanza delle componenti.
 
 **Varianza spiegata**: proporzione della variabilità totale catturata da un insieme di componenti.
+
+**Arco spurio**: connessione nel grafo dei rischi relativi creata dal rumore statistico piuttosto che da una vera relazione di mobilità strutturale. La riduzione di densità mira a eliminare gli archi spuri.
+
+**Purezza del segmento**: misura di quanto un segmento identificato da MONECA corrisponda a un gruppo "vero" atteso. Un segmento puro contiene solo categorie dello stesso gruppo logico; un segmento misto contiene categorie di gruppi diversi.
+
+**Rischio relativo (RR)**: rapporto tra mobilità osservata e mobilità attesa sotto indipendenza. RR > 1 indica mobilità sopra le aspettative; RR < 1 indica mobilità sotto le aspettative. Solo celle con RR >= cut.off formano archi nel grafo MONECA.
