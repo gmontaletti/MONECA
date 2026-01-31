@@ -81,6 +81,10 @@ articles:
     navbar: ~
     contents:
       - moneca-introduction
+  - title: "Density Reduction (Italian)"
+    desc: "Guida alla riduzione della densità delle matrici"
+    contents:
+      - reduce_density_guida_it
 
 news:
   releases:
