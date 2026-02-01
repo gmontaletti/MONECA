@@ -710,7 +710,6 @@ plot_moneca_ggraph(
 # Dendrogramma gerarchico
 plot_moneca_dendrogram(
   seg_reduced,
-  layout = "rectangular",
   label_size = 2.5,
   title = "Struttura Gerarchica dei Segmenti"
 )
@@ -1660,7 +1659,6 @@ plot_moneca_ggraph(
 # 7. Visualizza dendrogramma
 plot_moneca_dendrogram(
   seg,
-  layout = "rectangular",
   label_size = 2.5,
   title = "Struttura Gerarchica"
 )
