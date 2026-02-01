@@ -73,6 +73,17 @@ Functions for generating synthetic mobility data
 - [`generate_mobility_data()`](https://gmontaletti.github.io/MONECA/reference/generate_mobility_data.md)
   : Generate Realistic Synthetic Mobility Data
 
+## Density Reduction
+
+Functions for matrix density reduction analysis
+
+- [`reduce_density()`](https://gmontaletti.github.io/MONECA/reference/reduce_density.md)
+  : Reduce Density of Large Mobility Matrices
+- [`plot_scree()`](https://gmontaletti.github.io/MONECA/reference/plot_scree.md)
+  : Scree Plot for Component Selection
+- [`print(`*`<density_reduced>`*`)`](https://gmontaletti.github.io/MONECA/reference/print.density_reduced.md)
+  : Print Method for density_reduced Objects
+
 ## Package Information
 
 Package documentation and S3 methods

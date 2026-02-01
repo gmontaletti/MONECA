@@ -103,9 +103,9 @@ for auto-tuning details
 ``` r
 # Create a simple mobility table
 mob_table <- matrix(c(100, 20, 10, 130,
-                      15, 80, 25, 120,  
+                      15, 80, 25, 120,
                       5,  10, 50,  65,
-                      120, 110, 85, 315), 
+                      120, 110, 85, 315),
                     nrow = 4, byrow = TRUE)
 rownames(mob_table) <- colnames(mob_table) <- c("A", "B", "C", "Total")
 
@@ -113,7 +113,7 @@ rownames(mob_table) <- colnames(mob_table) <- c("A", "B", "C", "Total")
 rr_matrix <- weight.matrix(mob_table, cut.off = 1.5)
 
 # Use automatic tuning for small.cell.reduction parameter
-rr_matrix_tuned <- weight.matrix(mob_table, auto_tune = TRUE, 
+rr_matrix_tuned <- weight.matrix(mob_table, auto_tune = TRUE,
                                  tune_method = "stability", tune_verbose = TRUE)
 #> Auto-tuning small.cell.reduction parameter using method: stability
 #> Parallel decision: NO ( 1 cores)
@@ -157,7 +157,7 @@ rr_matrix_tuned <- weight.matrix(mob_table, auto_tune = TRUE,
 #> - Weight matrices cached: 20 
 #> 
 #> Optimal small.cell.reduction: 0 
-#> Total tuning time: 8.01 seconds
+#> Total tuning time: 12.59 seconds
 #> Selected optimal small.cell.reduction: 0
 
 # Check tuning results

@@ -26,7 +26,8 @@ moneca_fast(
   auto_tune = FALSE,
   tune_method = "stability",
   tune_verbose = FALSE,
-  use_maximal_cliques = FALSE
+  use_maximal_cliques = FALSE,
+  isolates = FALSE
 )
 
 moneca_fast(
@@ -43,7 +44,8 @@ moneca_fast(
   auto_tune = FALSE,
   tune_method = "stability",
   tune_verbose = FALSE,
-  use_maximal_cliques = FALSE
+  use_maximal_cliques = FALSE,
+  isolates = FALSE
 )
 ```
 
@@ -124,6 +126,13 @@ moneca_fast(
   Default is FALSE (use all cliques for algorithmic correctness). Set to
   TRUE for performance optimization on very dense graphs.
 
+- isolates:
+
+  Logical. If TRUE, returns additional summary information about
+  isolates (categories not belonging to any multi-member segment at the
+  final level). Isolates are grouped into a category called "altri".
+  Default is FALSE.
+
 ## Value
 
 An object of class "moneca" containing:
@@ -143,7 +152,22 @@ An object of class "moneca" containing:
   The small cell reduction parameter used.
 
 An object of class "moneca" with the same structure as the original
-moneca() function.
+moneca() function. When `isolates = TRUE`, the returned list also
+includes:
+
+- isolates_summary:
+
+  A list containing:
+
+  membership
+
+  :   Data frame with columns `name` (category name) and `group`
+      (segment name or "altri" for isolates)
+
+  mobility_matrix
+
+  :   Matrix of mobility counts between groups, including "altri" group
+      for isolates
 
 ## Details
 
@@ -295,7 +319,7 @@ print(seg)
 #> ================================================================================
 
 # Run with auto-tuning for optimal parameters
-seg_tuned <- moneca_fast(mobility_data, segment.levels = 3, 
+seg_tuned <- moneca_fast(mobility_data, segment.levels = 3,
                          auto_tune = TRUE, tune_method = "stability")
 #>   |                                                                              |                                                                      |   0%
 #>   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
