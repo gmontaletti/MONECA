@@ -1691,23 +1691,23 @@ sessionInfo()
 #> [1] stats     graphics  grDevices datasets  utils     methods   base     
 #> 
 #> other attached packages:
-#> [1] moneca_1.0.3
+#> [1] moneca_1.0.4
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] viridis_0.6.5      sass_0.4.10        generics_0.1.4     tidyr_1.3.2       
 #>  [5] renv_1.1.4         digest_0.6.39      magrittr_2.0.4     evaluate_1.0.5    
 #>  [9] grid_4.5.2         RColorBrewer_1.1-3 fastmap_1.2.0      jsonlite_2.0.0    
-#> [13] toOrdinal_1.3-0.0  ggrepel_0.9.6      brio_1.1.5         gridExtra_2.3     
-#> [17] purrr_1.2.1        viridisLite_0.4.2  scales_1.4.0       tweenr_2.0.3      
-#> [21] textshaping_1.0.4  jquerylib_0.1.4    cli_3.6.5          crayon_1.5.3      
-#> [25] rlang_1.1.7        graphlayouts_1.2.2 polyclip_1.10-7    tidygraph_1.3.1   
-#> [29] withr_3.0.2        cachem_1.1.0       yaml_2.3.12        tools_4.5.2       
-#> [33] memoise_2.0.1      dplyr_1.1.4        ggplot2_4.0.1      vctrs_0.7.1       
-#> [37] R6_2.6.1           lifecycle_1.0.5    fs_1.6.6           MASS_7.3-65       
-#> [41] ragg_1.5.0         ggraph_2.2.2       pkgconfig_2.0.3    desc_1.4.3        
-#> [45] pkgdown_2.2.0      pillar_1.11.1      bslib_0.10.0       gtable_0.3.6      
-#> [49] glue_1.8.0         Rcpp_1.1.1         ggforce_0.5.0      systemfonts_1.3.1 
-#> [53] xfun_0.56          tibble_3.3.1       tidyselect_1.2.1   knitr_1.51        
-#> [57] farver_2.1.2       htmltools_0.5.9    igraph_2.2.1       labeling_0.4.3    
-#> [61] rmarkdown_2.30     testthat_3.3.2     compiler_4.5.2     S7_0.2.1
+#> [13] toOrdinal_1.4-0.0  ggrepel_0.9.6      gridExtra_2.3      purrr_1.2.1       
+#> [17] viridisLite_0.4.3  scales_1.4.0       tweenr_2.0.3       textshaping_1.0.4 
+#> [21] jquerylib_0.1.4    cli_3.6.5          crayon_1.5.3       rlang_1.1.7       
+#> [25] graphlayouts_1.2.2 polyclip_1.10-7    tidygraph_1.3.1    withr_3.0.2       
+#> [29] cachem_1.1.0       yaml_2.3.12        tools_4.5.2        memoise_2.0.1     
+#> [33] dplyr_1.2.0        ggplot2_4.0.2      vctrs_0.7.1        R6_2.6.1          
+#> [37] lifecycle_1.0.5    fs_1.6.6           MASS_7.3-65        ragg_1.5.0        
+#> [41] ggraph_2.2.2       pkgconfig_2.0.3    desc_1.4.3         pkgdown_2.2.0     
+#> [45] pillar_1.11.1      bslib_0.10.0       gtable_0.3.6       glue_1.8.0        
+#> [49] Rcpp_1.1.1         ggforce_0.5.0      systemfonts_1.3.1  xfun_0.56         
+#> [53] tibble_3.3.1       tidyselect_1.2.1   knitr_1.51         farver_2.1.2      
+#> [57] htmltools_0.5.9    igraph_2.2.1       labeling_0.4.3     rmarkdown_2.30    
+#> [61] compiler_4.5.2     S7_0.2.1
 ```
