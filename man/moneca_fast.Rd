@@ -19,7 +19,10 @@ moneca_fast(
   tune_method = "stability",
   tune_verbose = FALSE,
   use_maximal_cliques = FALSE,
-  isolates = FALSE
+  isolates = FALSE,
+  has_margins = "auto",
+  reduce_density = "auto",
+  density_params = list()
 )
 
 moneca_fast(
@@ -37,12 +40,16 @@ moneca_fast(
   tune_method = "stability",
   tune_verbose = FALSE,
   use_maximal_cliques = FALSE,
-  isolates = FALSE
+  isolates = FALSE,
+  has_margins = "auto",
+  reduce_density = "auto",
+  density_params = list()
 )
 }
 \arguments{
-\item{mx}{A mobility table (square matrix) with row and column totals in the last
-row/column. Row names should identify the categories/classes.}
+\item{mx}{A mobility table (square matrix). Can include row and column totals in the
+last row/column, or be a core matrix without totals. Row names should identify the
+categories/classes. See \code{has_margins} parameter.}
 
 \item{segment.levels}{Integer specifying the number of hierarchical segmentation
 levels to compute. Default is 3.}
@@ -86,6 +93,28 @@ performance optimization on very dense graphs.}
 about isolates (categories not belonging to any multi-member segment at the
 final level). Isolates are grouped into a category called "altri".
 Default is FALSE.}
+
+\item{has_margins}{Controls whether the input matrix includes totals row/column.
+\itemize{
+  \item \code{"auto"} (default): Automatically detects if the last row/column
+    contains marginal totals
+  \item \code{TRUE}: Matrix already has totals in the last row/column
+  \item \code{FALSE}: Matrix is a core matrix without totals; margins will be
+    generated automatically
+}}
+
+\item{reduce_density}{Controls density reduction preprocessing for large matrices.
+\itemize{
+  \item \code{"auto"} (default): Applies density reduction when the matrix has
+    30+ categories and the weight matrix count density exceeds 0.7
+  \item \code{TRUE}: Always apply density reduction
+  \item \code{FALSE}: Never apply density reduction
+}}
+
+\item{density_params}{Named list of additional parameters passed to
+\code{\link{reduce_density}}. For example:
+\code{list(method = "svd", normalization = "ppmi", k = 20)}. See
+\code{\link{reduce_density}} for all available parameters.}
 }
 \value{
 An object of class "moneca" containing:
@@ -98,6 +127,12 @@ An object of class "moneca" containing:
   }
 
 An object of class "moneca" with the same structure as the original moneca() function.
+  The returned list always includes:
+  \describe{
+    \item{margins_added}{Logical indicating whether margins were generated}
+    \item{density_reduction}{NULL if no density reduction was applied, or a list
+      with metadata about the reduction (method, k, variance_explained, etc.)}
+  }
   When \code{isolates = TRUE}, the returned list also includes:
   \describe{
     \item{isolates_summary}{A list containing:
@@ -117,6 +152,7 @@ uses cliques to identify discrete and nested clusters of positions with high int
 
 An optimized version of the moneca algorithm with improved performance for large datasets.
 Implements various performance optimizations including vectorization and early stopping.
+Supports automatic margin detection and optional density reduction for large matrices.
 }
 \details{
 This version includes intelligent memory management for dense graphs and optimized
@@ -149,9 +185,20 @@ This implementation is optimized for single-core performance using:
   \item Optional sparse matrix support via \code{use.sparse} parameter
   \item Early stopping via \code{min.density} threshold (disabled by default)
   \item Clique size limiting via \code{max.clique.size} parameter
+  \item Pre-computed max clique size for early skip of impossible merges
+  \item Optimized node ordering in clique membership tests
 }
 
-\strong{Produces identical results to} \code{\link{moneca}} when using default parameters.
+\strong{Margin Handling:} When \code{has_margins = "auto"}, the function checks
+whether the last row and column of the matrix contain the row/column sums of
+the core matrix. If not detected, margins are generated automatically.
+
+\strong{Density Reduction:} Large matrices (30+ categories) with high density
+can be preprocessed using \code{\link{reduce_density}} to remove noise before
+clustering. This is controlled by \code{reduce_density} and \code{density_params}.
+
+\strong{Produces identical results to} \code{\link{moneca}} when using default parameters
+and \code{reduce_density = FALSE}.
 
 \strong{When to use:}
 \itemize{
@@ -195,5 +242,6 @@ Sociology, 51(6), 1257-1276.
 \code{\link{plot_moneca_ggraph}} for modern visualization,
 \code{\link{segment.membership}} for extracting memberships
 
-\code{\link{moneca}} for the original implementation
+\code{\link{moneca}} for the original implementation,
+  \code{\link{reduce_density}} for density reduction details
 }

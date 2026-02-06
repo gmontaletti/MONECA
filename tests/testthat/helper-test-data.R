@@ -318,7 +318,25 @@ expect_moneca_equivalent <- function(result1, result2, info = NULL) {
   invisible(TRUE)
 }
 
-# 6. Large Data Generators (for density reduction tests) -----
+# 6. No-Margins Test Data Generator -----
+
+#' Generate test data without margins (totals row/column stripped)
+#'
+#' @param size Character string: "small", "medium", or "large" (or integer for n_classes)
+#' @param seed Random seed (default 42)
+#' @return A core mobility matrix without totals row/column
+get_test_data_no_margins <- function(size = "small", seed = 42) {
+  if (is.numeric(size)) {
+    mx <- generate_mobility_data(n_classes = size, seed = seed)
+  } else {
+    mx <- get_test_data(size = size, seed = seed)
+  }
+  n <- nrow(mx) - 1
+  core <- mx[1:n, 1:n]
+  core
+}
+
+# 7. Large Data Generators (for density reduction tests) -----
 
 #' Generate large mobility data for density reduction testing
 #'

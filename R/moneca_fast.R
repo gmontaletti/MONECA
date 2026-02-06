@@ -2,9 +2,11 @@
 #'
 #' An optimized version of the moneca algorithm with improved performance for large datasets.
 #' Implements various performance optimizations including vectorization and early stopping.
+#' Supports automatic margin detection and optional density reduction for large matrices.
 #'
-#' @param mx A mobility table (square matrix) with row and column totals in the last
-#'   row/column. Row names should identify the categories/classes.
+#' @param mx A mobility table (square matrix). Can include row and column totals in the
+#'   last row/column, or be a core matrix without totals. Row names should identify the
+#'   categories/classes. See \code{has_margins} parameter.
 #' @param segment.levels Integer specifying the number of hierarchical segmentation
 #'   levels to compute. Default is 3.
 #' @param cut.off Numeric threshold for the minimum relative risk to be considered
@@ -26,6 +28,25 @@
 #'   about isolates (categories not belonging to any multi-member segment at the
 #'   final level). Isolates are grouped into a category called "altri".
 #'   Default is FALSE.
+#' @param has_margins Controls whether the input matrix includes totals row/column.
+#'   \itemize{
+#'     \item \code{"auto"} (default): Automatically detects if the last row/column
+#'       contains marginal totals
+#'     \item \code{TRUE}: Matrix already has totals in the last row/column
+#'     \item \code{FALSE}: Matrix is a core matrix without totals; margins will be
+#'       generated automatically
+#'   }
+#' @param reduce_density Controls density reduction preprocessing for large matrices.
+#'   \itemize{
+#'     \item \code{"auto"} (default): Applies density reduction when the matrix has
+#'       30+ categories and the weight matrix count density exceeds 0.7
+#'     \item \code{TRUE}: Always apply density reduction
+#'     \item \code{FALSE}: Never apply density reduction
+#'   }
+#' @param density_params Named list of additional parameters passed to
+#'   \code{\link{reduce_density}}. For example:
+#'   \code{list(method = "svd", normalization = "ppmi", k = 20)}. See
+#'   \code{\link{reduce_density}} for all available parameters.
 #'
 #' @details
 #' This implementation is optimized for single-core performance using:
@@ -34,9 +55,20 @@
 #'   \item Optional sparse matrix support via \code{use.sparse} parameter
 #'   \item Early stopping via \code{min.density} threshold (disabled by default)
 #'   \item Clique size limiting via \code{max.clique.size} parameter
+#'   \item Pre-computed max clique size for early skip of impossible merges
+#'   \item Optimized node ordering in clique membership tests
 #' }
 #'
-#' \strong{Produces identical results to} \code{\link{moneca}} when using default parameters.
+#' \strong{Margin Handling:} When \code{has_margins = "auto"}, the function checks
+#' whether the last row and column of the matrix contain the row/column sums of
+#' the core matrix. If not detected, margins are generated automatically.
+#'
+#' \strong{Density Reduction:} Large matrices (30+ categories) with high density
+#' can be preprocessed using \code{\link{reduce_density}} to remove noise before
+#' clustering. This is controlled by \code{reduce_density} and \code{density_params}.
+#'
+#' \strong{Produces identical results to} \code{\link{moneca}} when using default parameters
+#' and \code{reduce_density = FALSE}.
 #'
 #' \strong{When to use:}
 #' \itemize{
@@ -46,6 +78,12 @@
 #' }
 #'
 #' @return An object of class "moneca" with the same structure as the original moneca() function.
+#'   The returned list always includes:
+#'   \describe{
+#'     \item{margins_added}{Logical indicating whether margins were generated}
+#'     \item{density_reduction}{NULL if no density reduction was applied, or a list
+#'       with metadata about the reduction (method, k, variance_explained, etc.)}
+#'   }
 #'   When \code{isolates = TRUE}, the returned list also includes:
 #'   \describe{
 #'     \item{isolates_summary}{A list containing:
@@ -58,7 +96,8 @@
 #'     }
 #'   }
 #'
-#' @seealso \code{\link{moneca}} for the original implementation
+#' @seealso \code{\link{moneca}} for the original implementation,
+#'   \code{\link{reduce_density}} for density reduction details
 #'
 #' @export
 moneca_fast <- function(
@@ -76,12 +115,116 @@ moneca_fast <- function(
   tune_method = "stability",
   tune_verbose = FALSE,
   use_maximal_cliques = FALSE,
-  isolates = FALSE
+  isolates = FALSE,
+  has_margins = "auto",
+  reduce_density = "auto",
+  density_params = list()
 ) {
-  # Auto-enable sparse for large matrices (n > 50) unless explicitly set
+  # Ensure mx is a regular matrix before margin/density processing
   if (!is.matrix(mx)) {
     mx <- as.matrix(mx)
   }
+
+  # 1. Margin auto-detection and generation -----
+  margins_added <- FALSE
+
+  detect_has_margins <- function(mx) {
+    n <- nrow(mx)
+    if (n < 3 || nrow(mx) != ncol(mx)) {
+      return(FALSE)
+    }
+    core <- mx[1:(n - 1), 1:(n - 1)]
+    tol <- max(sum(core) * 1e-6, 1)
+    last_row_matches <- all(abs(mx[n, 1:(n - 1)] - colSums(core)) < tol)
+    last_col_matches <- all(abs(mx[1:(n - 1), n] - rowSums(core)) < tol)
+    corner_matches <- abs(mx[n, n] - sum(core)) < tol
+    last_row_matches && last_col_matches && corner_matches
+  }
+
+  needs_margins <- FALSE
+  if (identical(has_margins, FALSE)) {
+    needs_margins <- TRUE
+  } else if (identical(has_margins, "auto")) {
+    needs_margins <- !detect_has_margins(mx)
+  }
+  # has_margins = TRUE: assume margins already present
+
+  if (needs_margins) {
+    core <- mx
+    rs <- rowSums(core)
+    cs <- colSums(core)
+    gt <- sum(core)
+    mx <- rbind(cbind(core, rs), c(cs, gt))
+    # Preserve or generate names
+    cat_names <- rownames(core)
+    if (is.null(cat_names)) {
+      cat_names <- paste0("Cat", seq_len(nrow(core)))
+    }
+    full_names <- c(cat_names, "Total")
+    rownames(mx) <- full_names
+    colnames(mx) <- full_names
+    margins_added <- TRUE
+  }
+
+  # 2. Density reduction preprocessing -----
+  density_reduction_info <- NULL
+
+  apply_reduction <- FALSE
+  if (identical(reduce_density, TRUE)) {
+    apply_reduction <- TRUE
+  } else if (identical(reduce_density, "auto")) {
+    n_categories <- nrow(mx) - 1
+    if (n_categories >= 30) {
+      # Check count density: proportion of non-zero cells in core matrix
+      core_check <- mx[1:n_categories, 1:n_categories]
+      count_density <- sum(core_check > 0) / (n_categories * n_categories)
+      if (count_density > 0.7) {
+        apply_reduction <- TRUE
+      }
+    }
+  }
+  # reduce_density = FALSE: skip
+
+  if (apply_reduction) {
+    # Build arguments for reduce_density()
+    rd_args <- c(list(mx = mx), density_params)
+    # Set verbose default from progress if not explicitly set
+    if (is.null(rd_args$verbose)) {
+      rd_args$verbose <- progress
+    }
+    # Retrieve the reduce_density function from the parent environment
+    # (the parameter 'reduce_density' shadows the function name locally)
+    reduce_density_fn <- get(
+      "reduce_density",
+      envir = parent.env(environment())
+    )
+    reduced_mx <- do.call(reduce_density_fn, rd_args)
+
+    # Store metadata
+    density_reduction_info <- list(
+      method = attr(reduced_mx, "method"),
+      normalization = attr(reduced_mx, "normalization"),
+      k = attr(reduced_mx, "k"),
+      variance_explained = attr(reduced_mx, "variance_explained"),
+      filter_quantile = attr(reduced_mx, "filter_quantile"),
+      original_total = attr(reduced_mx, "original_total"),
+      reduced_total = attr(reduced_mx, "reduced_total")
+    )
+
+    # Replace mx with unclassed reduced matrix
+    mx <- unclass(reduced_mx)
+    attr(mx, "method") <- NULL
+    attr(mx, "normalization") <- NULL
+    attr(mx, "k") <- NULL
+    attr(mx, "variance_explained") <- NULL
+    attr(mx, "filter_quantile") <- NULL
+    attr(mx, "threshold_applied") <- NULL
+    attr(mx, "original_dims") <- NULL
+    attr(mx, "original_total") <- NULL
+    attr(mx, "reduced_total") <- NULL
+  }
+
+  # 3. Sparse matrix conversion (after margin and density steps) -----
   if (
     use.sparse || (nrow(mx) > 50 && requireNamespace("Matrix", quietly = TRUE))
   ) {
@@ -199,6 +342,9 @@ moneca_fast <- function(
       ))
     }
 
+    # OPTIMIZATION: Pre-compute max clique size for early skip
+    max_clique_size_found <- max(lengths(cliques))
+
     # Process matrix for mode (matches original exactly)
     if (mode == "Mutual") {
       mat[mat < cut.off] <- NA
@@ -238,17 +384,27 @@ moneca_fast <- function(
     }
 
     # Fast clique membership test using node-to-clique lookup
+    # OPTIMIZATION: Process nodes with fewest clique memberships first
+    # to shrink the intersection candidates faster (same result, fewer iterations)
     clique.test <- function(potential.clique) {
       if (length(potential.clique) < 2) {
         return(TRUE)
       }
-      candidates <- node_to_cliques[[potential.clique[1]]]
+      # OPTIMIZATION: Early size check - a group larger than the biggest clique
+      # can never be a subset of any clique
+      if (length(potential.clique) > max_clique_size_found) {
+        return(FALSE)
+      }
+      # Sort by number of clique memberships (fewest first)
+      membership_counts <- node_clique_count[potential.clique]
+      ordered_nodes <- potential.clique[order(membership_counts)]
+      candidates <- node_to_cliques[[ordered_nodes[1]]]
       if (length(candidates) == 0L) {
         return(FALSE)
       }
-      for (i in 2:length(potential.clique)) {
+      for (i in 2:length(ordered_nodes)) {
         candidates <- candidates[
-          candidates %in% node_to_cliques[[potential.clique[i]]]
+          candidates %in% node_to_cliques[[ordered_nodes[i]]]
         ]
         if (length(candidates) == 0L) return(FALSE)
       }
@@ -276,7 +432,8 @@ moneca_fast <- function(
 
     # Process edges in pre-sorted order (matches original logic exactly)
     for (i in seq_len(n_edges)) {
-      if (progress) {
+      # OPTIMIZATION: Update progress bar every 100 edges instead of every edge
+      if (progress && (i %% 100L == 0L || i == n_edges)) {
         setTxtProgressBar(pb, i)
       }
 
@@ -534,19 +691,15 @@ moneca_fast <- function(
       )
     }
 
+    out <- list(
+      segment.list = segment.list,
+      mat.list = mat.list,
+      small.cell.reduction = small.cell.reduction,
+      margins_added = margins_added,
+      density_reduction = density_reduction_info
+    )
     if (isolates) {
-      out <- list(
-        segment.list = segment.list,
-        mat.list = mat.list,
-        small.cell.reduction = small.cell.reduction,
-        isolates_summary = isolates_summary
-      )
-    } else {
-      out <- list(
-        segment.list = segment.list,
-        mat.list = mat.list,
-        small.cell.reduction = small.cell.reduction
-      )
+      out$isolates_summary <- isolates_summary
     }
     class(out) <- "moneca"
     return(out)
@@ -637,19 +790,15 @@ moneca_fast <- function(
   }
 
   # Create output
+  out <- list(
+    segment.list = segment.list,
+    mat.list = mat.list,
+    small.cell.reduction = small.cell.reduction,
+    margins_added = margins_added,
+    density_reduction = density_reduction_info
+  )
   if (isolates) {
-    out <- list(
-      segment.list = segment.list,
-      mat.list = mat.list,
-      small.cell.reduction = small.cell.reduction,
-      isolates_summary = isolates_summary
-    )
-  } else {
-    out <- list(
-      segment.list = segment.list,
-      mat.list = mat.list,
-      small.cell.reduction = small.cell.reduction
-    )
+    out$isolates_summary <- isolates_summary
   }
 
   class(out) <- "moneca"
