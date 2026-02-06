@@ -1,0 +1,276 @@
+---
+title: "Log-Linear Models for Professional Mobility: An Application to Italian Occupational Data"
+author: "Giampaolo Montaletti"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+# NOTE: This vignette is NOT built with the package. It requires an external
+# data file (profession_matrix_8day.rds) that is not distributed with moneca.
+# All code chunks are set to eval = FALSE.
+# vignette: >
+#   %\VignetteIndexEntry{Log-Linear Models for Professional Mobility}
+#   %\VignetteEngine{knitr::rmarkdown}
+#   %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+## Introduction
+
+This document presents a log-linear model analysis of an Italian professional mobility table. The objective is to evaluate how well different structural models account for the observed patterns of occupational transitions, and in particular to assess whether the segmentation produced by the MONECA algorithm identifies statistically meaningful clusters of professions.
+
+Log-linear models provide a standard framework for analyzing mobility tables. By fitting a sequence of increasingly complex models --- from full independence to structured topology models --- it is possible to quantify how much of the association between origin and destination professions is captured by each specification.
+
+The analysis proceeds in four steps: data preparation, MONECA segmentation, model fitting, and model comparison.
+
+## Data Description
+
+The data consist of an Italian occupational mobility table derived from labor force survey records with an 8-day reference period. The original matrix has 129 rows and 129 columns, corresponding to detailed professional categories. After removing three armed forces categories, the working matrix has 126 x 126 cells.
+
+Key characteristics of the data:
+
+- **Total observations**: 1,591,811 recorded transitions
+- **Immobility rate**: 50.4% of individuals remain in the same profession
+- **Zero cells**: 5,601 out of 15,876 cells (35.3%) contain no observed transitions
+- **Margins**: Added manually, as the original matrix did not include row and column totals
+
+The high proportion of zero cells indicates that many profession pairs have no observed transitions. This sparsity is consistent with the nature of occupational mobility: most professions are not directly connected through labor market flows. The high immobility rate --- more than half of all individuals stay in their current profession --- is a central feature of the data that any adequate model must account for.
+
+```{r load-data, eval = FALSE}
+# 1. Load and prepare data -----
+library(moneca)
+
+mx_raw <- readRDS("profession_matrix_8day.rds")
+
+# Remove armed forces (last 3 rows/columns)
+n <- nrow(mx_raw)
+mx_trimmed <- mx_raw[1:(n - 3), 1:(n - 3)]
+
+# Add margins
+nt <- nrow(mx_trimmed)
+row_totals <- rowSums(mx_trimmed)
+col_totals <- colSums(mx_trimmed)
+mx <- rbind(
+  cbind(mx_trimmed, row_totals),
+  c(col_totals, sum(mx_trimmed))
+)
+rownames(mx)[nt + 1] <- "Total"
+colnames(mx)[nt + 1] <- "Total"
+
+# Basic descriptives
+cat("Dimensions:", nrow(mx_trimmed), "x", ncol(mx_trimmed), "\n")
+cat("Total observations:", sum(mx_trimmed), "\n")
+cat("Immobility rate:", round(sum(diag(mx_trimmed)) / sum(mx_trimmed), 3), "\n")
+cat("Zero cells:", sum(mx_trimmed == 0), "out of", prod(dim(mx_trimmed)), "\n")
+```
+
+## MONECA Segmentation
+
+Before fitting log-linear models, the MONECA algorithm is applied to the mobility table to identify clusters of professions with high internal mobility. The `moneca_fast()` function is used with NMF-based density reduction (default parameters), which is appropriate for a matrix of this size given its density level.
+
+```{r moneca-segmentation, eval = FALSE}
+# 2. Run MONECA with NMF density reduction -----
+seg <- moneca_fast(
+  mx,
+  segment.levels = 3,
+  reduce_density = TRUE,
+  density_params = list(method = "nmf", seed = 42)
+)
+
+print(seg)
+```
+
+The segmentation produces three hierarchical levels:
+
+| Level | Segments | Categories in multi-member segments | Isolates |
+|-------|----------|-------------------------------------|----------|
+| 1     | 126      | 126 (trivial: each is its own)      | 0        |
+| 2     | 32       | 81                                  | 45       |
+| 3     | 19       | 99                                  | 27       |
+| 4     | 14       | 106                                 | 20       |
+
+Level 1 is trivially the identity partition. Level 2, with 32 segments, provides the first substantively meaningful grouping: 81 professions are grouped into multi-member segments, while 45 professions remain as isolates (not assigned to any cluster). At Level 3, further aggregation produces 19 segments covering 99 professions.
+
+These segment assignments serve as the structural topology in the log-linear models below.
+
+## Log-Linear Models
+
+Five Poisson log-linear models are fitted using `glm(family = poisson)`. Each represents a different hypothesis about the structure of the mobility table.
+
+### Model Specifications
+
+**Independence model.** Origin and destination professions are statistically independent. All off-diagonal flows are predicted solely from the marginal distributions:
+
+$$\log F_{ij} = \mu + \alpha_i + \beta_j$$
+
+**Quasi-independence model.** Origin and destination are independent conditional on being off-diagonal. A separate parameter is added for each diagonal cell, allowing the model to account for immobility without constraining the off-diagonal structure:
+
+$$\log F_{ij} = \mu + \alpha_i + \beta_j + \delta_i \cdot \mathbf{1}(i = j)$$
+
+where $\delta_i$ captures the immobility effect for profession $i$.
+
+**Uniform association model.** A single parameter $\phi$ measures the overall strength of association, treating professions as ordered on an integer scale:
+
+$$\log F_{ij} = \mu + \alpha_i + \beta_j + \phi \cdot u_i \cdot v_j$$
+
+where $u_i = i$ and $v_j = j$ are integer scores.
+
+**MONECA topology models.** The segment assignments from MONECA define a block structure. Within-segment and between-segment flows receive separate parameters:
+
+$$\log F_{ij} = \mu + \alpha_i + \beta_j + \delta_i \cdot \mathbf{1}(i = j) + \gamma_{S(i), S(j)}$$
+
+where $S(i)$ is the segment assignment of profession $i$ and $\gamma_{S(i), S(j)}$ captures the interaction between segment pairs. Two versions are fitted: one using Level 2 assignments (32 segments) and one using Level 3 assignments (19 segments).
+
+### Code
+
+```{r fit-models, eval = FALSE}
+# 3. Fit log-linear models -----
+m_ind  <- fit_mobility_model(mx, type = "independence")
+m_qi   <- fit_mobility_model(mx, type = "quasi_independence")
+m_ua   <- fit_mobility_model(mx, type = "uniform_association")
+m_top2 <- fit_mobility_model(seg, type = "moneca_topology", level = 2)
+m_top3 <- fit_mobility_model(seg, type = "moneca_topology", level = 3)
+```
+
+Each call returns a `moneca_loglinear` object containing the fitted `glm`, deviance, degrees of freedom, AIC, BIC, p-value, dissimilarity index, and the fitted/residual matrices reshaped to the original dimensions.
+
+### Model Comparison
+
+The following table summarizes the fit statistics for all five models. $G^2$ is the likelihood-ratio deviance (lower indicates better fit). The dissimilarity index (DI) measures the proportion of cases that would need to be reclassified to achieve a perfect fit.
+
+```{r model-comparison, eval = FALSE}
+# 4. Compare models -----
+comp <- compare_mobility_models(m_ind, m_qi, m_ua, m_top2, m_top3)
+print(comp)
+```
+
+| Model | $G^2$ (deviance) | df | AIC | BIC | DI |
+|:------|------------------:|-------:|----------:|----------:|------:|
+| Independence | 4,929,394 | 15,625 | 4,973,191 | 4,975,116 | 0.600 |
+| Quasi-independence | 959,392 | 15,499 | 1,003,441 | 1,006,333 | 0.190 |
+| Uniform association | 3,939,442 | 15,624 | 3,983,241 | 3,985,174 | 0.576 |
+| MONECA topology L2 | 157,377 | 14,971 | 182,495 | 189,438 | 0.062 |
+| MONECA topology L3 | 272,938 | 15,309 | 297,380 | 301,730 | 0.092 |
+
+**Note on quasi-symmetry.** A quasi-symmetry model was not fitted. With 126 categories, it would require approximately 8,000 symmetric pair parameters ($126 \times 125 / 2 = 7{,}875$), which exceeds the numerical stability limits of the GLM solver for a matrix of this size.
+
+### Likelihood-Ratio Tests
+
+Nested models are compared using the likelihood-ratio test ($\Delta G^2$). Each test evaluates whether the additional parameters in the more complex model provide a statistically significant improvement in fit.
+
+Likelihood-ratio tests are computed automatically by `compare_mobility_models()` for known nesting relationships. The `$lr_tests` component of the comparison object contains the results:
+
+```{r lr-tests, eval = FALSE}
+# 5. Likelihood-ratio tests -----
+# Extracted from the comparison object
+comp$lr_tests
+```
+
+| Simpler model | Complex model | $\Delta G^2$ | $\Delta$df | p-value |
+|:--------------|:--------------|----------:|-----:|:----------|
+| Independence | Quasi-independence | 3,970,002 | 126 | < 2.2e-16 |
+| Independence | Uniform association | 989,952 | 1 | < 2.2e-16 |
+| Quasi-independence | MONECA topology L2 | 802,015 | 528 | < 2.2e-16 |
+| Quasi-independence | MONECA topology L3 | 686,455 | 190 | < 2.2e-16 |
+
+All comparisons are statistically significant at conventional levels.
+
+## Interpretation
+
+### The Structure of the Data
+
+The Italian professional mobility table contains 126 occupational categories and 1.6 million observed transitions. Half of all individuals remain in the same profession over the observation period. More than a third of all cell pairs (35.3%) have no observed transitions, reflecting the fact that most professions are not connected by direct mobility flows. This combination --- high diagonal concentration and widespread zero cells --- is characteristic of large, detailed occupational classifications.
+
+### Independence Model: A Baseline
+
+The independence model assumes that origin and destination professions are unrelated. Its dissimilarity index of 0.60 indicates that 60% of all cases would need to be reclassified to match the observed data. This is expected: people do not move randomly between professions. Occupational transitions are structured by skills, credentials, industry, and labor market segmentation. The independence model serves as a lower bound against which other models are compared.
+
+### Diagonal Immobility Is the Dominant Pattern
+
+The transition from independence to quasi-independence provides the single largest improvement in fit across all model comparisons. Adding 126 diagonal parameters reduces $G^2$ by 3,970,002, and the dissimilarity index drops from 0.60 to 0.19. The fact that half the population stays in the same profession is the dominant feature of the table, and the diagonal parameters capture this effect directly.
+
+However, a dissimilarity index of 0.19 means that quasi-independence still misclassifies 19% of transitions. There is substantial structure in the off-diagonal flows --- the pattern of who moves where --- that the quasi-independence model does not capture. The remaining analysis focuses on this off-diagonal structure.
+
+### Ordinal Ranking Has Limited Explanatory Power
+
+The uniform association model adds a single parameter measuring the overall strength of linear-by-linear association, treating professions as ordered on an integer scale. This model reduces $G^2$ by approximately 990,000 from independence, but its dissimilarity index remains at 0.576 --- only marginally better than independence.
+
+This result indicates that professional mobility in Italy does not follow a simple ordinal gradient. If professions could be arranged along a single hierarchy such that adjacent professions exchanged members more frequently, the uniform association model would perform well. It does not. The mobility structure is multidimensional: professions cluster by sector, skill type, and institutional boundaries rather than along a single ranking. A single association parameter cannot capture this complexity.
+
+### MONECA Segments Capture Genuine Mobility Barriers
+
+The central finding of this analysis concerns the MONECA topology models. Starting from quasi-independence (DI = 0.190), the MONECA Level 2 topology model reduces the dissimilarity index to 0.062 by adding 528 parameters representing segment-pair interactions. The improvement in $G^2$ is 802,015, which is statistically overwhelming ($p < 2.2 \times 10^{-16}$).
+
+The practical significance of DI = 0.062 is that only 6.2% of transitions are misclassified by the model. The 32 segments identified by MONECA at Level 2 --- representing clusters of professions with elevated internal mobility --- account for the large majority of the off-diagonal structure in the table. Moving from quasi-independence (DI = 0.190) to the MONECA topology (DI = 0.062) eliminates roughly two-thirds of the remaining misfit. These segments correspond to recognizable professional clusters: groups of manual trades, administrative and commercial occupations, education-related professions, agricultural specializations, and similar groupings.
+
+The segments are not arbitrary. They are derived from the observed mobility network itself, and the log-linear analysis confirms that the boundaries they define correspond to statistically meaningful discontinuities in the flow of workers between occupations.
+
+### Coarser Segmentation Still Works but Fits Worse
+
+The MONECA Level 3 topology model, with 19 segments, achieves DI = 0.092. This is substantially better than quasi-independence (0.190) but worse than the Level 2 model (0.062). The additional granularity at Level 2 captures real mobility boundaries, not simply noise: the 13 additional segment distinctions between Level 3 and Level 2 correspond to genuine differences in mobility patterns.
+
+The likelihood-ratio test comparing quasi-independence to Level 3 topology ($\Delta G^2 = 686{,}455$, $\Delta \text{df} = 190$) is also highly significant. Both topology models represent large improvements over the baseline, but Level 2 provides the better fit.
+
+### Largest Model Residuals Reveal Cross-Segment Flows
+
+Even the best-fitting model (MONECA topology L2) does not capture all mobility flows. Examination of the largest positive Pearson residuals identifies specific profession pairs where observed flows substantially exceed model predictions. These are transitions that occur across segment boundaries --- "bridge flows" that the cluster structure does not predict:
+
+- Agricultural machine operators and specialized farmers ($r = 65.9$)
+- Cultural service technicians and artistic specialists ($r = 54.7$ and $47.0$ in both directions)
+- Travel assistants and qualified commercial workers ($r = 53.5$ and $51.4$ in both directions)
+
+```{r residuals, eval = FALSE}
+# 6. Examine largest residuals -----
+# The residuals matrix is stored in the moneca_loglinear object
+resid_mx <- m_top2$residuals
+
+# Find largest positive residuals (flows exceeding prediction)
+resid_long <- data.frame(
+  Origin = rep(rownames(resid_mx), ncol(resid_mx)),
+  Destination = rep(colnames(resid_mx), each = nrow(resid_mx)),
+  Residual = as.vector(resid_mx),
+  stringsAsFactors = FALSE
+)
+resid_long <- resid_long[order(-resid_long$Residual), ]
+head(resid_long, 20)
+```
+
+These residuals identify specific mobility channels that cross the segment boundaries identified by MONECA. They represent career pathways --- often involving related but distinct occupational fields --- that connect otherwise separate clusters. Such cross-segment flows are informative: they point to labor market connections that a purely cluster-based model cannot capture and may warrant further investigation.
+
+### Summary
+
+The results demonstrate that Italian professional mobility is organized into recognizable clusters of occupations. Within these clusters, workers move between similar professions at rates higher than expected under independence. Between clusters, mobility barriers limit the flow of workers.
+
+The MONECA topology model provides a substantially better fit than standard log-linear baselines:
+
+- The independence model misclassifies 60% of transitions.
+- Quasi-independence (accounting for immobility) reduces this to 19%.
+- The MONECA Level 2 topology further reduces misclassification to 6.2%.
+
+The network-based segmentation identifies statistically meaningful professional boundaries. The improvement over quasi-independence is not merely statistically significant (which, given 1.6 million observations, is a low bar) but practically substantial: two-thirds of the off-diagonal misfit is eliminated by the segment structure.
+
+These findings confirm the utility of MONECA as a preprocessing step for mobility table analysis. The segments it identifies are not only descriptively useful for visualizing occupational clusters but also correspond to genuine structural features of the mobility table as measured by standard log-linear model criteria.
+
+## References
+
+- Agresti, A. (2002). *Categorical Data Analysis*. 2nd edition. Wiley.
+- Goodman, L. A. (1979). Simple models for the analysis of association in cross-classifications having ordered categories. *Journal of the American Statistical Association*, 74(367), 537--552.
+- Touboel, J. & Larsen, A. G. (2017). MONECA: MObility NEtwork Clustering Analysis. R package.
+
+## Session Information
+
+```{r session-info, eval = FALSE}
+sessionInfo()
+```
