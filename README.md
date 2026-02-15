@@ -208,8 +208,8 @@ If you use moneca in your research, please cite:
 
 ```
 # Current package:
-Montaletti, G. (2025). moneca: Mobility Network Clustering Analysis.
-R package version 1.0.4. https://github.com/gmontaletti/moneca
+Montaletti, G. (2026). moneca: Mobility Network Clustering Analysis.
+R package version 1.0.5. https://github.com/gmontaletti/moneca
 
 # Original algorithm and methodology:
 Touboel, J., & Larsen, A. G. (2017). Mapping the Social Class Structure:
