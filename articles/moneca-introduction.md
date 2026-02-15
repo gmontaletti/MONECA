@@ -1691,7 +1691,7 @@ sessionInfo()
 #> [1] stats     graphics  grDevices datasets  utils     methods   base     
 #> 
 #> other attached packages:
-#> [1] moneca_1.0.5
+#> [1] moneca_1.1.0
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] viridis_0.6.5      sass_0.4.10        generics_0.1.4     tidyr_1.3.2       

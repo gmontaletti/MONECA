@@ -1,10 +1,8 @@
 # Legacy ggplot2 Visualization for moneca Objects
 
-Creates network visualizations of moneca clustering results using
-ggplot2. This function provides extensive customization options but has
-been superseded by
+**Deprecated**. Use
 [`plot_moneca_ggraph`](https://gmontaletti.github.io/MONECA/reference/plot_moneca_ggraph.md)
-for most use cases.
+instead. This function will be removed in moneca 1.2.0.
 
 ## Usage
 
@@ -214,6 +212,12 @@ A ggplot2 object.
 
 ## Details
 
+Creates network visualizations of moneca clustering results using
+ggplot2. This function provides extensive customization options but has
+been superseded by
+[`plot_moneca_ggraph`](https://gmontaletti.github.io/MONECA/reference/plot_moneca_ggraph.md)
+for most use cases.
+
 This function provides a highly customizable but complex interface for
 creating moneca visualizations. It requires the eliter package for some
 functionality. For most users,
@@ -241,7 +245,7 @@ seg <- moneca(mobility_data, segment.levels = 2)
 gg.moneca(seg)
 
 # Custom styling
-gg.moneca(seg, 
+gg.moneca(seg,
          vertex.fill = "red",
          edge.color = "blue",
          show.borders = FALSE)

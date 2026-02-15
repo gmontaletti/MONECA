@@ -1,9 +1,8 @@
 # Legacy Multi-Level Stair Plot
 
-Creates a series of plots showing how segmentation evolves across
-hierarchical levels using the legacy ggplot2 system. For modern stair
-plots, use
-[`plot_stair_ggraph`](https://gmontaletti.github.io/MONECA/reference/plot_stair_ggraph.md).
+**Deprecated**. Use
+[`plot_stair_ggraph`](https://gmontaletti.github.io/MONECA/reference/plot_stair_ggraph.md)
+instead. This function will be removed in moneca 1.2.0.
 
 ## Usage
 
@@ -211,6 +210,11 @@ stair.plot(
 A list of ggplot2 objects, one for each segmentation level.
 
 ## Details
+
+Creates a series of plots showing how segmentation evolves across
+hierarchical levels using the legacy ggplot2 system. For modern stair
+plots, use
+[`plot_stair_ggraph`](https://gmontaletti.github.io/MONECA/reference/plot_stair_ggraph.md).
 
 This function creates multiple plots showing the progression of
 segmentation across hierarchical levels. Each plot uses the same layout

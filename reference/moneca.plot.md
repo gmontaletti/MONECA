@@ -1,8 +1,8 @@
 # Legacy Network Plot for MONECA Results
 
-Creates a network visualization of MONECA segmentation results using
-base graphics and igraph. For modern visualizations, use
-[`plot_moneca_ggraph`](https://gmontaletti.github.io/MONECA/reference/plot_moneca_ggraph.md).
+**Deprecated**. Use
+[`plot_moneca_ggraph`](https://gmontaletti.github.io/MONECA/reference/plot_moneca_ggraph.md)
+instead. This function will be removed in moneca 1.2.0.
 
 ## Usage
 
@@ -111,6 +111,10 @@ moneca.plot(
 NULL (creates a plot as side effect).
 
 ## Details
+
+Creates a network visualization of MONECA segmentation results using
+base graphics and igraph. For modern visualizations, use
+[`plot_moneca_ggraph`](https://gmontaletti.github.io/MONECA/reference/plot_moneca_ggraph.md).
 
 This function provides backward compatibility with earlier versions of
 MONECA. For new analyses, consider using

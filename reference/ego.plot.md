@@ -1,9 +1,8 @@
 # Legacy Ego Network Visualization
 
-Creates ego network plots showing mobility patterns from a single focal
-position using the legacy ggplot2 plotting system. For modern ego
-network analysis, use
-[`plot_ego_ggraph`](https://gmontaletti.github.io/MONECA/reference/plot_ego_ggraph.md).
+**Deprecated**. Use
+[`plot_ego_ggraph`](https://gmontaletti.github.io/MONECA/reference/plot_ego_ggraph.md)
+instead. This function will be removed in moneca 1.2.0.
 
 ## Usage
 
@@ -88,6 +87,11 @@ A ggplot2 object showing the ego network.
 
 ## Details
 
+Creates ego network plots showing mobility patterns from a single focal
+position using the legacy ggplot2 plotting system. For modern ego
+network analysis, use
+[`plot_ego_ggraph`](https://gmontaletti.github.io/MONECA/reference/plot_ego_ggraph.md).
+
 This function creates a focused view of mobility patterns from a single
 position in the social structure. It highlights both incoming and
 outgoing mobility flows and uses different visual elements to represent:
@@ -122,7 +126,7 @@ seg <- moneca(mobility_data, segment.levels = 2)
 ego.plot(seg, mobility_data, id = 2)
 
 # Customized ego plot
-ego.plot(seg, mobility_data, 
+ego.plot(seg, mobility_data,
          id = 3,
          edge.size = 1.2,
          color.scheme = "Blues",

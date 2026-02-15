@@ -17,13 +17,13 @@ Source:
 [`DESCRIPTION`](https://github.com/gmontaletti/MONECA/blob/master/DESCRIPTION)
 
 Montaletti G, Touboel J (2026). *moneca: Mobility Network Clustering
-Analysis*. R package version 1.0.5,
+Analysis*. R package version 1.1.0,
 <https://gmontaletti.github.io/MONECA/>.
 
     @Manual{,
       title = {moneca: Mobility Network Clustering Analysis},
       author = {Giampaolo Montaletti and Jonas Touboel},
       year = {2026},
-      note = {R package version 1.0.5},
+      note = {R package version 1.1.0},
       url = {https://gmontaletti.github.io/MONECA/},
     }
