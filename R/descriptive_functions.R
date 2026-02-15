@@ -1298,7 +1298,12 @@ level.matrix <- function(segments, level = 2, include_total = FALSE) {
       main_node <- member_names[which.max(str)]
     }
 
-    main_nodes[i] <- main_node
+    n_extra <- length(members) - 1L
+    main_nodes[i] <- if (n_extra > 0L) {
+      paste0(main_node, "+", n_extra)
+    } else {
+      main_node
+    }
 
     segment_map$segment[i] <- i
     segment_map$main_node[i] <- main_node

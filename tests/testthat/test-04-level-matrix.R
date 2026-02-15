@@ -107,11 +107,26 @@ describe("level 2 and higher", {
       expect_false(all(grepl("^[0-9]+$", rownames(result_l2))))
     })
 
-    it("row/col names are a subset of original node names from level 1", {
+    it("row/col names use main_node+N format for multi-member segments", {
       orig_names <- rownames(seg_fast$mat.list[[1]])
       orig_names <- orig_names[orig_names != "Total"]
-      expect_true(all(rownames(result_l2) %in% orig_names))
-      expect_true(all(colnames(result_l2) %in% orig_names))
+      # Strip the +N suffix to recover the base node name
+      base_names <- sub("\\+[0-9]+$", "", rownames(result_l2))
+      expect_true(all(base_names %in% orig_names))
+      base_names_col <- sub("\\+[0-9]+$", "", colnames(result_l2))
+      expect_true(all(base_names_col %in% orig_names))
+    })
+
+    it("multi-member segments have +N suffix, singletons do not", {
+      for (i in seq_len(nrow(smap_l2))) {
+        nm <- rownames(result_l2)[i]
+        if (smap_l2$n_members[i] > 1L) {
+          expected_suffix <- paste0("+", smap_l2$n_members[i] - 1L)
+          expect_true(grepl(paste0(expected_suffix, "$"), nm))
+        } else {
+          expect_false(grepl("\\+[0-9]+$", nm))
+        }
+      }
     })
 
     it("segment_map has correct structure", {
