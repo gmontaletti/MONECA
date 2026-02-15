@@ -25,7 +25,15 @@
       "Bash(git log:*)",
       "Bash(/Library/Frameworks/R.framework/Resources/bin/Rscript:*)",
       "Bash(git rm:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run watch:*)",
+      "Bash(gh run view:*)",
+      "Bash(wc -l:*)",
+      "WebSearch",
+      "WebFetch(domain:cran.r-project.org)",
+      "Bash(open:*)",
+      "Bash(find:*)"
     ]
   },
   "enableAllProjectMcpServers": false

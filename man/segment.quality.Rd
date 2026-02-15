@@ -9,7 +9,7 @@ segment.quality(segments, final.solution = FALSE, segment_naming = "auto")
 \arguments{
 \item{segments}{A moneca object returned by \code{\link{moneca}}.}
 
-\item{final.solution}{Logical indicating whether to return only the final 
+\item{final.solution}{Logical indicating whether to return only the final
 (most aggregated) solution for each unique segment. Default is FALSE, which
 returns metrics for all levels.}
 
@@ -17,44 +17,44 @@ returns metrics for all levels.}
 Used to create readable segment labels in the output. Options include:
 \itemize{
   \item "auto" (default): Use simple "Segment X" format
-  \item "concat": Concatenate member names  
+  \item "concat": Concatenate member names
   \item "pattern": Use pattern-based naming
   \item "custom": Custom naming strategy
   \item Data frame: Must have columns "name" and "segment_label" for custom mapping
 }
-When using a data frame, the function will match original category names to 
+When using a data frame, the function will match original category names to
 custom labels and use them for segment naming. This creates a "segment_label"
 column in the output that can be used by plotting functions.}
 }
 \value{
 A data frame with the following columns for each hierarchical level:
   \describe{
-    \item{Membership}{Segment membership identifier in format "level.segment" 
+    \item{Membership}{Segment membership identifier in format "level.segment"
       (e.g., "2.1" means level 2, segment 1)}
     \item{[Level]: Segment}{Integer segment identifier at each level}
-    \item{[Level]: within.mobility}{Proportion of mobility that stays within 
+    \item{[Level]: within.mobility}{Proportion of mobility that stays within
       the segment (diagonal/total). Higher values indicate more cohesive segments.
       Range: 0-1, where 1 means all mobility is internal.}
-    \item{[Level]: share.of.mobility}{Segment's share of total mobility in the 
+    \item{[Level]: share.of.mobility}{Segment's share of total mobility in the
       system. Indicates the relative importance/size of the segment.
       Range: 0-1, values sum to 1 across segments.}
-    \item{[Level]: Density}{Network density within the segment (proportion of 
+    \item{[Level]: Density}{Network density within the segment (proportion of
       possible edges that exist). Higher values indicate more interconnected nodes.
       Range: 0-1, where 1 means fully connected.}
     \item{[Level]: Nodes}{Number of original categories/nodes in the segment}
-    \item{[Level]: Max.path}{Maximum shortest path length (diameter) within 
+    \item{[Level]: Max.path}{Maximum shortest path length (diameter) within
       the segment. Lower values indicate more compact segments.}
     \item{[Level]: share.of.total}{Segment's share of total population/observations
       based on marginal totals. Differs from share.of.mobility by considering
       population size rather than flow volume.}
   }
-  
+
   When \code{final.solution = TRUE}, returns a simplified data frame with only
   the most aggregated metrics for each unique segment.
 }
 \description{
-Calculates comprehensive quality metrics for each segment across all hierarchical 
-levels of a moneca analysis. This function provides detailed statistics about 
+Calculates comprehensive quality metrics for each segment across all hierarchical
+levels of a moneca analysis. This function provides detailed statistics about
 segment cohesion, size, network properties, and mobility patterns.
 }
 \details{
@@ -62,7 +62,7 @@ The function evaluates multiple aspects of segmentation quality:
 
 \strong{Cohesion Metrics:}
 \itemize{
-  \item \code{within.mobility}: Key quality indicator - proportion of mobility 
+  \item \code{within.mobility}: Key quality indicator - proportion of mobility
     contained within segment boundaries. Values > 0.7 suggest strong segments.
   \item \code{Density}: How interconnected nodes are within each segment.
     Dense segments (> 0.5) indicate tight communities.
@@ -77,7 +77,7 @@ The function evaluates multiple aspects of segmentation quality:
 
 \strong{Structure Metrics:}
 \itemize{
-  \item \code{Max.path}: Network diameter - smaller values indicate more 
+  \item \code{Max.path}: Network diameter - smaller values indicate more
     compact, well-connected segments
 }
 

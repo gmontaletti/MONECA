@@ -37,14 +37,14 @@ The analysis proceeds in four steps: data preparation, MONECA segmentation, mode
 
 ## Data Description
 
-The data consist of an Italian occupational mobility table derived from labor force survey records with an 8-day reference period. The original matrix has 129 rows and 129 columns, corresponding to detailed professional categories. After removing three armed forces categories, the working matrix has 126 x 126 cells.
+The data consist of an Italian occupational mobility table derived from administrative records of the Lombardy region. The original matrix has 129 rows and 129 columns, corresponding to detailed professional categories. After removing three armed forces categories, the working matrix has 126 x 126 cells.
 
 Key characteristics of the data:
 
 - **Total observations**: 1,591,811 recorded transitions
 - **Immobility rate**: 50.4% of individuals remain in the same profession
 - **Zero cells**: 5,601 out of 15,876 cells (35.3%) contain no observed transitions
-- **Margins**: Added manually, as the original matrix did not include row and column totals
+- **Margins**: Added automatically by `moneca_fast()` when not present in the input
 
 The high proportion of zero cells indicates that many profession pairs have no observed transitions. This sparsity is consistent with the nature of occupational mobility: most professions are not directly connected through labor market flows. The high immobility rate --- more than half of all individuals stay in their current profession --- is a central feature of the data that any adequate model must account for.
 
@@ -56,24 +56,13 @@ mx_raw <- readRDS("profession_matrix_8day.rds")
 
 # Remove armed forces (last 3 rows/columns)
 n <- nrow(mx_raw)
-mx_trimmed <- mx_raw[1:(n - 3), 1:(n - 3)]
-
-# Add margins
-nt <- nrow(mx_trimmed)
-row_totals <- rowSums(mx_trimmed)
-col_totals <- colSums(mx_trimmed)
-mx <- rbind(
-  cbind(mx_trimmed, row_totals),
-  c(col_totals, sum(mx_trimmed))
-)
-rownames(mx)[nt + 1] <- "Total"
-colnames(mx)[nt + 1] <- "Total"
+mx <- mx_raw[1:(n - 3), 1:(n - 3)]
 
 # Basic descriptives
-cat("Dimensions:", nrow(mx_trimmed), "x", ncol(mx_trimmed), "\n")
-cat("Total observations:", sum(mx_trimmed), "\n")
-cat("Immobility rate:", round(sum(diag(mx_trimmed)) / sum(mx_trimmed), 3), "\n")
-cat("Zero cells:", sum(mx_trimmed == 0), "out of", prod(dim(mx_trimmed)), "\n")
+cat("Dimensions:", nrow(mx), "x", ncol(mx), "\n")
+cat("Total observations:", sum(mx), "\n")
+cat("Immobility rate:", round(sum(diag(mx)) / sum(mx), 3), "\n")
+cat("Zero cells:", sum(mx == 0), "out of", prod(dim(mx)), "\n")
 ```
 
 ## MONECA Segmentation
@@ -92,16 +81,16 @@ seg <- moneca_fast(
 print(seg)
 ```
 
-The segmentation produces three hierarchical levels:
+The segmentation produces three hierarchical levels beyond the base:
 
-| Level | Segments | Categories in multi-member segments | Isolates |
-|-------|----------|-------------------------------------|----------|
-| 1     | 126      | 126 (trivial: each is its own)      | 0        |
-| 2     | 32       | 81                                  | 45       |
-| 3     | 19       | 99                                  | 27       |
-| 4     | 14       | 106                                 | 20       |
+| Level | Segments | Categories in segments | Unassigned categories |
+|------:|---------:|-----------------------:|----------------------:|
+| 1     | 126      | 126                    | 0                     |
+| 2     | 32       | 81                     | 45                    |
+| 3     | 19       | 99                     | 27                    |
+| 4     | 14       | 106                    | 20                    |
 
-Level 1 is trivially the identity partition. Level 2, with 32 segments, provides the first substantively meaningful grouping: 81 professions are grouped into multi-member segments, while 45 professions remain as isolates (not assigned to any cluster). At Level 3, further aggregation produces 19 segments covering 99 professions.
+Level 1 is the identity partition: each of the 126 categories forms its own singleton segment. Level 2, with 32 multi-member segments, provides the first substantively meaningful grouping: 81 professions are assigned to segments, while 45 remain unassigned. At Level 3, further aggregation produces 19 segments covering 99 professions. At Level 4, 14 segments account for 106 of the 126 original categories, leaving 20 unassigned.
 
 These segment assignments serve as the structural topology in the log-linear models below.
 

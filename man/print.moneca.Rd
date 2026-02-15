@@ -18,7 +18,7 @@
 \item{small.cell.reduction}{Numeric threshold for small cell handling. If NULL,
 uses the value from the moneca object.}
 
-\item{show.degree.stats}{Logical. If TRUE (default), displays detailed degree 
+\item{show.degree.stats}{Logical. If TRUE (default), displays detailed degree
 distribution statistics for each hierarchical level.}
 
 \item{digits}{Integer. Number of decimal places for numeric output (default 1).}
@@ -39,7 +39,7 @@ The output is organized into four main sections that follow the analysis workflo
 
 \strong{Section 1: OVERALL MOBILITY PATTERNS}
 \itemize{
-  \item \strong{Overall Population Mobility Rate}: Percentage of the total 
+  \item \strong{Overall Population Mobility Rate}: Percentage of the total
     population that experiences any form of mobility (moves from origin to a
     different destination). Calculated as: (total off-diagonal cells) / (grand total).
     A rate of 20% means 80% remain in their origin position.
@@ -87,7 +87,7 @@ The output is organized into four main sections that follow the analysis workflo
 
 Shows distribution statistics (Min, Q1, Median, Mean, Q3, Max) for:
 \itemize{
-  \item \strong{Total Weighted Connections}: Sum of weighted incoming and outgoing 
+  \item \strong{Total Weighted Connections}: Sum of weighted incoming and outgoing
     connections (strength) for each node. Represents the total volume of mobility
     flows, not just the count of connections.
   \item \strong{Outward Mobility Strength}: Sum of weights on outgoing edges from
@@ -104,8 +104,8 @@ Shows distribution statistics (Min, Q1, Median, Mean, Q3, Max) for:
 \section{Technical Terms}{
 
 \describe{
-  \item{\strong{Isolate}}{A node (category or segment) with no significant 
-    connections to other nodes. In mobility analysis, isolates represent 
+  \item{\strong{Isolate}}{A node (category or segment) with no significant
+    connections to other nodes. In mobility analysis, isolates represent
     positions that either have very high internal retention or only weak
     exchange with other positions. Not necessarily problematic - may indicate
     genuinely distinct positions.}
@@ -116,7 +116,7 @@ Shows distribution statistics (Min, Q1, Median, Mean, Q3, Max) for:
     actually exist. In a fully connected network (density = 1), every position
     has significant mobility to every other position. Low density indicates
     mobility is channeled through specific pathways.}
-  \item{\strong{Degree/Strength}}{In weighted networks, we use \strong{strength} 
+  \item{\strong{Degree/Strength}}{In weighted networks, we use \strong{strength}
     instead of simple degree: the sum of edge weights connected to a node.
     In-strength = sum of incoming edge weights, out-strength = sum of outgoing
     edge weights, total strength = sum of both. High strength nodes handle large
