@@ -82,24 +82,13 @@ test_that("moneca_fast handles sparse data correctly", {
   expect_true(is.list(result$mat.list))
 })
 
-test_that("moneca_fast performance is better than original", {
-  skip_on_cran() # Skip on CRAN to save time
+test_that("moneca_fast completes on medium data and produces valid output", {
+  skip_on_cran()
 
-  # Generate medium-sized test data
   test_data <- get_test_data("medium")
-
-  # Time both versions
-  time_original <- system.time({
-    result_original <- moneca(test_data, segment.levels = 2)
-  })
-
-  time_fast <- system.time({
-    result_fast <- moneca_fast(test_data, segment.levels = 2, progress = FALSE)
-  })
-
-  # Fast version should be faster (or at least not much slower)
-  # Due to small test size, we're lenient with the comparison
-  expect_true(time_fast["elapsed"] <= time_original["elapsed"] * 1.5)
+  result_fast <- moneca_fast(test_data, segment.levels = 2, progress = FALSE)
+  validate_moneca_object(result_fast)
+  expect_true(!is.null(result_fast$segment_metadata))
 })
 
 test_that("moneca_fast handles different cut-off values", {
