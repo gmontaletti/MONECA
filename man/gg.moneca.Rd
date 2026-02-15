@@ -127,11 +127,15 @@ gg.moneca(
 A ggplot2 object.
 }
 \description{
+\strong{Deprecated}. Use \code{\link{plot_moneca_ggraph}} instead.
+This function will be removed in moneca 1.2.0.
+}
+\details{
 Creates network visualizations of moneca clustering results using ggplot2.
 This function provides extensive customization options but has been superseded
 by \code{\link{plot_moneca_ggraph}} for most use cases.
-}
-\details{
+
+
 This function provides a highly customizable but complex interface for creating
 moneca visualizations. It requires the eliter package for some functionality.
 For most users, \code{\link{plot_moneca_ggraph}} offers a more modern and
@@ -149,7 +153,7 @@ seg <- moneca(mobility_data, segment.levels = 2)
 gg.moneca(seg)
 
 # Custom styling
-gg.moneca(seg, 
+gg.moneca(seg,
          vertex.fill = "red",
          edge.color = "blue",
          show.borders = FALSE)

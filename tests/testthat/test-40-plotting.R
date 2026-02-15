@@ -426,3 +426,117 @@ test_that("plot_segment_quality cohesion plot uses segment_label correctly", {
   # Either custom labels were applied OR metadata-based labels were used
   expect_true(has_custom || has_labels)
 })
+
+# Tests for internal helpers and metadata-based plotting -----
+
+test_that(".get_metadata works with moneca() objects (no cached metadata)", {
+  test_data <- get_test_data("small")
+  seg <- moneca(test_data, segment.levels = 2)
+
+  # moneca() does not cache segment_metadata
+  expect_null(seg$segment_metadata)
+
+  # .get_metadata should compute it on the fly
+  meta <- moneca:::.get_metadata(seg)
+  expect_s3_class(meta, "moneca_segments")
+  expect_true(meta$n_levels >= 1)
+  expect_true(length(meta$original_names) > 0)
+})
+
+test_that(".get_metadata works with moneca_fast() objects (cached metadata)", {
+  test_data <- get_test_data("small")
+  seg <- moneca_fast(test_data, segment.levels = 2)
+
+  # moneca_fast() caches segment_metadata
+  expect_false(is.null(seg$segment_metadata))
+
+  meta <- moneca:::.get_metadata(seg)
+  expect_s3_class(meta, "moneca_segments")
+  expect_equal(meta$n_levels, length(seg$segment.list))
+})
+
+test_that(".membership_from_metadata produces correct structure", {
+  test_data <- get_test_data("small")
+  seg <- moneca(test_data, segment.levels = 2)
+  meta <- moneca_segments(seg)
+
+  membership <- moneca:::.membership_from_metadata(meta, 2)
+
+  # Must have standard columns
+  expect_true(all(
+    c("name", "membership", "segment_label") %in%
+      colnames(membership)
+  ))
+  # One row per node
+  expect_equal(nrow(membership), length(meta$original_names))
+  # All names present
+  expect_equal(membership$name, meta$original_names)
+  # Non-empty membership
+  expect_true(all(nchar(membership$membership) > 0))
+  # Non-empty labels
+  expect_true(all(nchar(membership$segment_label) > 0))
+})
+
+test_that(".membership_from_metadata groupings match moneca_segments groups", {
+  test_data <- get_custom_test_data(n_classes = 6, seed = 42)
+  seg <- moneca(test_data, segment.levels = 3)
+  meta <- moneca_segments(seg)
+
+  for (lvl in seq_len(meta$n_levels)) {
+    membership <- moneca:::.membership_from_metadata(meta, lvl)
+    groups <- meta$levels[[lvl]]$groups
+
+    for (g in seq_along(groups)) {
+      expected_names <- meta$original_names[groups[[g]]]
+      actual_names <- membership$name[
+        membership$membership == paste0(lvl, ".", g)
+      ]
+      expect_setequal(actual_names, expected_names)
+    }
+  }
+})
+
+test_that("modern plotting functions work with moneca() objects (no cache)", {
+  skip_if_not_installed("ggraph")
+  skip_if_not_installed("tidygraph")
+  skip_if_not_installed("dplyr")
+
+  test_data <- get_test_data("small")
+  seg <- moneca(test_data, segment.levels = 2)
+
+  # All 5 modern plotting functions should work without cached metadata
+  expect_no_error({
+    p1 <- plot_moneca_ggraph(seg)
+  })
+  expect_s3_class(p1, "ggplot")
+
+  expect_no_error({
+    p2 <- plot_ego_ggraph(seg, test_data, ego_id = 2)
+  })
+  expect_s3_class(p2, "ggplot")
+
+  expect_no_error({
+    p3 <- plot_stair_ggraph(seg)
+  })
+  expect_is(p3, "list")
+
+  expect_no_error({
+    p4 <- plot_moneca_dendrogram(seg)
+  })
+  expect_s3_class(p4, "ggplot")
+
+  expect_no_error({
+    p5 <- plot_segment_quality(seg, plot_type = "cohesion")
+  })
+  expect_s3_class(p5, "ggplot")
+})
+
+test_that("legacy functions emit deprecation warnings", {
+  test_data <- get_test_data("small")
+  seg <- moneca(test_data, segment.levels = 2)
+
+  expect_warning(
+    moneca.plot(seg),
+    "deprecated"
+  )
+})

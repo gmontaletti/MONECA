@@ -49,6 +49,44 @@ if (getRversion() >= "2.15.1") {
   if (is.null(x)) y else x
 }
 
+# 1. Internal helper: get or compute metadata -----
+.get_metadata <- function(segments) {
+  if (!is.null(segments$segment_metadata)) {
+    segments$segment_metadata
+  } else {
+    moneca_segments(segments)
+  }
+}
+
+# 2. Internal helper: membership from metadata -----
+.membership_from_metadata <- function(meta, level) {
+  target_level <- max(level)
+  if (target_level < 1 || target_level > meta$n_levels) {
+    stop("level must be between 1 and ", meta$n_levels, call. = FALSE)
+  }
+
+  groups <- meta$levels[[target_level]]$groups
+  map_df <- meta$levels[[target_level]]$map
+  node_names <- meta$original_names
+  n_nodes <- length(node_names)
+
+  membership <- character(n_nodes)
+  seg_label <- character(n_nodes)
+
+  for (g in seq_along(groups)) {
+    idx <- groups[[g]]
+    membership[idx] <- paste0(target_level, ".", g)
+    seg_label[idx] <- map_df$label[g]
+  }
+
+  data.frame(
+    name = node_names,
+    membership = membership,
+    segment_label = seg_label,
+    stringsAsFactors = FALSE
+  )
+}
+
 # Helper function to create segment labels based on segment_naming parameter
 create_segment_labels <- function(
   segments,
@@ -57,11 +95,7 @@ create_segment_labels <- function(
   segment_naming
 ) {
   # Get canonical metadata
-  meta <- if (!is.null(segments$segment_metadata)) {
-    segments$segment_metadata
-  } else {
-    moneca_segments(segments)
-  }
+  meta <- .get_metadata(segments)
 
   # Default labels from metadata
   if (level >= 1 && level <= meta$n_levels) {
@@ -276,9 +310,12 @@ plot_moneca_ggraph <- function(
     )
   }
 
+  # Canonical metadata (cached or computed once)
+  meta <- .get_metadata(segments)
+
   # Set default level after validation
   if (is.null(level)) {
-    level <- seq(segments$segment.list)[-1]
+    level <- seq_len(meta$n_levels)[-1]
   }
 
   # Get edge matrix
@@ -355,18 +392,13 @@ plot_moneca_ggraph <- function(
         )
       }
 
-      # Get basic membership first - IMPORTANT: Pass "auto" as character string
-      membership <- segment.membership.enhanced(
-        segments,
-        level = level,
-        naming_strategy = "auto"
-      )
+      # Get metadata-based membership then override labels
+      membership <- .membership_from_metadata(meta, level)
 
       # Override segment_label with custom labels where available
       custom_match <- match(membership$name, segment_naming$name)
       custom_labels <- segment_naming$segment_label[custom_match]
 
-      # Use custom labels where available, fallback to generated names
       membership$segment_label <- ifelse(
         is.na(custom_labels),
         membership$segment_label,
@@ -386,11 +418,17 @@ plot_moneca_ggraph <- function(
         )
       }
 
-      membership <- segment.membership.enhanced(
-        segments,
-        level = level,
-        naming_strategy = naming_strategy
-      )
+      if (naming_strategy == "auto") {
+        # Fast path: use pre-computed metadata
+        membership <- .membership_from_metadata(meta, level)
+      } else {
+        # Legacy path for concat/pattern/custom strategies
+        membership <- segment.membership.enhanced(
+          segments,
+          level = level,
+          naming_strategy = naming_strategy
+        )
+      }
     }
 
     # Match node names to membership
@@ -828,6 +866,9 @@ plot_ego_ggraph <- function(
     )
   }
 
+  # Canonical metadata (cached or computed once)
+  meta <- .get_metadata(segments)
+
   # Extract the core mobility matrix (without totals)
   n_classes <- nrow(mobility_matrix) - 1
   core_matrix <- mobility_matrix[1:n_classes, 1:n_classes]
@@ -891,6 +932,8 @@ plot_ego_ggraph <- function(
 
   # Get enhanced segment membership for all nodes
   # Handle different types of segment_naming input
+  all_levels <- seq_len(meta$n_levels)
+
   if (is.data.frame(segment_naming)) {
     # Custom dataframe provided - validate structure
     if (!all(c("name", "segment_label") %in% colnames(segment_naming))) {
@@ -899,18 +942,12 @@ plot_ego_ggraph <- function(
       )
     }
 
-    # Get basic membership first
-    membership <- segment.membership.enhanced(
-      segments,
-      level = 1:length(segments$segment.list),
-      naming_strategy = "auto"
-    )
+    # Get metadata-based membership then override labels
+    membership <- .membership_from_metadata(meta, all_levels)
 
-    # Override level_name with custom labels where available
     custom_match <- match(membership$name, segment_naming$name)
     custom_labels <- segment_naming$segment_label[custom_match]
 
-    # Use custom labels where available, fallback to generated names
     membership$segment_label <- ifelse(
       is.na(custom_labels),
       membership$segment_label,
@@ -930,11 +967,17 @@ plot_ego_ggraph <- function(
       )
     }
 
-    membership <- segment.membership.enhanced(
-      segments,
-      level = 1:length(segments$segment.list),
-      naming_strategy = naming_strategy
-    )
+    if (naming_strategy == "auto") {
+      # Fast path: use pre-computed metadata
+      membership <- .membership_from_metadata(meta, all_levels)
+    } else {
+      # Legacy path for concat/pattern/custom strategies
+      membership <- segment.membership.enhanced(
+        segments,
+        level = all_levels,
+        naming_strategy = naming_strategy
+      )
+    }
   }
 
   # Find ego's segment
@@ -1136,6 +1179,9 @@ plot_stair_ggraph <- function(
       "segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function."
     )
   }
+
+  # Canonical metadata (cached or computed once)
+  meta <- .get_metadata(segments)
 
   # Create consistent layout if not provided
   if (is.null(layout)) {
@@ -1341,13 +1387,15 @@ plot_moneca_dendrogram <- function(
     stop("segments must be a moneca object created by the moneca() function")
   }
 
+  # Canonical metadata (cached or computed once)
+  meta <- .get_metadata(segments)
+
   # Extract segment list and original names
   seg_list <- segments$segment.list
-  n_levels <- length(seg_list)
+  n_levels <- meta$n_levels
 
-  # Get original category names
-  mat <- segments$mat.list[[1]]
-  cat_names <- rownames(mat)[-nrow(mat)] # Remove "Total" row
+  # Get original category names from metadata
+  cat_names <- meta$original_names
   n_categories <- length(cat_names)
 
   # Initialize data structures for dendrogram
@@ -1483,20 +1531,8 @@ plot_moneca_dendrogram <- function(
       member_y <- node_positions[[1]]$y[members]
       y_positions[i] <- mean(member_y)
 
-      # Create segment label
-      if (length(members) <= 3) {
-        segment_labels[i] <- paste(cat_names[members], collapse = "-")
-      } else {
-        segment_labels[i] <- paste0(
-          "S",
-          level,
-          ".",
-          i,
-          " (",
-          length(members),
-          " nodes)"
-        )
-      }
+      # Use canonical label from metadata
+      segment_labels[i] <- meta$levels[[level]]$map$label[i]
     }
 
     node_positions[[level]] <- data.frame(
@@ -1793,6 +1829,9 @@ plot_segment_quality <- function(
   if (!inherits(segments, "moneca")) {
     stop("segments must be a moneca object created by the moneca() function")
   }
+
+  # Canonical metadata (cached or computed once)
+  meta <- .get_metadata(segments)
 
   # Get quality data
   quality_data <- segment.quality(segments, final.solution = FALSE)
@@ -2234,25 +2273,18 @@ plot_segment_quality <- function(
     ]
 
     # Apply segment naming for better labels
-    # Get segment numbers from the first available level
-    if (length(segments$segment.list) > 0) {
-      # Use level 1 as reference for segment numbering
-      first_level_membership <- segment.membership(segments, level = 1)
-      segment_labels <- create_segment_labels(
-        segments,
-        1,
-        1:length(unique(first_level_membership$membership)),
-        segment_naming
-      )
+    if (meta$n_levels > 0) {
+      # Use metadata-based membership at level 1 for labelling
+      level1_membership <- .membership_from_metadata(meta, 1)
 
-      # Create a mapping from membership to segment labels
+      # Create a mapping from membership ID to label
       membership_mapping <- data.frame(
         Membership = unique(heatmap_data$Membership),
-        segment_label = segment_labels[match(
-          unique(heatmap_data$Membership),
-          paste0("1.", 1:length(segment_labels))
-        )]
+        stringsAsFactors = FALSE
       )
+      membership_mapping$segment_label <- level1_membership$segment_label[
+        match(membership_mapping$Membership, level1_membership$membership)
+      ]
 
       # Handle potential NA values by falling back to membership
       membership_mapping$segment_label[is.na(

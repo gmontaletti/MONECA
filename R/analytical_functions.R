@@ -974,6 +974,9 @@ segment.edges <- function(
 
 #' Legacy Network Plot for MONECA Results
 #'
+#' \strong{Deprecated}. Use \code{\link{plot_moneca_ggraph}} instead.
+#' This function will be removed in moneca 1.2.0.
+#'
 #' Creates a network visualization of MONECA segmentation results using base
 #' graphics and igraph. For modern visualizations, use \code{\link{plot_moneca_ggraph}}.
 #'

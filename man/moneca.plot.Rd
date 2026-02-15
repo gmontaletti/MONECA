@@ -66,10 +66,14 @@ moneca.plot(
 NULL (creates a plot as side effect).
 }
 \description{
-Creates a network visualization of MONECA segmentation results using base
-graphics and igraph. For modern visualizations, use \code{\link{plot_moneca_ggraph}}.
+\strong{Deprecated}. Use \code{\link{plot_moneca_ggraph}} instead.
+This function will be removed in moneca 1.2.0.
 }
 \details{
+Creates a network visualization of MONECA segmentation results using base
+graphics and igraph. For modern visualizations, use \code{\link{plot_moneca_ggraph}}.
+
+
 This function provides backward compatibility with earlier versions of MONECA.
 For new analyses, consider using \code{\link{plot_moneca_ggraph}} which offers
 more modern styling and customization options.

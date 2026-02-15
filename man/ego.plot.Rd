@@ -52,11 +52,15 @@ for the visualization. Default is "RdPu".}
 A ggplot2 object showing the ego network.
 }
 \description{
+\strong{Deprecated}. Use \code{\link{plot_ego_ggraph}} instead.
+This function will be removed in moneca 1.2.0.
+}
+\details{
 Creates ego network plots showing mobility patterns from a single focal position
 using the legacy ggplot2 plotting system. For modern ego network analysis,
 use \code{\link{plot_ego_ggraph}}.
-}
-\details{
+
+
 This function creates a focused view of mobility patterns from a single position
 in the social structure. It highlights both incoming and outgoing mobility flows
 and uses different visual elements to represent:
@@ -79,7 +83,7 @@ seg <- moneca(mobility_data, segment.levels = 2)
 ego.plot(seg, mobility_data, id = 2)
 
 # Customized ego plot
-ego.plot(seg, mobility_data, 
+ego.plot(seg, mobility_data,
          id = 3,
          edge.size = 1.2,
          color.scheme = "Blues",

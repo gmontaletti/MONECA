@@ -127,11 +127,15 @@ stair.plot(
 A list of ggplot2 objects, one for each segmentation level.
 }
 \description{
+\strong{Deprecated}. Use \code{\link{plot_stair_ggraph}} instead.
+This function will be removed in moneca 1.2.0.
+}
+\details{
 Creates a series of plots showing how segmentation evolves across hierarchical
 levels using the legacy ggplot2 system. For modern stair plots, use
 \code{\link{plot_stair_ggraph}}.
-}
-\details{
+
+
 This function creates multiple plots showing the progression of segmentation
 across hierarchical levels. Each plot uses the same layout to maintain
 consistency, making it easy to see how segments merge or split across levels.
