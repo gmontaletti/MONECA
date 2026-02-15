@@ -901,9 +901,12 @@ segment.edges <- function(
   # Always use the first matrix which contains the original data with totals
   mx <- segments$mat.list[[1]]
 
-  # Validate that the matrix exists and has proper structure
-  if (is.null(mx) || !is.matrix(mx)) {
+  # Validate that the matrix exists and coerce if needed
+  if (is.null(mx)) {
     stop("segments$mat.list[[1]] must be a valid matrix")
+  }
+  if (!is.matrix(mx)) {
+    mx <- as.matrix(mx)
   }
 
   # Set default values after validation
