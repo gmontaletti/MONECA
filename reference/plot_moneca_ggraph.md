@@ -19,7 +19,7 @@ plot_moneca_ggraph(
   edge_width = "weight",
   edge_color = "grey50",
   edge_alpha = 0.6,
-  show_labels = TRUE,
+  show_labels = FALSE,
   label_size = 3,
   show_segments = TRUE,
   segment_alpha = 0.3,
@@ -112,7 +112,8 @@ plot_moneca_ggraph(
 
 - show_labels:
 
-  Logical indicating whether to display node labels. Default is TRUE.
+  Logical indicating whether to display individual node labels. Default
+  is FALSE (only segment/cluster labels are shown).
 
 - label_size:
 
@@ -173,12 +174,9 @@ plot_moneca_ggraph(
 ## Value
 
 When `level` is a single integer, a `ggplot2` object that can be further
-customized. When `level` is a vector (including the default), a `gtable`
-object from
-[`gridExtra::grid.arrange()`](https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html)
-that can be displayed with
-[`print()`](https://rdrr.io/r/base/print.html) or saved with
-[`ggplot2::ggsave()`](https://ggplot2.tidyverse.org/reference/ggsave.html).
+customized. When `level` is a vector (including the default), a named
+list of `ggplot2` objects (one per level), each viewable individually at
+full size. Names are `"level_2"`, `"level_3"`, etc.
 
 ## Details
 

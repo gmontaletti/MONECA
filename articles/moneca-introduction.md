@@ -458,20 +458,22 @@ p1 <- plot_moneca_ggraph(
   segment_alpha = 0.2,
   label_size = 3.5
 )
+
+print(p1)
+#> $level_2
 ```
 
 ![](figures/plot_basic-1.png)
 
-``` r
+    #> 
+    #> $level_3
 
-print(p1)
-#> TableGrob (3 x 2) "arrange": 4 grobs
-#>   z     cells    name                grob
-#> 1 1 (2-2,1-1) arrange      gtable[layout]
-#> 2 2 (2-2,2-2) arrange      gtable[layout]
-#> 3 3 (3-3,1-1) arrange      gtable[layout]
-#> 4 4 (1-1,1-2) arrange text[GRID.text.101]
-```
+![](figures/plot_basic-2.png)
+
+    #> 
+    #> $level_4
+
+![](figures/plot_basic-3.png)
 
 ### Advanced Network Visualization with Clear Segment Boundaries
 
@@ -494,19 +496,24 @@ p2 <- plot_moneca_ggraph(
   node_alpha = 0.9,
   edge_alpha = 0.6
 )
+
+print(p2)
+#> $level_2
 ```
 
 ![](figures/plot_custom-1.png)
 
-``` r
+    #> 
+    #> $level_3
 
-print(p2)
-#> TableGrob (3 x 2) "arrange": 4 grobs
-#>   z     cells    name                grob
-#> 1 1 (2-2,1-1) arrange      gtable[layout]
-#> 2 2 (2-2,2-2) arrange      gtable[layout]
-#> 3 3 (3-3,1-1) arrange      gtable[layout]
-#> 4 4 (1-1,1-2) arrange text[GRID.text.405]
+![](figures/plot_custom-2.png)
+
+    #> 
+    #> $level_4
+
+![](figures/plot_custom-3.png)
+
+``` r
 
 # Also create a subset visualization focusing on the largest segments
 cat("\nLargest segments at Level 2:\n")
@@ -739,11 +746,6 @@ p_rigid <- plot_moneca_ggraph(
   edge_alpha = 0.5,
   show_labels = FALSE  # No labels for 30-node network
 )
-```
-
-![](figures/compare_plots-1.png)
-
-``` r
 
 # Plot fluid system - emphasis on connectivity
 # Note: Strong cross-segment mobility creates overlapping, less distinct boundaries
@@ -761,26 +763,41 @@ p_fluid <- plot_moneca_ggraph(
   edge_alpha = 0.7,  # Higher edge alpha to show connectivity
   show_labels = FALSE  # No labels for 30-node network
 )
+
+print(p_rigid)
+#> $level_2
 ```
+
+![](figures/compare_plots-1.png)
+
+    #> 
+    #> $level_3
 
 ![](figures/compare_plots-2.png)
 
-``` r
+    #> 
+    #> $level_4
 
-print(p_rigid)
-#> TableGrob (3 x 2) "arrange": 4 grobs
-#>   z     cells    name                grob
-#> 1 1 (2-2,1-1) arrange      gtable[layout]
-#> 2 2 (2-2,2-2) arrange      gtable[layout]
-#> 3 3 (3-3,1-1) arrange      gtable[layout]
-#> 4 4 (1-1,1-2) arrange text[GRID.text.834]
+![](figures/compare_plots-3.png)
+
+``` r
 print(p_fluid)
-#> TableGrob (3 x 2) "arrange": 4 grobs
-#>   z     cells    name                grob
-#> 1 1 (2-2,1-1) arrange      gtable[layout]
-#> 2 2 (2-2,2-2) arrange      gtable[layout]
-#> 3 3 (3-3,1-1) arrange      gtable[layout]
-#> 4 4 (1-1,1-2) arrange text[GRID.text.948]
+#> $level_2
+```
+
+![](figures/compare_plots-4.png)
+
+    #> 
+    #> $level_3
+
+![](figures/compare_plots-5.png)
+
+    #> 
+    #> $level_4
+
+![](figures/compare_plots-6.png)
+
+``` r
 
 # Add network density comparison
 cat("\nNetwork characteristics comparison:\n")
@@ -848,12 +865,12 @@ quality_overview <- plot_segment_quality(
 
 print(quality_overview)
 #> TableGrob (3 x 2) "arrange": 5 grobs
-#>   z     cells    name                 grob
-#> 1 1 (2-2,1-1) arrange       gtable[layout]
-#> 2 2 (2-2,2-2) arrange       gtable[layout]
-#> 3 3 (3-3,1-1) arrange       gtable[layout]
-#> 4 4 (3-3,2-2) arrange       gtable[layout]
-#> 5 5 (1-1,1-2) arrange text[GRID.text.1169]
+#>   z     cells    name                grob
+#> 1 1 (2-2,1-1) arrange      gtable[layout]
+#> 2 2 (2-2,2-2) arrange      gtable[layout]
+#> 3 3 (3-3,1-1) arrange      gtable[layout]
+#> 4 4 (3-3,2-2) arrange      gtable[layout]
+#> 5 5 (1-1,1-2) arrange text[GRID.text.851]
 
 # Cohesion vs Size Analysis
 cohesion_plot <- plot_segment_quality(
@@ -916,19 +933,24 @@ auto_plot <- plot_moneca_ggraph(
   show_segments = TRUE,
   color_palette = "Set2"
 )
+
+print(auto_plot)
+#> $level_2
 ```
 
 ![](figures/segment_naming_basic-1.png)
 
-``` r
+    #> 
+    #> $level_3
 
-print(auto_plot)
-#> TableGrob (3 x 2) "arrange": 4 grobs
-#>   z     cells    name                 grob
-#> 1 1 (2-2,1-1) arrange       gtable[layout]
-#> 2 2 (2-2,2-2) arrange       gtable[layout]
-#> 3 3 (3-3,1-1) arrange       gtable[layout]
-#> 4 4 (1-1,1-2) arrange text[GRID.text.1309]
+![](figures/segment_naming_basic-2.png)
+
+    #> 
+    #> $level_4
+
+![](figures/segment_naming_basic-3.png)
+
+``` r
 
 # Example 2: Concatenation strategy - joins names with separator
 concat_plot <- plot_moneca_ggraph(
@@ -939,20 +961,22 @@ concat_plot <- plot_moneca_ggraph(
   show_segments = TRUE,
   color_palette = "Dark2"
 )
-```
-
-![](figures/segment_naming_basic-2.png)
-
-``` r
 
 print(concat_plot)
-#> TableGrob (3 x 2) "arrange": 4 grobs
-#>   z     cells    name                 grob
-#> 1 1 (2-2,1-1) arrange       gtable[layout]
-#> 2 2 (2-2,2-2) arrange       gtable[layout]
-#> 3 3 (3-3,1-1) arrange       gtable[layout]
-#> 4 4 (1-1,1-2) arrange text[GRID.text.1428]
+#> $level_2
 ```
+
+![](figures/segment_naming_basic-4.png)
+
+    #> 
+    #> $level_3
+
+![](figures/segment_naming_basic-5.png)
+
+    #> 
+    #> $level_4
+
+![](figures/segment_naming_basic-6.png)
 
 #### Advanced Custom Naming with Data Frames
 
@@ -1003,19 +1027,24 @@ custom_plot <- plot_moneca_ggraph(
   show_labels = TRUE,
   label_size = 3.5
 )
+
+print(custom_plot)
+#> $level_2
 ```
 
 ![](figures/segment_naming_custom-1.png)
 
-``` r
+    #> 
+    #> $level_3
 
-print(custom_plot)
-#> TableGrob (3 x 2) "arrange": 4 grobs
-#>   z     cells    name                 grob
-#> 1 1 (2-2,1-1) arrange       gtable[layout]
-#> 2 2 (2-2,2-2) arrange       gtable[layout]
-#> 3 3 (3-3,1-1) arrange       gtable[layout]
-#> 4 4 (1-1,1-2) arrange text[GRID.text.1605]
+![](figures/segment_naming_custom-2.png)
+
+    #> 
+    #> $level_4
+
+![](figures/segment_naming_custom-3.png)
+
+``` r
 
 # Show how this works across different plot types
 # Ego network with custom naming
@@ -1033,7 +1062,7 @@ ego_custom <- plot_ego_ggraph(
 print(ego_custom)
 ```
 
-![](figures/segment_naming_custom-2.png)
+![](figures/segment_naming_custom-4.png)
 
 #### Partial Custom Naming
 
@@ -1058,19 +1087,24 @@ partial_plot <- plot_moneca_ggraph(
   show_segments = TRUE,
   segment_alpha = 0.15
 )
+
+print(partial_plot)
+#> $level_2
 ```
 
 ![](figures/segment_naming_partial-1.png)
 
-``` r
+    #> 
+    #> $level_3
 
-print(partial_plot)
-#> TableGrob (3 x 2) "arrange": 4 grobs
-#>   z     cells    name                 grob
-#> 1 1 (2-2,1-1) arrange       gtable[layout]
-#> 2 2 (2-2,2-2) arrange       gtable[layout]
-#> 3 3 (3-3,1-1) arrange       gtable[layout]
-#> 4 4 (1-1,1-2) arrange text[GRID.text.1821]
+![](figures/segment_naming_partial-2.png)
+
+    #> 
+    #> $level_4
+
+![](figures/segment_naming_partial-3.png)
+
+``` r
 
 cat("\\nPartial custom naming allows focus on analytically important categories\\n")
 #> \nPartial custom naming allows focus on analytically important categories\n

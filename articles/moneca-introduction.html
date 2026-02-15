@@ -570,22 +570,22 @@ while maintaining analytical depth</li>
 <span>  show_segments <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  segment_alpha <span class="op">=</span> <span class="fl">0.2</span>,</span>
 <span>  label_size <span class="op">=</span> <span class="fl">3.5</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/plot_basic-1.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; TableGrob (3 x 2) "arrange": 4 grobs</span></span>
-<span><span class="co">#&gt;   z     cells    name                grob</span></span>
-<span><span class="co">#&gt; 1 1 (2-2,1-1) arrange      gtable[layout]</span></span>
-<span><span class="co">#&gt; 2 2 (2-2,2-2) arrange      gtable[layout]</span></span>
-<span><span class="co">#&gt; 3 3 (3-3,1-1) arrange      gtable[layout]</span></span>
-<span><span class="co">#&gt; 4 4 (1-1,1-2) arrange text[GRID.text.101]</span></span></code></pre></div>
+<span><span class="co">#&gt; $level_2</span></span></code></pre></div>
+<p><img src="figures/plot_basic-1.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_3</span></span></code></pre>
+<p><img src="figures/plot_basic-2.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_4</span></span></code></pre>
+<p><img src="figures/plot_basic-3.png" class="r-plt" alt="" width="100%"></p>
 </div>
 <div class="section level3">
 <h3 id="advanced-network-visualization-with-clear-segment-boundaries">Advanced Network Visualization with Clear Segment Boundaries<a class="anchor" aria-label="anchor" href="#advanced-network-visualization-with-clear-segment-boundaries"></a>
 </h3>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create an advanced plot emphasizing segment structure for 30-node network</span></span>
 <span><span class="co"># Note: For larger networks, reduce label clutter and focus on structure</span></span>
 <span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span></span>
@@ -603,18 +603,19 @@ while maintaining analytical depth</li>
 <span>  segment_alpha <span class="op">=</span> <span class="fl">0.15</span>,</span>
 <span>  node_alpha <span class="op">=</span> <span class="fl">0.9</span>,</span>
 <span>  edge_alpha <span class="op">=</span> <span class="fl">0.6</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/plot_custom-1.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; TableGrob (3 x 2) "arrange": 4 grobs</span></span>
-<span><span class="co">#&gt;   z     cells    name                grob</span></span>
-<span><span class="co">#&gt; 1 1 (2-2,1-1) arrange      gtable[layout]</span></span>
-<span><span class="co">#&gt; 2 2 (2-2,2-2) arrange      gtable[layout]</span></span>
-<span><span class="co">#&gt; 3 3 (3-3,1-1) arrange      gtable[layout]</span></span>
-<span><span class="co">#&gt; 4 4 (1-1,1-2) arrange text[GRID.text.405]</span></span>
+<span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $level_2</span></span></code></pre></div>
+<p><img src="figures/plot_custom-1.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_3</span></span></code></pre>
+<p><img src="figures/plot_custom-2.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_4</span></span></code></pre>
+<p><img src="figures/plot_custom-3.png" class="r-plt" alt="" width="100%"></p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="co"># Also create a subset visualization focusing on the largest segments</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nLargest segments at Level 2:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -630,7 +631,7 @@ while maintaining analytical depth</li>
 </h3>
 <p>Ego networks reveal mobility patterns from a single focal position,
 showing both incoming and outgoing flows:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create ego network for class 15 (middle of the range) with enhanced accessibility</span></span>
 <span><span class="co"># Note: Red nodes show focal position and same-segment connections; Flow width indicates volume</span></span>
 <span><span class="va">p3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_ego_ggraph.html">plot_ego_ggraph</a></span><span class="op">(</span></span>
@@ -648,7 +649,7 @@ showing both incoming and outgoing flows:</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p3</span><span class="op">)</span></span></code></pre></div>
 <p><img src="figures/ego_plot-1.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Show ego network statistics</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nEgo network statistics for Class 15:\n"</span><span class="op">)</span></span>
@@ -663,7 +664,7 @@ showing both incoming and outgoing flows:</p>
 <div class="section level3">
 <h3 id="multi-level-segmentation-hierarchical-structure-visualization">Multi-Level Segmentation: Hierarchical Structure Visualization<a class="anchor" aria-label="anchor" href="#multi-level-segmentation-hierarchical-structure-visualization"></a>
 </h3>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create stair plots showing progressive segmentation for 30-class system</span></span>
 <span><span class="co"># Using consistent positioning to track segment evolution across levels</span></span>
 <span><span class="va">stair_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_stair_ggraph.html">plot_stair_ggraph</a></span><span class="op">(</span></span>
@@ -682,10 +683,10 @@ showing both incoming and outgoing flows:</p>
 <span><span class="co"># Display individual plots with improved spacing</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">stair_plots</span><span class="op">$</span><span class="va">`Level 2`</span><span class="op">)</span></span></code></pre></div>
 <p><img src="figures/stair_plot-1.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">stair_plots</span><span class="op">$</span><span class="va">`Level 3`</span><span class="op">)</span></span></code></pre></div>
 <p><img src="figures/stair_plot-2.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Provide numerical summary of segmentation progression</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nSegmentation progression summary:\n"</span><span class="op">)</span></span>
@@ -706,7 +707,7 @@ showing both incoming and outgoing flows:</p>
 <div class="section level3">
 <h3 id="comparing-different-mobility-regimes">Comparing Different Mobility Regimes<a class="anchor" aria-label="anchor" href="#comparing-different-mobility-regimes"></a>
 </h3>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analyze the rigid class system (30x30)</span></span>
 <span><span class="va">rigid_seg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">examples_30x30</span><span class="op">$</span><span class="va">rigid</span>, segment.levels <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |=                                                                     |   2%  |                                                                              |==                                                                    |   4%  |                                                                              |====                                                                  |   5%  |                                                                              |=====                                                                 |   7%  |                                                                              |======                                                                |   9%  |                                                                              |========                                                              |  11%  |                                                                              |=========                                                             |  12%  |                                                                              |==========                                                            |  14%  |                                                                              |===========                                                           |  16%  |                                                                              |============                                                          |  18%  |                                                                              |==============                                                        |  20%  |                                                                              |===============                                                       |  21%  |                                                                              |================                                                      |  23%</span></span>
@@ -819,7 +820,7 @@ showing both incoming and outgoing flows:</p>
 <h3 id="comparing-mobility-regimes-accessibility-focused-visualizations">Comparing Mobility Regimes: Accessibility-Focused
 Visualizations<a class="anchor" aria-label="anchor" href="#comparing-mobility-regimes-accessibility-focused-visualizations"></a>
 </h3>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Compare rigid vs fluid systems for 30-class networks</span></span>
 <span><span class="co"># Using colorblind-safe palettes and clear differentiation</span></span>
 <span></span>
@@ -838,10 +839,8 @@ Visualizations<a class="anchor" aria-label="anchor" href="#comparing-mobility-re
 <span>  node_alpha <span class="op">=</span> <span class="fl">0.9</span>,</span>
 <span>  edge_alpha <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  show_labels <span class="op">=</span> <span class="cn">FALSE</span>  <span class="co"># No labels for 30-node network</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/compare_plots-1.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># Plot fluid system - emphasis on connectivity</span></span>
 <span><span class="co"># Note: Strong cross-segment mobility creates overlapping, less distinct boundaries</span></span>
 <span><span class="va">p_fluid</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span></span>
@@ -857,25 +856,29 @@ Visualizations<a class="anchor" aria-label="anchor" href="#comparing-mobility-re
 <span>  node_alpha <span class="op">=</span> <span class="fl">0.85</span>,</span>
 <span>  edge_alpha <span class="op">=</span> <span class="fl">0.7</span>,  <span class="co"># Higher edge alpha to show connectivity</span></span>
 <span>  show_labels <span class="op">=</span> <span class="cn">FALSE</span>  <span class="co"># No labels for 30-node network</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/compare_plots-2.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p_rigid</span><span class="op">)</span></span>
-<span><span class="co">#&gt; TableGrob (3 x 2) "arrange": 4 grobs</span></span>
-<span><span class="co">#&gt;   z     cells    name                grob</span></span>
-<span><span class="co">#&gt; 1 1 (2-2,1-1) arrange      gtable[layout]</span></span>
-<span><span class="co">#&gt; 2 2 (2-2,2-2) arrange      gtable[layout]</span></span>
-<span><span class="co">#&gt; 3 3 (3-3,1-1) arrange      gtable[layout]</span></span>
-<span><span class="co">#&gt; 4 4 (1-1,1-2) arrange text[GRID.text.834]</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p_fluid</span><span class="op">)</span></span>
-<span><span class="co">#&gt; TableGrob (3 x 2) "arrange": 4 grobs</span></span>
-<span><span class="co">#&gt;   z     cells    name                grob</span></span>
-<span><span class="co">#&gt; 1 1 (2-2,1-1) arrange      gtable[layout]</span></span>
-<span><span class="co">#&gt; 2 2 (2-2,2-2) arrange      gtable[layout]</span></span>
-<span><span class="co">#&gt; 3 3 (3-3,1-1) arrange      gtable[layout]</span></span>
-<span><span class="co">#&gt; 4 4 (1-1,1-2) arrange text[GRID.text.948]</span></span>
+<span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p_rigid</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $level_2</span></span></code></pre></div>
+<p><img src="figures/compare_plots-1.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_3</span></span></code></pre>
+<p><img src="figures/compare_plots-2.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_4</span></span></code></pre>
+<p><img src="figures/compare_plots-3.png" class="r-plt" alt="" width="100%"></p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p_fluid</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $level_2</span></span></code></pre></div>
+<p><img src="figures/compare_plots-4.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_3</span></span></code></pre>
+<p><img src="figures/compare_plots-5.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_4</span></span></code></pre>
+<p><img src="figures/compare_plots-6.png" class="r-plt" alt="" width="100%"></p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="co"># Add network density comparison</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nNetwork characteristics comparison:\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -901,7 +904,7 @@ Visualizations<a class="anchor" aria-label="anchor" href="#comparing-mobility-re
 <div class="section level4">
 <h4 id="dendrogram-visualization-for-hierarchical-structure">Dendrogram Visualization for Hierarchical Structure<a class="anchor" aria-label="anchor" href="#dendrogram-visualization-for-hierarchical-structure"></a>
 </h4>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create a dendrogram showing the hierarchical clustering structure</span></span>
 <span><span class="co"># This provides a clear view of how categories are progressively aggregated</span></span>
 <span><span class="va">dendro_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_moneca_dendrogram.html">plot_moneca_dendrogram</a></span><span class="op">(</span></span>
@@ -923,7 +926,7 @@ Visualizations<a class="anchor" aria-label="anchor" href="#comparing-mobility-re
 <div class="section level4">
 <h4 id="quality-assessment-visualization">Quality Assessment Visualization<a class="anchor" aria-label="anchor" href="#quality-assessment-visualization"></a>
 </h4>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Comprehensive segment quality analysis</span></span>
 <span><span class="va">quality_overview</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_segment_quality.html">plot_segment_quality</a></span><span class="op">(</span></span>
 <span>  <span class="va">seg</span>,</span>
@@ -935,16 +938,16 @@ Visualizations<a class="anchor" aria-label="anchor" href="#comparing-mobility-re
 <span>  label_size <span class="op">=</span> <span class="fl">3</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="figures/quality_plots-1.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">quality_overview</span><span class="op">)</span></span>
 <span><span class="co">#&gt; TableGrob (3 x 2) "arrange": 5 grobs</span></span>
-<span><span class="co">#&gt;   z     cells    name                 grob</span></span>
-<span><span class="co">#&gt; 1 1 (2-2,1-1) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 2 2 (2-2,2-2) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 3 3 (3-3,1-1) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 4 4 (3-3,2-2) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 5 5 (1-1,1-2) arrange text[GRID.text.1169]</span></span>
+<span><span class="co">#&gt;   z     cells    name                grob</span></span>
+<span><span class="co">#&gt; 1 1 (2-2,1-1) arrange      gtable[layout]</span></span>
+<span><span class="co">#&gt; 2 2 (2-2,2-2) arrange      gtable[layout]</span></span>
+<span><span class="co">#&gt; 3 3 (3-3,1-1) arrange      gtable[layout]</span></span>
+<span><span class="co">#&gt; 4 4 (3-3,2-2) arrange      gtable[layout]</span></span>
+<span><span class="co">#&gt; 5 5 (1-1,1-2) arrange text[GRID.text.851]</span></span>
 <span></span>
 <span><span class="co"># Cohesion vs Size Analysis</span></span>
 <span><span class="va">cohesion_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_segment_quality.html">plot_segment_quality</a></span><span class="op">(</span></span>
@@ -974,7 +977,7 @@ descriptions.</p>
 </h4>
 <p>The <code>segment_naming</code> parameter accepts several types of
 input:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Generate example data with meaningful class names</span></span>
 <span><span class="va">occupational_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_mobility_data.html">generate_mobility_data</a></span><span class="op">(</span></span>
 <span>  n_classes <span class="op">=</span> <span class="fl">8</span>,</span>
@@ -1006,18 +1009,19 @@ input:</p>
 <span>  node_color <span class="op">=</span> <span class="st">"segment"</span>,</span>
 <span>  show_segments <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  color_palette <span class="op">=</span> <span class="st">"Set2"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/segment_naming_basic-1.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">auto_plot</span><span class="op">)</span></span>
-<span><span class="co">#&gt; TableGrob (3 x 2) "arrange": 4 grobs</span></span>
-<span><span class="co">#&gt;   z     cells    name                 grob</span></span>
-<span><span class="co">#&gt; 1 1 (2-2,1-1) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 2 2 (2-2,2-2) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 3 3 (3-3,1-1) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 4 4 (1-1,1-2) arrange text[GRID.text.1309]</span></span>
+<span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">auto_plot</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $level_2</span></span></code></pre></div>
+<p><img src="figures/segment_naming_basic-1.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_3</span></span></code></pre>
+<p><img src="figures/segment_naming_basic-2.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_4</span></span></code></pre>
+<p><img src="figures/segment_naming_basic-3.png" class="r-plt" alt="" width="100%"></p>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="co"># Example 2: Concatenation strategy - joins names with separator</span></span>
 <span><span class="va">concat_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span></span>
 <span>  <span class="va">occ_seg</span>,</span>
@@ -1026,24 +1030,24 @@ input:</p>
 <span>  node_color <span class="op">=</span> <span class="st">"segment"</span>,</span>
 <span>  show_segments <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  color_palette <span class="op">=</span> <span class="st">"Dark2"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/segment_naming_basic-2.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">concat_plot</span><span class="op">)</span></span>
-<span><span class="co">#&gt; TableGrob (3 x 2) "arrange": 4 grobs</span></span>
-<span><span class="co">#&gt;   z     cells    name                 grob</span></span>
-<span><span class="co">#&gt; 1 1 (2-2,1-1) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 2 2 (2-2,2-2) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 3 3 (3-3,1-1) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 4 4 (1-1,1-2) arrange text[GRID.text.1428]</span></span></code></pre></div>
+<span><span class="co">#&gt; $level_2</span></span></code></pre></div>
+<p><img src="figures/segment_naming_basic-4.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_3</span></span></code></pre>
+<p><img src="figures/segment_naming_basic-5.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_4</span></span></code></pre>
+<p><img src="figures/segment_naming_basic-6.png" class="r-plt" alt="" width="100%"></p>
 </div>
 <div class="section level4">
 <h4 id="advanced-custom-naming-with-data-frames">Advanced Custom Naming with Data Frames<a class="anchor" aria-label="anchor" href="#advanced-custom-naming-with-data-frames"></a>
 </h4>
 <p>The most powerful feature is the ability to provide custom labels
 using a data.frame:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create custom segment labels that provide analytical insight</span></span>
 <span><span class="va">custom_labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Executive"</span>, <span class="st">"Professional"</span>, <span class="st">"Manager"</span>, <span class="st">"Technical"</span>, </span>
@@ -1086,18 +1090,19 @@ using a data.frame:</p>
 <span>  color_palette <span class="op">=</span> <span class="st">"Set3"</span>,</span>
 <span>  show_labels <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  label_size <span class="op">=</span> <span class="fl">3.5</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/segment_naming_custom-1.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">custom_plot</span><span class="op">)</span></span>
-<span><span class="co">#&gt; TableGrob (3 x 2) "arrange": 4 grobs</span></span>
-<span><span class="co">#&gt;   z     cells    name                 grob</span></span>
-<span><span class="co">#&gt; 1 1 (2-2,1-1) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 2 2 (2-2,2-2) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 3 3 (3-3,1-1) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 4 4 (1-1,1-2) arrange text[GRID.text.1605]</span></span>
+<span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">custom_plot</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $level_2</span></span></code></pre></div>
+<p><img src="figures/segment_naming_custom-1.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_3</span></span></code></pre>
+<p><img src="figures/segment_naming_custom-2.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_4</span></span></code></pre>
+<p><img src="figures/segment_naming_custom-3.png" class="r-plt" alt="" width="100%"></p>
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="co"># Show how this works across different plot types</span></span>
 <span><span class="co"># Ego network with custom naming</span></span>
 <span><span class="va">ego_custom</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_ego_ggraph.html">plot_ego_ggraph</a></span><span class="op">(</span></span>
@@ -1112,14 +1117,14 @@ using a data.frame:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">ego_custom</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/segment_naming_custom-2.png" class="r-plt" alt="" width="100%"></p>
+<p><img src="figures/segment_naming_custom-4.png" class="r-plt" alt="" width="100%"></p>
 </div>
 <div class="section level4">
 <h4 id="partial-custom-naming">Partial Custom Naming<a class="anchor" aria-label="anchor" href="#partial-custom-naming"></a>
 </h4>
 <p>You can provide custom names for only some categories, with others
 using default strategies:</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Partial custom naming - focus on key categories</span></span>
 <span><span class="va">key_positions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Executive"</span>, <span class="st">"Professional"</span>, <span class="st">"Manual Worker"</span><span class="op">)</span>,</span>
@@ -1136,18 +1141,19 @@ using default strategies:</p>
 <span>  color_palette <span class="op">=</span> <span class="st">"Spectral"</span>,</span>
 <span>  show_segments <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  segment_alpha <span class="op">=</span> <span class="fl">0.15</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/segment_naming_partial-1.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">partial_plot</span><span class="op">)</span></span>
-<span><span class="co">#&gt; TableGrob (3 x 2) "arrange": 4 grobs</span></span>
-<span><span class="co">#&gt;   z     cells    name                 grob</span></span>
-<span><span class="co">#&gt; 1 1 (2-2,1-1) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 2 2 (2-2,2-2) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 3 3 (3-3,1-1) arrange       gtable[layout]</span></span>
-<span><span class="co">#&gt; 4 4 (1-1,1-2) arrange text[GRID.text.1821]</span></span>
+<span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">partial_plot</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $level_2</span></span></code></pre></div>
+<p><img src="figures/segment_naming_partial-1.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_3</span></span></code></pre>
+<p><img src="figures/segment_naming_partial-2.png" class="r-plt" alt="" width="100%"></p>
+<pre><code><span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $level_4</span></span></code></pre>
+<p><img src="figures/segment_naming_partial-3.png" class="r-plt" alt="" width="100%"></p>
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\\nPartial custom naming allows focus on analytically important categories\\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; \nPartial custom naming allows focus on analytically important categories\n</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"while maintaining readability for other positions.\\n"</span><span class="op">)</span></span>
@@ -1157,7 +1163,7 @@ using default strategies:</p>
 <h4 id="multi-level-analysis-with-custom-naming">Multi-Level Analysis with Custom Naming<a class="anchor" aria-label="anchor" href="#multi-level-analysis-with-custom-naming"></a>
 </h4>
 <p>Custom naming works seamlessly across hierarchical levels:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Multi-level visualization with consistent custom naming</span></span>
 <span><span class="va">multilevel_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_stair_ggraph.html">plot_stair_ggraph</a></span><span class="op">(</span></span>
 <span>  <span class="va">occ_seg</span>,</span>
@@ -1172,10 +1178,10 @@ using default strategies:</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">multilevel_plots</span><span class="op">$</span><span class="va">`Level 2`</span><span class="op">)</span></span></code></pre></div>
 <p><img src="figures/segment_naming_multilevel-1.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">multilevel_plots</span><span class="op">$</span><span class="va">`Level 3`</span><span class="op">)</span></span></code></pre></div>
 <p><img src="figures/segment_naming_multilevel-2.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Show progression of segmentation with meaningful names</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\\nMulti-level segmentation progression with custom names:\\n"</span><span class="op">)</span></span>
@@ -1209,7 +1215,7 @@ classifications</li>
 <strong>International Comparisons</strong>: Apply country-specific
 terminology</li>
 </ol>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Example applications for different research contexts</span></span>
 <span></span>
 <span><span class="co"># Educational mobility</span></span>
@@ -1302,7 +1308,7 @@ distinctions</li>
 <h4 id="accessibility-features">Accessibility Features<a class="anchor" aria-label="anchor" href="#accessibility-features"></a>
 </h4>
 <p>All plots include several accessibility enhancements:</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Example showing all accessibility features</span></span>
 <span><span class="va">accessible_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span></span>
 <span>  <span class="va">seg</span>,</span>
@@ -1336,7 +1342,7 @@ distinctions</li>
 <div class="section level3">
 <h3 id="segment-quality-assessment">Segment Quality Assessment<a class="anchor" aria-label="anchor" href="#segment-quality-assessment"></a>
 </h3>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Assess the quality of segmentation for 30-class system</span></span>
 <span><span class="va">level2_matrix</span> <span class="op">&lt;-</span> <span class="va">seg</span><span class="op">$</span><span class="va">mat.list</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Level 2 aggregated matrix dimensions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">level2_matrix</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
@@ -1422,7 +1428,7 @@ distinctions</li>
 <div class="section level3">
 <h3 id="edge-analysis">Edge Analysis<a class="anchor" aria-label="anchor" href="#edge-analysis"></a>
 </h3>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Examine edge weights between classes (Level 1) for 30-class system</span></span>
 <span><span class="va">edges</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/segment.edges.html">segment.edges</a></span><span class="op">(</span><span class="va">seg</span>, level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Edge weights matrix dimensions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">edges</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
@@ -1517,7 +1523,7 @@ MONECA format:</p>
 <div class="section level3">
 <h3 id="data-format-requirements">Data Format Requirements<a class="anchor" aria-label="anchor" href="#data-format-requirements"></a>
 </h3>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Your data should be a matrix with:</span></span>
 <span><span class="co"># - Rows: origin positions</span></span>
 <span><span class="co"># - Columns: destination positions  </span></span>
@@ -1568,7 +1574,7 @@ MONECA format:</p>
 <div class="section level3">
 <h3 id="data-validation">Data Validation<a class="anchor" aria-label="anchor" href="#data-validation"></a>
 </h3>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Check if your data is properly formatted</span></span>
 <span><span class="va">validate_mobility_matrix</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">mat</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">n</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">mat</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span></span>
@@ -1694,7 +1700,7 @@ large matrices</li>
 <h4 id="color-palette-selection">Color Palette Selection<a class="anchor" aria-label="anchor" href="#color-palette-selection"></a>
 </h4>
 <p>Choose palettes based on your data type and accessibility needs:</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># For categorical data (segments)</span></span>
 <span><span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg</span>, color_palette <span class="op">=</span> <span class="st">"Set2"</span><span class="op">)</span>    <span class="co"># Colorblind-safe qualitative</span></span>
 <span><span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg</span>, color_palette <span class="op">=</span> <span class="st">"Dark2"</span><span class="op">)</span>   <span class="co"># High contrast qualitative</span></span>
@@ -1712,7 +1718,7 @@ large matrices</li>
 </h4>
 <p>Different layouts work better for different network
 characteristics:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Force-directed layouts</span></span>
 <span><span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg</span>, layout <span class="op">=</span> <span class="st">"fr"</span><span class="op">)</span>      <span class="co"># Fruchterman-Reingold (balanced)</span></span>
 <span><span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg</span>, layout <span class="op">=</span> <span class="st">"kk"</span><span class="op">)</span>      <span class="co"># Kamada-Kawai (minimize edge crossings)</span></span>
@@ -1729,7 +1735,7 @@ characteristics:</p>
 <h4 id="node-and-edge-styling">Node and Edge Styling<a class="anchor" aria-label="anchor" href="#node-and-edge-styling"></a>
 </h4>
 <p>Optimize visual elements for clarity and accessibility:</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># High contrast for presentations</span></span>
 <span><span class="fu"><a href="../reference/plot_moneca_ggraph.html">plot_moneca_ggraph</a></span><span class="op">(</span><span class="va">seg</span>,</span>
 <span>  node_alpha <span class="op">=</span> <span class="fl">0.9</span>,        <span class="co"># Strong nodes</span></span>
@@ -1776,7 +1782,7 @@ properties</li>
 <p>For large datasets or when computational speed is important, moneca
 provides a fast implementation that produces identical results to the
 standard algorithm:</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Standard implementation</span></span>
 <span><span class="va">seg_standard</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/moneca.html">moneca</a></span><span class="op">(</span><span class="va">basic_data</span>, segment.levels <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span></span>
@@ -1794,7 +1800,7 @@ functions.</p>
 </h3>
 <p>The package includes auto-tuning capabilities to automatically
 optimize the <code>small.cell.reduction</code> parameter:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Auto-tune using stability method (recommended)</span></span>
 <span><span class="va">seg_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/moneca.html">moneca</a></span><span class="op">(</span></span>
 <span>  <span class="va">basic_data</span>,</span>
@@ -1860,7 +1866,7 @@ documentation</li>
 <li>Check the package website for updates and examples</li>
 <li>Report issues on the GitHub repository</li>
 </ul>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Session information for reproducibility</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.5.2 (2025-10-31)</span></span>
