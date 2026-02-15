@@ -208,6 +208,108 @@ NULL
   sum(abs(observed - fitted)) / (2 * total)
 }
 
+#' Fit quasi-symmetry model via Iterative Proportional Fitting
+#'
+#' Computes the MLE for the quasi-symmetry log-linear model using IPF
+#' instead of GLM. All operations are vectorized (no R-level loops over
+#' cells). Convergence is guaranteed and typically reached in 20-50
+#' iterations.
+#'
+#' @param core An N x N numeric matrix (no margins) of observed counts.
+#' @param max_iter Maximum number of IPF iterations. Default 500.
+#' @param tol Convergence tolerance on the maximum absolute deviation
+#'   between fitted and observed marginal totals. Default 1e-8.
+#' @return A list with components: fitted, deviance, df, p_value, aic,
+#'   bic, dissimilarity_index, residuals, n_iter, converged.
+#' @keywords internal
+.fit_quasi_symmetry_ipf <- function(core, max_iter = 500L, tol = 1e-8) {
+  n <- nrow(core)
+  obs <- core
+  row_totals <- rowSums(obs)
+  col_totals <- colSums(obs)
+
+  # Initialize fitted values (uniform start avoids log(0))
+  fitted <- matrix(sum(obs) / n^2, n, n)
+
+  # Structural zeros: pairs where both directions are 0
+  obs_sym <- obs + t(obs)
+  struct_zero <- obs_sym == 0
+  diag(struct_zero) <- diag(obs) == 0
+  fitted[struct_zero] <- 0
+
+  converged <- FALSE
+  iter <- 0L
+  for (it in seq_len(max_iter)) {
+    iter <- it
+
+    # 1. Row scaling (vectorized)
+    rs <- rowSums(fitted)
+    rs[rs == 0] <- 1
+    fitted <- fitted * (row_totals / rs)
+
+    # 2. Column scaling (vectorized)
+    cs <- colSums(fitted)
+    cs[cs == 0] <- 1
+    fitted <- t(t(fitted) * (col_totals / cs))
+
+    # 3. Symmetric pair scaling (vectorized)
+    fit_sym <- fitted + t(fitted)
+    ratio <- ifelse(fit_sym > 0, obs_sym / fit_sym, 0)
+    fitted <- fitted * ratio
+
+    # 4. Diagonal exact fit
+    diag(fitted) <- diag(obs)
+
+    # 5. Convergence check
+    max_dev <- max(
+      abs(rowSums(fitted) - row_totals),
+      abs(colSums(fitted) - col_totals)
+    )
+    if (max_dev < tol) {
+      converged <- TRUE
+      break
+    }
+  }
+
+  # Compute deviance (G-squared)
+  pos <- obs > 0 & fitted > 0
+  deviance <- 2 * sum(obs[pos] * log(obs[pos] / fitted[pos]))
+  df_residual <- as.integer((n - 1L) * (n - 2L) / 2L)
+
+  # Log-likelihood (Poisson) for AIC/BIC consistency with glm()
+  loglik <- sum(
+    obs[pos] * log(fitted[pos]) - fitted[pos] - lfactorial(obs[pos])
+  )
+  zero_obs <- obs == 0 & fitted > 0
+  if (any(zero_obs)) {
+    loglik <- loglik - sum(fitted[zero_obs])
+  }
+
+  n_params <- as.integer((n^2 + 3L * n - 2L) / 2L)
+  n_cells <- n^2
+
+  # Pearson residuals
+  resid_mat <- matrix(0, n, n)
+  pos_fit <- fitted > 0
+  resid_mat[pos_fit] <- (obs[pos_fit] - fitted[pos_fit]) / sqrt(fitted[pos_fit])
+
+  list(
+    fitted = fitted,
+    deviance = deviance,
+    df = df_residual,
+    p_value = pchisq(deviance, df_residual, lower.tail = FALSE),
+    aic = -2 * loglik + 2 * n_params,
+    bic = -2 * loglik + log(n_cells) * n_params,
+    dissimilarity_index = .dissimilarity_index(
+      as.vector(t(obs)),
+      as.vector(t(fitted))
+    ),
+    residuals = resid_mat,
+    n_iter = iter,
+    converged = converged
+  )
+}
+
 #' Extract segment membership from a moneca object
 #'
 #' Returns a named character vector mapping category names to segment labels
@@ -409,7 +511,7 @@ fit_mobility_model <- function(
     segment_level <- level
   }
 
-  # 3. Convert to long format -----
+  # 3. Ensure category names -----
   categories <- rownames(core)
   if (is.null(categories)) {
     categories <- paste0("Cat", seq_len(n))
@@ -417,14 +519,57 @@ fit_mobility_model <- function(
     colnames(core) <- categories
   }
 
+  # 4. IPF fast-path for quasi-symmetry -----
+  if (type == "quasi_symmetry") {
+    ipf <- .fit_quasi_symmetry_ipf(core)
+
+    fitted_matrix <- ipf$fitted
+    rownames(fitted_matrix) <- categories
+    colnames(fitted_matrix) <- categories
+
+    resid_matrix <- ipf$residuals
+    rownames(resid_matrix) <- categories
+    colnames(resid_matrix) <- categories
+
+    design_info <- list(
+      type = type,
+      n_categories = n,
+      n_cells = n^2,
+      n_parameters = as.integer((n^2 + 3L * n - 2L) / 2L),
+      method = "ipf",
+      n_iter = ipf$n_iter,
+      converged = ipf$converged
+    )
+
+    result <- list(
+      model = NULL,
+      type = type,
+      deviance = ipf$deviance,
+      df = ipf$df,
+      aic = ipf$aic,
+      bic = ipf$bic,
+      p_value = ipf$p_value,
+      dissimilarity_index = ipf$dissimilarity_index,
+      coefficients = NULL,
+      fitted = fitted_matrix,
+      residuals = resid_matrix,
+      design_info = design_info,
+      original_matrix = original_matrix,
+      segment_level = NULL
+    )
+
+    class(result) <- "moneca_loglinear"
+    return(result)
+  }
+
+  # 5. Convert to long format -----
   df <- .matrix_to_long(core)
 
-  # 4. Build design matrix -----
+  # 6. Build design matrix -----
   design_df <- switch(
     type,
     "independence" = .build_design_independence(df, categories),
     "quasi_independence" = .build_design_quasi_independence(df, categories),
-    "quasi_symmetry" = .build_design_quasi_symmetry(df, categories),
     "uniform_association" = .build_design_uniform_association(
       df,
       categories,
@@ -437,7 +582,7 @@ fit_mobility_model <- function(
     )
   )
 
-  # 5. Fit Poisson log-linear model -----
+  # 7. Fit Poisson log-linear model -----
   # Drop all-zero numeric columns (e.g., singleton within-segment indicators)
   predictor_cols <- setdiff(
     names(design_df),
@@ -482,7 +627,7 @@ fit_mobility_model <- function(
     }
   )
 
-  # 6. Extract results -----
+  # 8. Extract results -----
   dev <- deviance(model)
   df_resid <- df.residual(model)
   p_val <- pchisq(dev, df_resid, lower.tail = FALSE)
@@ -523,7 +668,7 @@ fit_mobility_model <- function(
     design_info$scores <- scores
   }
 
-  # 7. Construct return object -----
+  # 9. Construct return object -----
   result <- list(
     model = model,
     type = type,

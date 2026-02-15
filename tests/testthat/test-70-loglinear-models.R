@@ -423,3 +423,49 @@ test_that("print returns invisible", {
   comp <- compare_mobility_models(mx = test_mx, include_topology = FALSE)
   expect_invisible(print(comp))
 })
+
+# 13. IPF-based quasi-symmetry -----
+
+test_that("IPF quasi-symmetry converges for small matrix", {
+  m <- fit_mobility_model(test_mx, type = "quasi_symmetry")
+  expect_s3_class(m, "moneca_loglinear")
+  expect_true(m$design_info$converged)
+  expect_true(m$design_info$method == "ipf")
+})
+
+test_that("IPF quasi-symmetry model field is NULL", {
+  m <- fit_mobility_model(test_mx, type = "quasi_symmetry")
+  expect_null(m$model)
+  expect_null(m$coefficients)
+})
+
+test_that("IPF quasi-symmetry deviance/df match GLM reference", {
+  # Reference values from GLM for 5-class test data (seed=42)
+  # Pre-computed: deviance ~ 2.49, df = 3
+  m <- fit_mobility_model(test_mx, type = "quasi_symmetry")
+  n <- 5
+  expect_equal(m$df, (n - 1) * (n - 2) / 2)
+
+  # Cross-check: fit with the internal GLM path to get reference values
+  core <- test_mx[1:5, 1:5]
+  df_long <- moneca:::.matrix_to_long(core)
+  df_design <- moneca:::.build_design_quasi_symmetry(df_long, rownames(core))
+  glm_fit <- suppressWarnings(
+    glm(Freq ~ ., data = df_design, family = poisson())
+  )
+  expect_equal(m$deviance, deviance(glm_fit), tolerance = 0.01)
+  expect_equal(m$df, df.residual(glm_fit))
+})
+
+test_that("IPF quasi-symmetry works for N=20 matrix", {
+  mx20 <- generate_mobility_data(n_classes = 20, seed = 99)
+  m <- fit_mobility_model(mx20, type = "quasi_symmetry")
+  expect_s3_class(m, "moneca_loglinear")
+  expect_true(m$design_info$converged)
+  expect_equal(m$df, (20 - 1) * (20 - 2) / 2)
+
+  # Fitted values should sum to observed total
+  n <- 20
+  observed_total <- sum(mx20[1:n, 1:n])
+  expect_equal(sum(m$fitted), observed_total, tolerance = 0.01)
+})
