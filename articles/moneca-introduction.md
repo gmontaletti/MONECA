@@ -1691,7 +1691,7 @@ sessionInfo()
 #> [1] stats     graphics  grDevices datasets  utils     methods   base     
 #> 
 #> other attached packages:
-#> [1] moneca_1.0.4
+#> [1] moneca_1.0.5
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] viridis_0.6.5      sass_0.4.10        generics_0.1.4     tidyr_1.3.2       
@@ -1708,6 +1708,6 @@ sessionInfo()
 #> [45] pillar_1.11.1      bslib_0.10.0       gtable_0.3.6       glue_1.8.0        
 #> [49] Rcpp_1.1.1         ggforce_0.5.0      systemfonts_1.3.1  xfun_0.56         
 #> [53] tibble_3.3.1       tidyselect_1.2.1   knitr_1.51         farver_2.1.2      
-#> [57] htmltools_0.5.9    igraph_2.2.1       labeling_0.4.3     rmarkdown_2.30    
+#> [57] htmltools_0.5.9    igraph_2.2.2       labeling_0.4.3     rmarkdown_2.30    
 #> [61] compiler_4.5.2     S7_0.2.1
 ```

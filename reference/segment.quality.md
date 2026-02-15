@@ -224,7 +224,7 @@ print(quality_final)
 #>         Membership within.mobility share.of.mobility   Density Nodes Max.path
 #> Class 5        4.1               1                 1 0.2142857     8        3
 #>         share.of.total Segment segment_label
-#> Class 5              1     4.1     Segment 1
+#> Class 5              1     4.1     Class 8+7
 
 # Use custom segment naming with final solution
 custom_names <- data.frame(
@@ -237,7 +237,7 @@ print(quality_labeled)
 #>         Membership within.mobility share.of.mobility   Density Nodes Max.path
 #> Class 5        4.1               1                 1 0.2142857     8        3
 #>         share.of.total Segment segment_label
-#> Class 5              1     4.1     Segment 1
+#> Class 5              1     4.1     Class 8+7
 
 if (FALSE) { # \dontrun{
 # Visualize segment quality

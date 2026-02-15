@@ -6,4 +6,7 @@ articles:
   loglinear-profession-mobility: loglinear-profession-mobility.html
   moneca-introduction: moneca-introduction.html
   reduce_density_guida_it: reduce_density_guida_it.html
-last_built: 2026-02-15T11:35Z
+last_built: 2026-02-15T12:01Z
+urls:
+  reference: https://gmontaletti.github.io/MONECA/reference
+  article: https://gmontaletti.github.io/MONECA/articles

@@ -125,12 +125,12 @@ for visualizing results
 basic_data <- generate_mobility_data()
 print(basic_data[1:6, 1:6])  # Show first 5 classes plus totals
 #>         Class 1 Class 2 Class 3 Class 4 Class 5 Class 6
-#> Class 1     495     125      85       9      10       7
-#> Class 2     212     784     220     111       9      13
-#> Class 3      30      49     242      58      24       2
-#> Class 4       1       8      17      55      17       9
-#> Class 5      10      10      97     199     753     201
-#> Class 6       5       7       6      38      72     237
+#> Class 1     255      64      42       7       4       4
+#> Class 2     194     703     179     104      11       7
+#> Class 3     135     276    1046     280     156      17
+#> Class 4       2      25      51     141      40      18
+#> Class 5       4       3      28      58     207      60
+#> Class 6       5       7       1      23      71     251
 
 # Small example for quick testing
 test_data <- generate_mobility_data(
