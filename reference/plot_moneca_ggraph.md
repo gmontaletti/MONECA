@@ -172,7 +172,13 @@ plot_moneca_ggraph(
 
 ## Value
 
-A ggplot2 object that can be further customized or displayed.
+When `level` is a single integer, a `ggplot2` object that can be further
+customized. When `level` is a vector (including the default), a `gtable`
+object from
+[`gridExtra::grid.arrange()`](https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html)
+that can be displayed with
+[`print()`](https://rdrr.io/r/base/print.html) or saved with
+[`ggplot2::ggsave()`](https://ggplot2.tidyverse.org/reference/ggsave.html).
 
 ## Details
 

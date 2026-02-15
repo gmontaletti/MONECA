@@ -196,7 +196,11 @@ instead of "Segment 1") or multilingual applications.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A ggplot2 object that can be further customized or displayed.</p>
+    <p>When <code>level</code> is a single integer, a <code>ggplot2</code> object that
+  can be further customized. When <code>level</code> is a vector (including the
+  default), a <code>gtable</code> object from <code><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">gridExtra::grid.arrange()</a></code>
+  that can be displayed with <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> or saved with
+  <code><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggplot2::ggsave()</a></code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

@@ -428,7 +428,7 @@ seg_tuned <- moneca(mobility_data, segment.levels = 3,
 #> - Weight matrices cached: 20 
 #> 
 #> Optimal small.cell.reduction: 51 
-#> Total tuning time: 1.06 seconds
+#> Total tuning time: 51.23 seconds
 #> Selected optimal small.cell.reduction: 51
 #>   |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%
 #> 33% ready!
@@ -530,7 +530,7 @@ seg_tuned <- moneca(mobility_data, segment.levels = 3,
 #> - Weight matrices cached: 20 
 #> 
 #> Optimal small.cell.reduction: 10 
-#> Total tuning time: 30.88 seconds
+#> Total tuning time: 25.28 seconds
 #> Selected optimal small.cell.reduction: 10
 #>   |                                                                              |                                                                      |   0%
 #> 100% ready!
@@ -554,7 +554,7 @@ seg_tuned <- moneca(mobility_data, segment.levels = 3,
 #> - Weight matrices cached: 20 
 #> 
 #> Optimal small.cell.reduction: 0 
-#> Total tuning time: 3.68 seconds
+#> Total tuning time: 3.03 seconds
 #> Selected optimal small.cell.reduction: 0
 print(seg_tuned)
 #> 
