@@ -14,7 +14,7 @@ plot_ego_ggraph(
   ego_id,
   min_weight = 0,
   layout = "stress",
-  highlight_color = "red",
+  highlight_color = "#D55E00",
   flow_color = "viridis",
   node_size_range = c(2, 8),
   edge_width_range = c(0.2, 3),
@@ -59,7 +59,8 @@ plot_ego_ggraph(
 
 - highlight_color:
 
-  Color for the ego (focal) node. Default is "red".
+  Color for the ego (focal) node. Default is `"#D55E00"` (CVD-safe
+  vermillion from the Okabe-Ito palette).
 
 - flow_color:
 

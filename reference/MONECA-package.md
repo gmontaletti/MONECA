@@ -101,6 +101,28 @@ social mobility.
 
 - `toOrdinal`: Ordinal number formatting
 
+## Color Vision Deficiency (CVD) Accessibility
+
+All modern visualization functions use CVD-safe defaults:
+
+- Default discrete palette is the 8-color Okabe-Ito palette
+  (`color_palette = "okabe-ito"`), distinguishable under deuteranopia,
+  protanopia, and tritanopia.
+
+- Continuous gradients use perceptually uniform viridis scales.
+
+- Diverging scales use a PuOr (purple-orange) scheme that remains
+  discriminable under common CVD types.
+
+- [`plot_moneca_ggraph()`](https://gmontaletti.github.io/MONECA/reference/plot_moneca_ggraph.md)
+  supports `node_shape = "segment"` for shape-based redundant encoding
+  alongside color.
+
+- All hardcoded fill and reference-line colors use CVD-safe hex values.
+
+Users who prefer other palettes can override with
+`color_palette = "Set3"` or any RColorBrewer/viridis palette name.
+
 ## See also
 
 Useful links:

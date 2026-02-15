@@ -23,10 +23,11 @@ plot_moneca_ggraph(
   label_size = 3,
   show_segments = TRUE,
   segment_alpha = 0.3,
-  color_palette = "Set3",
+  color_palette = "okabe-ito",
   theme_style = "void",
   title = NULL,
   segment_naming = "auto",
+  node_shape = "none",
   ...
 )
 ```
@@ -130,8 +131,16 @@ plot_moneca_ggraph(
 
 - color_palette:
 
-  Character string specifying the color palette for segments. Can be any
-  RColorBrewer palette name. Default is "Set3".
+  Character string specifying the color palette for segments:
+
+  - `"okabe-ito"` (default): 8-color CVD-safe Okabe-Ito palette. For \>8
+    segments, falls back to viridis.
+
+  - `"viridis"`, `"plasma"`, `"inferno"`, `"cividis"`, `"magma"`:
+    Perceptually uniform viridis palettes (requires viridis package).
+
+  - Any RColorBrewer qualitative palette name (e.g., `"Set3"`,
+    `"Paired"`).
 
 - theme_style:
 
@@ -166,6 +175,17 @@ plot_moneca_ggraph(
   generated names. The data.frame approach is useful for meaningful
   business names (e.g., "Upper Management" instead of "Segment 1") or
   multilingual applications.
+
+- node_shape:
+
+  Controls shape encoding for nodes:
+
+  - `"none"` (default): All nodes use circles (shape 16).
+
+  - `"segment"`: Nodes mapped to different shapes per segment, providing
+    redundant encoding alongside color for CVD accessibility. Shapes
+    cycle through: circle, triangle, square, diamond, asterisk, plus,
+    cross, and square-cross.
 
 - ...:
 

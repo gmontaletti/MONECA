@@ -68,7 +68,7 @@ aggregated across segmentation levels, making the hierarchical structure clear.<
 <span>  branch_width <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"MONECA Hierarchical Clustering"</span>,</span>
 <span>  subtitle <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  color_palette <span class="op">=</span> <span class="st">"Set3"</span>,</span>
+<span>  color_palette <span class="op">=</span> <span class="st">"okabe-ito"</span>,</span>
 <span>  theme_style <span class="op">=</span> <span class="st">"minimal"</span>,</span>
 <span>  vertical <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -116,8 +116,9 @@ bottom. Default is TRUE.</p></dd>
 
 
 <dt id="arg-color-palette">color_palette<a class="anchor" aria-label="anchor" href="#arg-color-palette"></a></dt>
-<dd><p>Character string specifying the RColorBrewer palette for
-segment colors. Default is "Set3".</p></dd>
+<dd><p>Character string specifying the color palette for segment
+colors. Default is <code>"okabe-ito"</code> (CVD-safe). Also accepts RColorBrewer
+palette names (e.g., <code>"Set3"</code>) or viridis options.</p></dd>
 
 
 <dt id="arg-theme-style">theme_style<a class="anchor" aria-label="anchor" href="#arg-theme-style"></a></dt>

@@ -55,8 +55,9 @@ plot_segment_quality(
 
 - color_palette:
 
-  Character string specifying the RColorBrewer palette. Default is
-  "Set3" for categorical data, "RdYlBu" for continuous.
+  Character string specifying the color palette. Default is
+  `"okabe-ito"` (CVD-safe) for categorical data, `"RdYlBu"` for
+  continuous. Also accepts RColorBrewer names or viridis options.
 
 - theme_style:
 

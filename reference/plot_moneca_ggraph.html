@@ -74,10 +74,11 @@ with support for multiple layout algorithms, node aesthetics, and segment highli
 <span>  label_size <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  show_segments <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  segment_alpha <span class="op">=</span> <span class="fl">0.3</span>,</span>
-<span>  color_palette <span class="op">=</span> <span class="st">"Set3"</span>,</span>
+<span>  color_palette <span class="op">=</span> <span class="st">"okabe-ito"</span>,</span>
 <span>  theme_style <span class="op">=</span> <span class="st">"void"</span>,</span>
 <span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  segment_naming <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  node_shape <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -164,8 +165,12 @@ Default is 0.3.</p></dd>
 
 
 <dt id="arg-color-palette">color_palette<a class="anchor" aria-label="anchor" href="#arg-color-palette"></a></dt>
-<dd><p>Character string specifying the color palette for segments.
-Can be any RColorBrewer palette name. Default is "Set3".</p></dd>
+<dd><p>Character string specifying the color palette for segments:</p><ul><li><p><code>"okabe-ito"</code> (default): 8-color CVD-safe Okabe-Ito palette.
+    For &gt;8 segments, falls back to viridis.</p></li>
+<li><p><code>"viridis"</code>, <code>"plasma"</code>, <code>"inferno"</code>, <code>"cividis"</code>,
+    <code>"magma"</code>: Perceptually uniform viridis palettes (requires viridis package).</p></li>
+<li><p>Any RColorBrewer qualitative palette name (e.g., <code>"Set3"</code>, <code>"Paired"</code>).</p></li>
+</ul></dd>
 
 
 <dt id="arg-theme-style">theme_style<a class="anchor" aria-label="anchor" href="#arg-theme-style"></a></dt>
@@ -189,6 +194,15 @@ Can be any RColorBrewer palette name. Default is "Set3".</p></dd>
 </ul><p>When a data.frame is provided, custom labels override automatically generated names.
 The data.frame approach is useful for meaningful business names (e.g., "Upper Management"
 instead of "Segment 1") or multilingual applications.</p></dd>
+
+
+<dt id="arg-node-shape">node_shape<a class="anchor" aria-label="anchor" href="#arg-node-shape"></a></dt>
+<dd><p>Controls shape encoding for nodes:</p><ul><li><p><code>"none"</code> (default): All nodes use circles (shape 16).</p></li>
+<li><p><code>"segment"</code>: Nodes mapped to different shapes per segment,
+    providing redundant encoding alongside color for CVD accessibility.
+    Shapes cycle through: circle, triangle, square, diamond, asterisk, plus,
+    cross, and square-cross.</p></li>
+</ul></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

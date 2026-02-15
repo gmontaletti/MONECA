@@ -103,6 +103,22 @@ underlying organization of social mobility.</p>
 <li><p><code>toOrdinal</code>: Ordinal number formatting</p></li>
 </ul></div>
     <div class="section level2">
+    <h2 id="color-vision-deficiency-cvd-accessibility">Color Vision Deficiency (CVD) Accessibility<a class="anchor" aria-label="anchor" href="#color-vision-deficiency-cvd-accessibility"></a></h2>
+
+
+<p>All modern visualization functions use CVD-safe defaults:</p><ul><li><p>Default discrete palette is the 8-color Okabe-Ito palette
+    (<code>color_palette = "okabe-ito"</code>), distinguishable under deuteranopia,
+    protanopia, and tritanopia.</p></li>
+<li><p>Continuous gradients use perceptually uniform viridis scales.</p></li>
+<li><p>Diverging scales use a PuOr (purple-orange) scheme that remains
+    discriminable under common CVD types.</p></li>
+<li><p><code><a href="plot_moneca_ggraph.html">plot_moneca_ggraph()</a></code> supports <code>node_shape = "segment"</code> for
+    shape-based redundant encoding alongside color.</p></li>
+<li><p>All hardcoded fill and reference-line colors use CVD-safe hex values.</p></li>
+</ul><p>Users who prefer other palettes can override with <code>color_palette = "Set3"</code>
+or any RColorBrewer/viridis palette name.</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Useful links:</p><ul><li><p><a href="https://gmontaletti.github.io/MONECA/">https://gmontaletti.github.io/MONECA/</a></p></li>
 <li><p><a href="https://github.com/gmontaletti/MONECA" class="external-link">https://github.com/gmontaletti/MONECA</a></p></li>
