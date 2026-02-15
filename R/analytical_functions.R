@@ -3030,7 +3030,7 @@ generate_segment_plot <- function(
         size = size_value
       )
   } else {
-    p <- p + ggraph::geom_node_point(size = size_value, color = "steelblue")
+    p <- p + ggraph::geom_node_point(size = size_value, color = "#0072B2")
   }
 
   # Add node labels
@@ -3045,24 +3045,22 @@ generate_segment_plot <- function(
   # Customize colors based on metric
   if (plot_node_color == "mobility_rate") {
     p <- p +
-      ggplot2::scale_color_gradient(
-        low = "darkblue",
-        high = "red",
+      ggplot2::scale_color_viridis_c(
+        option = "viridis",
         name = "Mobility\nRate"
       )
   } else if (plot_node_color == "centrality") {
     p <- p +
-      ggplot2::scale_color_gradient(
-        low = "lightblue",
-        high = "darkred",
+      ggplot2::scale_color_viridis_c(
+        option = "plasma",
         name = "Centrality\n(Strength)"
       )
   } else if (plot_node_color == "net_flow") {
     p <- p +
       ggplot2::scale_color_gradient2(
-        low = "red",
-        mid = "white",
-        high = "blue",
+        low = "#E66101",
+        mid = "#F7F7F7",
+        high = "#5E3C99",
         name = "Net Flow"
       )
   } else if (plot_node_color == "segment") {

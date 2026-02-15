@@ -80,6 +80,24 @@ underlying organization of social mobility.
 }
 }
 
+\section{Color Vision Deficiency (CVD) Accessibility}{
+
+All modern visualization functions use CVD-safe defaults:
+\itemize{
+  \item Default discrete palette is the 8-color Okabe-Ito palette
+    (\code{color_palette = "okabe-ito"}), distinguishable under deuteranopia,
+    protanopia, and tritanopia.
+  \item Continuous gradients use perceptually uniform viridis scales.
+  \item Diverging scales use a PuOr (purple-orange) scheme that remains
+    discriminable under common CVD types.
+  \item \code{plot_moneca_ggraph()} supports \code{node_shape = "segment"} for
+    shape-based redundant encoding alongside color.
+  \item All hardcoded fill and reference-line colors use CVD-safe hex values.
+}
+Users who prefer other palettes can override with \code{color_palette = "Set3"}
+or any RColorBrewer/viridis palette name.
+}
+
 \seealso{
 Useful links:
 \itemize{

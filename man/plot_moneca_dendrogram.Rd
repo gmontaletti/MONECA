@@ -13,7 +13,7 @@ plot_moneca_dendrogram(
   branch_width = 1,
   title = "MONECA Hierarchical Clustering",
   subtitle = NULL,
-  color_palette = "Set3",
+  color_palette = "okabe-ito",
   theme_style = "minimal",
   vertical = TRUE
 )
@@ -42,8 +42,9 @@ bottom. Default is TRUE.}
 
 \item{subtitle}{Character string for plot subtitle. Default is NULL.}
 
-\item{color_palette}{Character string specifying the RColorBrewer palette for
-segment colors. Default is "Set3".}
+\item{color_palette}{Character string specifying the color palette for segment
+colors. Default is \code{"okabe-ito"} (CVD-safe). Also accepts RColorBrewer
+palette names (e.g., \code{"Set3"}) or viridis options.}
 
 \item{theme_style}{Character string specifying the plot theme. Options are
 "minimal" (default), "classic", or "void".}

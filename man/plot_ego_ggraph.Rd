@@ -10,7 +10,7 @@ plot_ego_ggraph(
   ego_id,
   min_weight = 0,
   layout = "stress",
-  highlight_color = "red",
+  highlight_color = "#D55E00",
   flow_color = "viridis",
   node_size_range = c(2, 8),
   edge_width_range = c(0.2, 3),
@@ -39,7 +39,8 @@ stronger mobility flows.}
 \item{layout}{Character string specifying the layout algorithm. Default is "stress"
 which often works well for ego networks. Other options include "fr", "kk", "dh".}
 
-\item{highlight_color}{Color for the ego (focal) node. Default is "red".}
+\item{highlight_color}{Color for the ego (focal) node. Default is
+\code{"#D55E00"} (CVD-safe vermillion from the Okabe-Ito palette).}
 
 \item{flow_color}{Character string specifying the color scheme for mobility flows.
 Default is "viridis". Can be any viridis variant ("viridis", "plasma", "inferno", etc.).}

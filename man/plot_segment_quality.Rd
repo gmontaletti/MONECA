@@ -36,8 +36,9 @@ Default is 2. Use NULL for all levels (only valid for some plot types).}
 Options: "within.mobility", "share.of.mobility", "Density", "Nodes",
 "Max.path", "share.of.total"}
 
-\item{color_palette}{Character string specifying the RColorBrewer palette.
-Default is "Set3" for categorical data, "RdYlBu" for continuous.}
+\item{color_palette}{Character string specifying the color palette. Default is
+\code{"okabe-ito"} (CVD-safe) for categorical data, \code{"RdYlBu"} for
+continuous. Also accepts RColorBrewer names or viridis options.}
 
 \item{theme_style}{Character string specifying the plot theme: "minimal"
 (default), "classic", or "void".}

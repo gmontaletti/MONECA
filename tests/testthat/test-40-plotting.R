@@ -646,3 +646,115 @@ test_that("plot_moneca_ggraph single level with show_labels shows node names", {
   layer_classes <- sapply(p$layers, function(l) class(l$geom)[1])
   expect_true(any(grepl("Text", layer_classes)))
 })
+
+# CVD accessibility tests -----
+
+test_that(".compute_segment_colors handles okabe-ito palette", {
+  test_data <- get_custom_test_data(n_classes = 6, seed = 42)
+  seg <- moneca(test_data, segment.levels = 3)
+  meta <- moneca_segments(seg)
+
+  colors <- moneca:::.compute_segment_colors(meta, c(2, 3), "okabe-ito")
+
+  expect_type(colors, "character")
+  expect_true(!is.null(names(colors)))
+  # Colors should be from Okabe-Ito palette (hex format)
+  expect_true(all(grepl("^#[0-9A-Fa-f]{6}$", colors)))
+})
+
+test_that(".compute_segment_colors falls back for >8 segments with okabe-ito", {
+  test_data <- get_custom_test_data(n_classes = 12, seed = 42)
+  seg <- moneca(test_data, segment.levels = 2)
+  meta <- moneca_segments(seg)
+
+  # Should not error even with many segments
+  colors <- moneca:::.compute_segment_colors(meta, 2, "okabe-ito")
+  expect_type(colors, "character")
+  expect_true(all(grepl("^#", colors)))
+})
+
+test_that("plot_moneca_ggraph default succeeds with okabe-ito palette", {
+  skip_if_not_installed("ggraph")
+  skip_if_not_installed("tidygraph")
+  skip_if_not_installed("dplyr")
+
+  test_data <- get_test_data("small")
+  seg <- moneca(test_data, segment.levels = 2)
+
+  expect_no_error({
+    p <- plot_moneca_ggraph(seg, level = 2)
+  })
+  p <- plot_moneca_ggraph(seg, level = 2)
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("plot_moneca_ggraph backward compat with Set3", {
+  skip_if_not_installed("ggraph")
+  skip_if_not_installed("tidygraph")
+  skip_if_not_installed("dplyr")
+
+  test_data <- get_test_data("small")
+  seg <- moneca(test_data, segment.levels = 2)
+
+  expect_no_error({
+    p <- plot_moneca_ggraph(seg, level = 2, color_palette = "Set3")
+  })
+  p <- plot_moneca_ggraph(seg, level = 2, color_palette = "Set3")
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("plot_ego_ggraph default uses CVD-safe highlight", {
+  skip_if_not_installed("ggraph")
+  skip_if_not_installed("tidygraph")
+  skip_if_not_installed("dplyr")
+
+  test_data <- get_test_data("small")
+  seg <- moneca(test_data, segment.levels = 2)
+
+  expect_no_error({
+    p <- plot_ego_ggraph(seg, test_data, ego_id = 1)
+  })
+  p <- plot_ego_ggraph(seg, test_data, ego_id = 1)
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("plot_moneca_dendrogram default uses CVD-safe palette", {
+  test_data <- get_test_data("small")
+  seg <- moneca(test_data, segment.levels = 3)
+
+  expect_no_error({
+    p <- plot_moneca_dendrogram(seg)
+  })
+  p <- plot_moneca_dendrogram(seg)
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("node_shape = segment produces valid ggplot", {
+  skip_if_not_installed("ggraph")
+  skip_if_not_installed("tidygraph")
+  skip_if_not_installed("dplyr")
+
+  test_data <- get_test_data("small")
+  seg <- moneca(test_data, segment.levels = 2)
+
+  expect_no_error({
+    p <- plot_moneca_ggraph(seg, level = 2, node_shape = "segment")
+  })
+  p <- plot_moneca_ggraph(seg, level = 2, node_shape = "segment")
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("node_shape = none produces valid ggplot", {
+  skip_if_not_installed("ggraph")
+  skip_if_not_installed("tidygraph")
+  skip_if_not_installed("dplyr")
+
+  test_data <- get_test_data("small")
+  seg <- moneca(test_data, segment.levels = 2)
+
+  expect_no_error({
+    p <- plot_moneca_ggraph(seg, level = 2, node_shape = "none")
+  })
+  p <- plot_moneca_ggraph(seg, level = 2, node_shape = "none")
+  expect_s3_class(p, "ggplot")
+})

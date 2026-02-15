@@ -50,6 +50,28 @@ if (getRversion() >= "2.15.1") {
   if (is.null(x)) y else x
 }
 
+# 0. CVD-safe palette constants -----
+.okabe_ito_palette <- c(
+  "#E69F00",
+  "#56B4E9",
+  "#009E73",
+  "#F0E442",
+  "#0072B2",
+  "#D55E00",
+  "#CC79A7",
+  "#999999"
+)
+
+.overview_bar_colors <- c(
+  cohesion = "#0072B2",
+  size = "#E69F00",
+  density = "#009E73",
+  share = "#CC79A7"
+)
+
+.ref_line_high <- "#D55E00"
+.ref_line_low <- "#0072B2"
+
 # 1. Internal helper: get or compute metadata -----
 .get_metadata <- function(segments) {
   if (!is.null(segments$segment_metadata)) {
@@ -151,6 +173,23 @@ create_segment_labels <- function(
   }
   n <- length(all_labels)
 
+  cols <- .resolve_palette_colors(n, color_palette)
+
+  setNames(cols, sort(all_labels))
+}
+
+# 4b. Internal helper: resolve n colors from a palette name -----
+.resolve_palette_colors <- function(n, color_palette) {
+  if (identical(color_palette, "okabe-ito")) {
+    if (n <= length(.okabe_ito_palette)) {
+      return(.okabe_ito_palette[seq_len(n)])
+    }
+    if (requireNamespace("viridis", quietly = TRUE)) {
+      return(viridis::viridis(n))
+    }
+    return(scales::hue_pal()(n))
+  }
+
   if (
     color_palette %in% c("viridis", "plasma", "inferno", "cividis", "magma")
   ) {
@@ -159,17 +198,40 @@ create_segment_labels <- function(
         "Package 'viridis' is required for viridis color palettes. Please install it."
       )
     }
-    cols <- viridis::viridis(n, option = color_palette)
-  } else {
-    max_brew <- RColorBrewer::brewer.pal.info[color_palette, "maxcolors"]
-    if (n <= max_brew) {
-      cols <- RColorBrewer::brewer.pal(max(3, n), color_palette)[seq_len(n)]
-    } else {
-      cols <- scales::hue_pal()(n)
-    }
+    return(viridis::viridis(n, option = color_palette))
   }
 
-  setNames(cols, sort(all_labels))
+  max_brew <- RColorBrewer::brewer.pal.info[color_palette, "maxcolors"]
+  if (n <= max_brew) {
+    RColorBrewer::brewer.pal(max(3, n), color_palette)[seq_len(n)]
+  } else {
+    grDevices::colorRampPalette(
+      RColorBrewer::brewer.pal(max_brew, color_palette)
+    )(n)
+  }
+}
+
+# 4c. Internal helper: apply discrete color scale to a ggplot -----
+.apply_discrete_color_scale <- function(p, color_palette, n, guide = "none") {
+  if (identical(color_palette, "okabe-ito")) {
+    cols <- .resolve_palette_colors(n, color_palette)
+    return(p + ggplot2::scale_color_manual(values = cols, guide = guide))
+  }
+
+  if (
+    color_palette %in% c("viridis", "plasma", "inferno", "cividis", "magma")
+  ) {
+    return(
+      p + ggplot2::scale_color_viridis_d(option = color_palette, guide = guide)
+    )
+  }
+
+  if (n <= 12) {
+    p + ggplot2::scale_color_brewer(palette = color_palette, guide = guide)
+  } else {
+    cols <- .resolve_palette_colors(n, color_palette)
+    p + ggplot2::scale_color_manual(values = cols, guide = guide)
+  }
 }
 
 # 5. Internal helper: plot a single segmentation level -----
@@ -194,6 +256,7 @@ create_segment_labels <- function(
   title,
   segment_naming,
   segment_colors,
+  node_shape = "none",
   ...
 ) {
   # Create igraph object with validation
@@ -505,30 +568,50 @@ create_segment_labels <- function(
   }
 
   # Add nodes (third layer - on top)
+  use_shape <- identical(node_shape, "segment") &&
+    identical(node_color, "segment")
+
   if (identical(node_color, "segment")) {
-    p <- p +
-      ggraph::geom_node_point(
-        ggplot2::aes(size = node_size, color = segment_label),
-        alpha = node_alpha,
-        show.legend = FALSE
+    if (use_shape) {
+      p <- p +
+        ggraph::geom_node_point(
+          ggplot2::aes(
+            size = node_size,
+            color = segment_label,
+            shape = segment_label
+          ),
+          alpha = node_alpha,
+          show.legend = FALSE
+        )
+      # Shape scale: recycle 8 shapes for >8 segments
+      shape_values <- c(16, 17, 15, 18, 8, 3, 4, 7)
+      seg_labels <- sort(unique(
+        tidygraph::as_tibble(tidy_graph, what = "nodes")$segment_label
+      ))
+      n_seg <- length(seg_labels)
+      shapes <- setNames(
+        rep_len(shape_values, n_seg),
+        seg_labels
       )
+      p <- p + ggplot2::scale_shape_manual(values = shapes, guide = "none")
+    } else {
+      p <- p +
+        ggraph::geom_node_point(
+          ggplot2::aes(size = node_size, color = segment_label),
+          alpha = node_alpha,
+          show.legend = FALSE
+        )
+    }
 
     # Use unified segment_colors if available, otherwise fall back
     if (!is.null(segment_colors)) {
       p <- p +
         ggplot2::scale_color_manual(values = segment_colors, guide = "none")
-    } else if (
-      color_palette %in% c("viridis", "plasma", "inferno", "cividis", "magma")
-    ) {
-      p <- p +
-        ggplot2::scale_color_viridis_d(option = color_palette, guide = "none")
     } else {
-      p <- p +
-        ggplot2::scale_color_brewer(
-          type = "qual",
-          palette = color_palette,
-          guide = "none"
-        )
+      n_labels <- length(unique(
+        tidygraph::as_tibble(tidy_graph, what = "nodes")$segment_label
+      ))
+      p <- .apply_discrete_color_scale(p, color_palette, n_labels)
     }
   } else if (identical(node_color, "mobility")) {
     p <- p +
@@ -537,7 +620,7 @@ create_segment_labels <- function(
         alpha = node_alpha,
         show.legend = FALSE
       ) +
-      ggplot2::scale_color_gradient(low = "blue", high = "red", guide = "none")
+      ggplot2::scale_color_viridis_c(option = "viridis", guide = "none")
   } else {
     p <- p +
       ggraph::geom_node_point(
@@ -685,8 +768,14 @@ create_segment_labels <- function(
 #'   Default is TRUE.
 #' @param segment_alpha Numeric value (0-1) for segment boundary transparency.
 #'   Default is 0.3.
-#' @param color_palette Character string specifying the color palette for segments.
-#'   Can be any RColorBrewer palette name. Default is "Set3".
+#' @param color_palette Character string specifying the color palette for segments:
+#'   \itemize{
+#'     \item \code{"okabe-ito"} (default): 8-color CVD-safe Okabe-Ito palette.
+#'       For >8 segments, falls back to viridis.
+#'     \item \code{"viridis"}, \code{"plasma"}, \code{"inferno"}, \code{"cividis"},
+#'       \code{"magma"}: Perceptually uniform viridis palettes (requires viridis package).
+#'     \item Any RColorBrewer qualitative palette name (e.g., \code{"Set3"}, \code{"Paired"}).
+#'   }
 #' @param theme_style Character string specifying the plot theme:
 #'   \itemize{
 #'     \item "void" (default): Clean background with no axes
@@ -706,6 +795,14 @@ create_segment_labels <- function(
 #'   When a data.frame is provided, custom labels override automatically generated names.
 #'   The data.frame approach is useful for meaningful business names (e.g., "Upper Management"
 #'   instead of "Segment 1") or multilingual applications.
+#' @param node_shape Controls shape encoding for nodes:
+#'   \itemize{
+#'     \item \code{"none"} (default): All nodes use circles (shape 16).
+#'     \item \code{"segment"}: Nodes mapped to different shapes per segment,
+#'       providing redundant encoding alongside color for CVD accessibility.
+#'       Shapes cycle through: circle, triangle, square, diamond, asterisk, plus,
+#'       cross, and square-cross.
+#'   }
 #' @param ... Additional arguments passed to ggraph layout functions.
 #'
 #' @return When \code{level} is a single integer, a \code{ggplot2} object that
@@ -773,10 +870,11 @@ plot_moneca_ggraph <- function(
   label_size = 3,
   show_segments = TRUE,
   segment_alpha = 0.3,
-  color_palette = "Set3",
+  color_palette = "okabe-ito",
   theme_style = "void",
   title = NULL,
   segment_naming = "auto",
+  node_shape = "none",
   ...
 ) {
   # 1. Package checks
@@ -863,6 +961,7 @@ plot_moneca_ggraph <- function(
       title = title,
       segment_naming = segment_naming,
       segment_colors = segment_colors,
+      node_shape = node_shape,
       ...
     ))
   }
@@ -904,6 +1003,7 @@ plot_moneca_ggraph <- function(
       title = paste("Level", lvl),
       segment_naming = segment_naming,
       segment_colors = segment_colors,
+      node_shape = node_shape,
       ...
     )
   })
@@ -931,7 +1031,8 @@ plot_moneca_ggraph <- function(
 #'   stronger mobility flows.
 #' @param layout Character string specifying the layout algorithm. Default is "stress"
 #'   which often works well for ego networks. Other options include "fr", "kk", "dh".
-#' @param highlight_color Color for the ego (focal) node. Default is "red".
+#' @param highlight_color Color for the ego (focal) node. Default is
+#'   \code{"#D55E00"} (CVD-safe vermillion from the Okabe-Ito palette).
 #' @param flow_color Character string specifying the color scheme for mobility flows.
 #'   Default is "viridis". Can be any viridis variant ("viridis", "plasma", "inferno", etc.).
 #' @param node_size_range Numeric vector of length 2 specifying the range for node sizes.
@@ -990,7 +1091,7 @@ plot_ego_ggraph <- function(
   ego_id,
   min_weight = 0,
   layout = "stress",
-  highlight_color = "red",
+  highlight_color = "#D55E00",
   flow_color = "viridis",
   node_size_range = c(2, 8),
   edge_width_range = c(0.2, 3),
@@ -1173,7 +1274,7 @@ plot_ego_ggraph <- function(
     ) +
     ggplot2::scale_color_manual(
       values = c(
-        "FALSE.FALSE" = "steelblue",
+        "FALSE.FALSE" = "#56B4E9",
         "FALSE.TRUE" = highlight_color,
         "TRUE.FALSE" = highlight_color,
         "TRUE.TRUE" = highlight_color
@@ -1461,8 +1562,9 @@ plot_stair_ggraph <- function(
 #' @param branch_width Numeric width for dendrogram branches. Default is 1.
 #' @param title Character string for plot title. Default is "MONECA Hierarchical Clustering".
 #' @param subtitle Character string for plot subtitle. Default is NULL.
-#' @param color_palette Character string specifying the RColorBrewer palette for
-#'   segment colors. Default is "Set3".
+#' @param color_palette Character string specifying the color palette for segment
+#'   colors. Default is \code{"okabe-ito"} (CVD-safe). Also accepts RColorBrewer
+#'   palette names (e.g., \code{"Set3"}) or viridis options.
 #' @param theme_style Character string specifying the plot theme. Options are
 #'   "minimal" (default), "classic", or "void".
 #' @param vertical Logical indicating whether to plot vertically (TRUE, default)
@@ -1520,7 +1622,7 @@ plot_moneca_dendrogram <- function(
   branch_width = 1,
   title = "MONECA Hierarchical Clustering",
   subtitle = NULL,
-  color_palette = "Set3",
+  color_palette = "okabe-ito",
   theme_style = "minimal",
   vertical = TRUE
 ) {
@@ -1734,16 +1836,7 @@ plot_moneca_dendrogram <- function(
     n_final_segments <- length(final_segments)
 
     # Get colors from palette
-    if (n_final_segments <= 12) {
-      segment_colors <- RColorBrewer::brewer.pal(
-        max(3, n_final_segments),
-        color_palette
-      )
-    } else {
-      segment_colors <- grDevices::colorRampPalette(
-        RColorBrewer::brewer.pal(12, color_palette)
-      )(n_final_segments)
-    }
+    segment_colors <- .resolve_palette_colors(n_final_segments, color_palette)
 
     # Assign colors to edges based on final segment membership
     edge_colors <- character(nrow(edges))
@@ -1882,8 +1975,9 @@ plot_moneca_dendrogram <- function(
 #' @param metrics Character vector of metrics to include. Default includes all.
 #'   Options: "within.mobility", "share.of.mobility", "Density", "Nodes",
 #'   "Max.path", "share.of.total"
-#' @param color_palette Character string specifying the RColorBrewer palette.
-#'   Default is "Set3" for categorical data, "RdYlBu" for continuous.
+#' @param color_palette Character string specifying the color palette. Default is
+#'   \code{"okabe-ito"} (CVD-safe) for categorical data, \code{"RdYlBu"} for
+#'   continuous. Also accepts RColorBrewer names or viridis options.
 #' @param theme_style Character string specifying the plot theme: "minimal"
 #'   (default), "classic", or "void".
 #' @param title Character string for plot title. Default is auto-generated
@@ -1995,7 +2089,7 @@ plot_segment_quality <- function(
     color_palette <- if (plot_type %in% c("heatmap", "cohesion")) {
       "RdYlBu"
     } else {
-      "Set3"
+      "okabe-ito"
     }
   }
 
@@ -2069,11 +2163,14 @@ plot_segment_quality <- function(
       level_data,
       ggplot2::aes(x = plot_label, y = within.mobility)
     ) +
-      ggplot2::geom_bar(stat = "identity", fill = "steelblue") +
+      ggplot2::geom_bar(
+        stat = "identity",
+        fill = .overview_bar_colors["cohesion"]
+      ) +
       ggplot2::geom_hline(
         yintercept = 0.7,
         linetype = "dashed",
-        color = "red",
+        color = .ref_line_high,
         alpha = 0.5
       ) +
       ggplot2::labs(
@@ -2096,7 +2193,10 @@ plot_segment_quality <- function(
 
     # 2. Segment size (nodes)
     p2 <- ggplot2::ggplot(level_data, ggplot2::aes(x = plot_label, y = Nodes)) +
-      ggplot2::geom_bar(stat = "identity", fill = "darkgreen") +
+      ggplot2::geom_bar(
+        stat = "identity",
+        fill = .overview_bar_colors["size"]
+      ) +
       ggplot2::labs(
         x = "Segment",
         y = "Number of Nodes",
@@ -2120,11 +2220,14 @@ plot_segment_quality <- function(
       level_data,
       ggplot2::aes(x = plot_label, y = Density)
     ) +
-      ggplot2::geom_bar(stat = "identity", fill = "orange") +
+      ggplot2::geom_bar(
+        stat = "identity",
+        fill = .overview_bar_colors["density"]
+      ) +
       ggplot2::geom_hline(
         yintercept = 0.5,
         linetype = "dashed",
-        color = "red",
+        color = .ref_line_high,
         alpha = 0.5
       ) +
       ggplot2::labs(
@@ -2150,7 +2253,10 @@ plot_segment_quality <- function(
       level_data,
       ggplot2::aes(x = plot_label, y = share.of.mobility)
     ) +
-      ggplot2::geom_bar(stat = "identity", fill = "purple") +
+      ggplot2::geom_bar(
+        stat = "identity",
+        fill = .overview_bar_colors["share"]
+      ) +
       ggplot2::labs(
         x = "Segment",
         y = "Share of Total Mobility",
@@ -2252,13 +2358,13 @@ plot_segment_quality <- function(
       ggplot2::geom_hline(
         yintercept = 0.7,
         linetype = "dashed",
-        color = "red",
+        color = .ref_line_high,
         alpha = 0.5
       ) +
       ggplot2::geom_vline(
         xintercept = 2,
         linetype = "dashed",
-        color = "blue",
+        color = .ref_line_low,
         alpha = 0.5
       ) +
       ggplot2::labs(
@@ -2281,18 +2387,7 @@ plot_segment_quality <- function(
 
     # Color palette - Remove the Membership legend since labels are on points
     n_segments <- nrow(level_data)
-    if (n_segments <= 12) {
-      p <- p +
-        ggplot2::scale_color_brewer(palette = color_palette, guide = "none")
-    } else {
-      p <- p +
-        ggplot2::scale_color_manual(
-          values = grDevices::colorRampPalette(
-            RColorBrewer::brewer.pal(12, color_palette)
-          )(n_segments),
-          guide = "none"
-        )
-    }
+    p <- .apply_discrete_color_scale(p, color_palette, n_segments)
 
     return(p)
   } else if (plot_type == "radar") {
@@ -2386,16 +2481,12 @@ plot_segment_quality <- function(
 
     # Color palette
     n_segments <- length(unique(radar_long$segment_label))
-    if (n_segments <= 12) {
-      p <- p + ggplot2::scale_color_brewer(palette = color_palette)
-    } else {
-      p <- p +
-        ggplot2::scale_color_manual(
-          values = grDevices::colorRampPalette(
-            RColorBrewer::brewer.pal(12, color_palette)
-          )(n_segments)
-        )
-    }
+    p <- .apply_discrete_color_scale(
+      p,
+      color_palette,
+      n_segments,
+      guide = ggplot2::guide_legend()
+    )
 
     return(p)
   } else if (plot_type == "heatmap") {
@@ -2564,16 +2655,12 @@ plot_segment_quality <- function(
 
     # Color palette
     n_segments <- length(unique(evolution_combined$segment_label))
-    if (n_segments <= 12) {
-      p <- p + ggplot2::scale_color_brewer(palette = color_palette)
-    } else {
-      p <- p +
-        ggplot2::scale_color_manual(
-          values = grDevices::colorRampPalette(
-            RColorBrewer::brewer.pal(12, color_palette)
-          )(n_segments)
-        )
-    }
+    p <- .apply_discrete_color_scale(
+      p,
+      color_palette,
+      n_segments,
+      guide = ggplot2::guide_legend()
+    )
 
     return(p)
   } else {

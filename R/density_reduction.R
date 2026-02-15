@@ -914,17 +914,17 @@ plot_scree <- function(
     ggplot2::geom_bar(
       ggplot2::aes(y = .data$variance),
       stat = "identity",
-      fill = "steelblue",
+      fill = "#0072B2",
       alpha = 0.7
     ) +
     ggplot2::geom_line(
       ggplot2::aes(y = .data$cumulative),
-      color = "darkred",
+      color = "#D55E00",
       linewidth = 1.2
     ) +
     ggplot2::geom_point(
       ggplot2::aes(y = .data$cumulative),
-      color = "darkred",
+      color = "#D55E00",
       size = 2
     ) +
     ggplot2::scale_y_continuous(
@@ -963,7 +963,7 @@ plot_scree <- function(
       ggplot2::geom_vline(
         xintercept = k_target,
         linetype = "dashed",
-        color = "darkred",
+        color = "#D55E00",
         alpha = 0.7
       ) +
       ggplot2::annotate(
@@ -972,7 +972,7 @@ plot_scree <- function(
         y = variance_target + 0.05,
         label = sprintf("k=%d (%.0f%%)", k_target, variance_target * 100),
         hjust = 0,
-        color = "darkred",
+        color = "#D55E00",
         size = 3.5
       )
   }
@@ -983,7 +983,7 @@ plot_scree <- function(
       ggplot2::geom_vline(
         xintercept = k_elbow,
         linetype = "dotted",
-        color = "darkgreen",
+        color = "#009E73",
         alpha = 0.7
       ) +
       ggplot2::annotate(
@@ -992,7 +992,7 @@ plot_scree <- function(
         y = cum_var[k_elbow] - 0.05,
         label = sprintf("elbow=%d", k_elbow),
         hjust = 0,
-        color = "darkgreen",
+        color = "#009E73",
         size = 3.5
       )
   }

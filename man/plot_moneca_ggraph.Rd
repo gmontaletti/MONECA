@@ -19,10 +19,11 @@ plot_moneca_ggraph(
   label_size = 3,
   show_segments = TRUE,
   segment_alpha = 0.3,
-  color_palette = "Set3",
+  color_palette = "okabe-ito",
   theme_style = "void",
   title = NULL,
   segment_naming = "auto",
+  node_shape = "none",
   ...
 )
 }
@@ -84,8 +85,14 @@ Default is TRUE.}
 \item{segment_alpha}{Numeric value (0-1) for segment boundary transparency.
 Default is 0.3.}
 
-\item{color_palette}{Character string specifying the color palette for segments.
-Can be any RColorBrewer palette name. Default is "Set3".}
+\item{color_palette}{Character string specifying the color palette for segments:
+\itemize{
+  \item \code{"okabe-ito"} (default): 8-color CVD-safe Okabe-Ito palette.
+    For >8 segments, falls back to viridis.
+  \item \code{"viridis"}, \code{"plasma"}, \code{"inferno"}, \code{"cividis"},
+    \code{"magma"}: Perceptually uniform viridis palettes (requires viridis package).
+  \item Any RColorBrewer qualitative palette name (e.g., \code{"Set3"}, \code{"Paired"}).
+}}
 
 \item{theme_style}{Character string specifying the plot theme:
 \itemize{
@@ -108,6 +115,15 @@ Can be any RColorBrewer palette name. Default is "Set3".}
 When a data.frame is provided, custom labels override automatically generated names.
 The data.frame approach is useful for meaningful business names (e.g., "Upper Management"
 instead of "Segment 1") or multilingual applications.}
+
+\item{node_shape}{Controls shape encoding for nodes:
+\itemize{
+  \item \code{"none"} (default): All nodes use circles (shape 16).
+  \item \code{"segment"}: Nodes mapped to different shapes per segment,
+    providing redundant encoding alongside color for CVD accessibility.
+    Shapes cycle through: circle, triangle, square, diamond, asterisk, plus,
+    cross, and square-cross.
+}}
 
 \item{...}{Additional arguments passed to ggraph layout functions.}
 }
