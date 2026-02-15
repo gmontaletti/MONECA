@@ -45,6 +45,8 @@ Suggests:
   testthat (>= 3.0.0),
   Matrix,
   viridis,
+  ggrepel (>= 0.9.0),
+  ggforce (>= 0.3.0),
   irlba (>= 2.3.0),
   RcppML (>= 0.3.0)
 License: GPL-3

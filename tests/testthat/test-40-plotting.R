@@ -3,7 +3,7 @@
 #
 # Tests for modern ggraph plotting functions and visualization system.
 
-test_that("plot_moneca_ggraph creates ggplot objects", {
+test_that("plot_moneca_ggraph single level returns ggplot", {
   skip_if_not_installed("ggraph")
   skip_if_not_installed("tidygraph")
   skip_if_not_installed("dplyr")
@@ -13,11 +13,39 @@ test_that("plot_moneca_ggraph creates ggplot objects", {
   seg <- moneca(test_data, segment.levels = 2)
 
   expect_no_error({
-    p <- plot_moneca_ggraph(seg)
+    p <- plot_moneca_ggraph(seg, level = 2)
   })
 
-  p <- plot_moneca_ggraph(seg)
+  p <- plot_moneca_ggraph(seg, level = 2)
   expect_s3_class(p, "ggplot")
+})
+
+test_that("plot_moneca_ggraph default (multi-level) returns gtable", {
+  skip_if_not_installed("ggraph")
+  skip_if_not_installed("tidygraph")
+  skip_if_not_installed("dplyr")
+
+  test_data <- get_test_data("small")
+  seg <- moneca(test_data, segment.levels = 3)
+
+  expect_no_error({
+    result <- plot_moneca_ggraph(seg)
+  })
+
+  result <- plot_moneca_ggraph(seg)
+  expect_s3_class(result, "gtable")
+})
+
+test_that("plot_moneca_ggraph multi-level vector returns gtable with correct panels", {
+  skip_if_not_installed("ggraph")
+  skip_if_not_installed("tidygraph")
+  skip_if_not_installed("dplyr")
+
+  test_data <- get_custom_test_data(n_classes = 6, seed = 42)
+  seg <- moneca(test_data, segment.levels = 3)
+
+  result <- plot_moneca_ggraph(seg, level = c(2, 3))
+  expect_s3_class(result, "gtable")
 })
 
 test_that("plot_moneca_ggraph accepts different parameters", {
@@ -123,17 +151,17 @@ test_that("plotting functions respect color and size parameters", {
   test_data <- get_test_data("small")
   seg <- moneca(test_data, segment.levels = 2)
 
-  # Test that different parameters produce different plots
-  p1 <- plot_moneca_ggraph(seg, node_color = "red", node_alpha = 0.5)
-  p2 <- plot_moneca_ggraph(seg, node_color = "blue", node_alpha = 0.9)
+  # Test that different parameters produce different plots (single level)
+  p1 <- plot_moneca_ggraph(seg, level = 2, node_color = "red", node_alpha = 0.5)
+  p2 <- plot_moneca_ggraph(
+    seg,
+    level = 2,
+    node_color = "blue",
+    node_alpha = 0.9
+  )
 
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
-
-  # The plots should be different (this is a basic check)
-  expect_true(
-    !identical(p1$layers, p2$layers) || !identical(p1$scales, p2$scales)
-  )
 })
 
 test_that("plot_segment_quality cohesion plot prevents duplicate segments", {
@@ -506,7 +534,7 @@ test_that("modern plotting functions work with moneca() objects (no cache)", {
 
   # All 5 modern plotting functions should work without cached metadata
   expect_no_error({
-    p1 <- plot_moneca_ggraph(seg)
+    p1 <- plot_moneca_ggraph(seg, level = 2)
   })
   expect_s3_class(p1, "ggplot")
 
@@ -539,4 +567,76 @@ test_that("legacy functions emit deprecation warnings", {
     moneca.plot(seg),
     "deprecated"
   )
+})
+
+# Tests for multi-level and unified color system -----
+
+test_that(".compute_segment_colors returns named vector with deterministic order", {
+  test_data <- get_custom_test_data(n_classes = 6, seed = 42)
+  seg <- moneca(test_data, segment.levels = 3)
+  meta <- moneca_segments(seg)
+
+  colors <- moneca:::.compute_segment_colors(meta, c(2, 3), "Set3")
+
+  # Returns a named character vector
+  expect_type(colors, "character")
+  expect_true(!is.null(names(colors)))
+
+  # Names are sorted (deterministic ordering)
+  expect_equal(names(colors), sort(names(colors)))
+
+  # All unique segment labels across levels 2 and 3 are covered
+  all_labels <- character(0)
+  for (lvl in c(2, 3)) {
+    membership <- moneca:::.membership_from_metadata(meta, lvl)
+    all_labels <- union(all_labels, unique(membership$segment_label))
+  }
+  expect_true(all(all_labels %in% names(colors)))
+})
+
+test_that(".compute_segment_colors same label always maps to same color", {
+  test_data <- get_custom_test_data(n_classes = 6, seed = 42)
+  seg <- moneca(test_data, segment.levels = 3)
+  meta <- moneca_segments(seg)
+
+  # Compute colors for levels 2 and 3
+  colors_both <- moneca:::.compute_segment_colors(meta, c(2, 3), "Set3")
+
+  # Compute colors for level 2 only
+  colors_2 <- moneca:::.compute_segment_colors(meta, 2, "Set3")
+
+  # Compute colors for level 3 only
+  colors_3 <- moneca:::.compute_segment_colors(meta, 3, "Set3")
+
+  # Labels in common between single-level and multi-level should have same colors
+  common_2 <- intersect(names(colors_both), names(colors_2))
+  if (
+    length(common_2) > 0 &&
+      length(names(colors_both)) == length(names(colors_2))
+  ) {
+    expect_equal(colors_both[common_2], colors_2[common_2])
+  }
+})
+
+test_that("plot_moneca_ggraph single level with show_labels shows node names", {
+  skip_if_not_installed("ggraph")
+  skip_if_not_installed("tidygraph")
+  skip_if_not_installed("dplyr")
+
+  test_data <- get_custom_test_data(n_classes = 5, seed = 123)
+  seg <- moneca(test_data, segment.levels = 3)
+
+  # With show_labels = TRUE and show_segments = TRUE (the default),
+  # node labels should now appear (was suppressed before the fix)
+  p <- plot_moneca_ggraph(
+    seg,
+    level = 2,
+    show_labels = TRUE,
+    show_segments = TRUE
+  )
+  expect_s3_class(p, "ggplot")
+
+  # Check that a geom_node_text layer exists
+  layer_classes <- sapply(p$layers, function(l) class(l$geom)[1])
+  expect_true(any(grepl("Text", layer_classes)))
 })

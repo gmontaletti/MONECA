@@ -36,7 +36,9 @@
       "Bash(find:*)",
       "mcp__Context7__resolve-library-id",
       "mcp__Context7__query-docs",
-      "Bash(git show:*)"
+      "Bash(git show:*)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:gmontaletti.github.io)"
     ]
   },
   "enableAllProjectMcpServers": false

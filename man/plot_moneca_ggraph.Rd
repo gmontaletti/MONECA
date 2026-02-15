@@ -111,7 +111,11 @@ instead of "Segment 1") or multilingual applications.}
 \item{...}{Additional arguments passed to ggraph layout functions.}
 }
 \value{
-A ggplot2 object that can be further customized or displayed.
+When \code{level} is a single integer, a \code{ggplot2} object that
+  can be further customized. When \code{level} is a vector (including the
+  default), a \code{gtable} object from \code{gridExtra::grid.arrange()}
+  that can be displayed with \code{print()} or saved with
+  \code{ggplot2::ggsave()}.
 }
 \description{
 Creates sophisticated network visualizations of MONECA clustering results using

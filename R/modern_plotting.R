@@ -40,7 +40,8 @@ if (getRversion() >= "2.15.1") {
     "x2",
     "y2",
     "node_id",
-    "label"
+    "label",
+    "segment_label"
   ))
 }
 
@@ -87,7 +88,7 @@ if (getRversion() >= "2.15.1") {
   )
 }
 
-# Helper function to create segment labels based on segment_naming parameter
+# 3. Helper function to create segment labels based on segment_naming parameter -----
 create_segment_labels <- function(
   segments,
   level,
@@ -141,199 +142,61 @@ create_segment_labels <- function(
   segment_labels
 }
 
-#' Modern Network Visualization for MONECA Results
-#'
-#' Creates sophisticated network visualizations of MONECA clustering results using
-#' ggraph and ggplot2. This function provides modern, highly customizable plots
-#' with support for multiple layout algorithms, node aesthetics, and segment highlighting.
-#'
-#' @param segments A moneca object returned by \code{\link{moneca}}.
-#' @param level Integer vector specifying which hierarchical levels to visualize.
-#'   Default displays all levels except the first (which represents individual categories).
-#' @param layout Character string or matrix specifying the layout algorithm:
-#'   \itemize{
-#'     \item "fr" (default): Fruchterman-Reingold force-directed layout
-#'     \item "kk": Kamada-Kawai layout
-#'     \item "dh": Davidson-Harel layout
-#'     \item "mds": Multidimensional scaling
-#'     \item "stress": Stress majorization
-#'     \item Matrix: Custom coordinate matrix (n_nodes x 2)
-#'   }
-#' @param edges Edge matrix or "auto" to automatically generate using
-#'   \code{\link{segment.edges}}. Default is "auto".
-#' @param node_size Aesthetic mapping for node size:
-#'   \itemize{
-#'     \item "total": Size by total mobility volume (default)
-#'     \item "mobility": Size by off-diagonal mobility rate
-#'     \item Numeric vector: Custom sizes for each node
-#'     \item Single numeric: Fixed size for all nodes
-#'   }
-#' @param node_color Aesthetic mapping for node color:
-#'   \itemize{
-#'     \item "segment" (default): Color by segment membership
-#'     \item "mobility": Color by mobility rate
-#'     \item Character vector: Custom colors for each node
-#'     \item Single color: Fixed color for all nodes
-#'   }
-#' @param node_alpha Numeric value (0-1) for node transparency. Default is 0.8.
-#' @param edge_width Aesthetic for edge width:
-#'   \itemize{
-#'     \item "weight" (default): Width proportional to edge weight
-#'     \item Numeric: Fixed width for all edges
-#'   }
-#' @param edge_color Color for edges. Default is "grey50".
-#' @param edge_alpha Numeric value (0-1) for edge transparency. Default is 0.6.
-#' @param show_labels Logical indicating whether to display node labels. Default is TRUE.
-#' @param label_size Numeric size for node labels. Default is 3.
-#' @param show_segments Logical indicating whether to highlight segment boundaries.
-#'   Default is TRUE.
-#' @param segment_alpha Numeric value (0-1) for segment boundary transparency.
-#'   Default is 0.3.
-#' @param color_palette Character string specifying the color palette for segments.
-#'   Can be any RColorBrewer palette name. Default is "Set3".
-#' @param theme_style Character string specifying the plot theme:
-#'   \itemize{
-#'     \item "void" (default): Clean background with no axes
-#'     \item "minimal": Minimal theme with subtle gridlines
-#'     \item "classic": Traditional ggplot2 theme
-#'   }
-#' @param title Character string for plot title. Default is NULL (no title).
-#' @param segment_naming Specifies how to name segments in the visualization. Can be:
-#'   \itemize{
-#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" -
-#'       these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
-#'     \item data.frame: Custom segment labels with columns "name" (node names from the
-#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete
-#'       control over segment naming
-#'     \item NULL: Uses default "auto" strategy
-#'   }
-#'   When a data.frame is provided, custom labels override automatically generated names.
-#'   The data.frame approach is useful for meaningful business names (e.g., "Upper Management"
-#'   instead of "Segment 1") or multilingual applications.
-#' @param ... Additional arguments passed to ggraph layout functions.
-#'
-#' @return A ggplot2 object that can be further customized or displayed.
-#'
-#' @details
-#' This function creates publication-quality network visualizations with extensive
-#' customization options. It automatically handles node positioning, edge rendering,
-#' and segment highlighting. The resulting plot can be further modified using
-#' standard ggplot2 syntax.
-#'
-#' For interactive exploration, different layout algorithms may work better with
-#' different network structures. Force-directed layouts ("fr") work well for most
-#' cases, while "stress" layouts often produce cleaner results for dense networks.
-#'
-#' \strong{Segment Naming}: The new data.frame approach for segment_naming provides
-#' complete control over how segments are labeled. This is particularly useful for:
-#' \itemize{
-#'   \item Business applications where meaningful names are essential (e.g., "Senior Management" vs "Segment 1")
-#'   \item Multilingual visualizations where labels need translation
-#'   \item Presentations where consistent, professional terminology is required
-#'   \item Partial customization where only specific segments need custom names
-#' }
-#'
-#' @examples
-#' \dontrun{
-#' # Generate synthetic data and run MONECA
-#' mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
-#' seg <- moneca(mobility_data, segment.levels = 3)
-#'
-#' # Basic network plot
-#' plot_moneca_ggraph(seg)
-#'
-#' # Customized plot with different aesthetics
-#' plot_moneca_ggraph(seg,
-#'   layout = "stress",
-#'   node_color = "mobility",
-#'   color_palette = "Spectral",
-#'   title = "Social Mobility Network"
-#' )
-#' }
-#'
-#' @seealso
-#' \code{\link{moneca}} for the main analysis function,
-#' \code{\link{plot_ego_ggraph}} for ego network visualization,
-#' \code{\link{plot_stair_ggraph}} for multi-level visualization,
-#' \code{\link{segment.edges}} for edge matrix generation
-#'
-#' @export
-plot_moneca_ggraph <- function(
+# 4. Internal helper: compute unified segment colors -----
+.compute_segment_colors <- function(meta, levels, color_palette) {
+  all_labels <- character(0)
+  for (lvl in levels) {
+    membership <- .membership_from_metadata(meta, lvl)
+    all_labels <- union(all_labels, unique(membership$segment_label))
+  }
+  n <- length(all_labels)
+
+  if (
+    color_palette %in% c("viridis", "plasma", "inferno", "cividis", "magma")
+  ) {
+    if (!requireNamespace("viridis", quietly = TRUE)) {
+      stop(
+        "Package 'viridis' is required for viridis color palettes. Please install it."
+      )
+    }
+    cols <- viridis::viridis(n, option = color_palette)
+  } else {
+    max_brew <- RColorBrewer::brewer.pal.info[color_palette, "maxcolors"]
+    if (n <= max_brew) {
+      cols <- RColorBrewer::brewer.pal(max(3, n), color_palette)[seq_len(n)]
+    } else {
+      cols <- scales::hue_pal()(n)
+    }
+  }
+
+  setNames(cols, sort(all_labels))
+}
+
+# 5. Internal helper: plot a single segmentation level -----
+.plot_single_level <- function(
   segments,
-  level = NULL,
-  layout = "fr",
-  edges = "auto",
-  node_size = "total",
-  node_color = "segment",
-  node_alpha = 0.8,
-  edge_width = "weight",
-  edge_color = "grey50",
-  edge_alpha = 0.6,
-  show_labels = TRUE,
-  label_size = 3,
-  show_segments = TRUE,
-  segment_alpha = 0.3,
-  color_palette = "Set3",
-  theme_style = "void",
-  title = NULL,
-  segment_naming = "auto",
+  meta,
+  level,
+  layout,
+  edge_matrix,
+  node_size,
+  node_color,
+  node_alpha,
+  edge_width,
+  edge_color,
+  edge_alpha,
+  show_labels,
+  label_size,
+  show_segments,
+  segment_alpha,
+  color_palette,
+  theme_style,
+  title,
+  segment_naming,
+  segment_colors,
   ...
 ) {
-  # Load required packages
-  if (!requireNamespace("ggraph", quietly = TRUE)) {
-    stop("Package 'ggraph' is required for this function. Please install it.")
-  }
-  if (!requireNamespace("tidygraph", quietly = TRUE)) {
-    stop(
-      "Package 'tidygraph' is required for this function. Please install it."
-    )
-  }
-  if (!requireNamespace("dplyr", quietly = TRUE)) {
-    stop("Package 'dplyr' is required for this function. Please install it.")
-  }
-
-  # Validate segments object
-  if (is.null(segments)) {
-    stop("segments object is NULL")
-  }
-  if (!inherits(segments, "moneca")) {
-    stop("segments must be a moneca object created by the moneca() function")
-  }
-  if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
-    stop(
-      "segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function."
-    )
-  }
-  if (is.null(segments$mat.list[[1]])) {
-    stop(
-      "segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function."
-    )
-  }
-
-  # Canonical metadata (cached or computed once)
-  meta <- .get_metadata(segments)
-
-  # Set default level after validation
-  if (is.null(level)) {
-    level <- seq_len(meta$n_levels)[-1]
-  }
-
-  # Get edge matrix
-  if (identical(edges, "auto")) {
-    edge_matrix <- segment.edges(segments, level = 1)
-  } else {
-    edge_matrix <- edges
-  }
-
   # Create igraph object with validation
-  # Check if edge matrix has valid structure
-  if (nrow(edge_matrix) == 0 || ncol(edge_matrix) == 0) {
-    stop("Edge matrix is empty - cannot create network plot")
-  }
-  if (all(edge_matrix == 0, na.rm = TRUE)) {
-    warning("Edge matrix contains no non-zero values - plot may be empty")
-  }
-
   g <- moneca_graph_from_adjacency(
     edge_matrix,
     mode = "directed",
@@ -561,14 +424,14 @@ plot_moneca_ggraph <- function(
       dplyr::ungroup()
 
     if (nrow(hull_data) > 0) {
-      # Calculate label positions
+      # Calculate label positions (centroid)
       label_data <- hull_data %>%
         dplyr::group_by(segment) %>%
         dplyr::summarise(
           x = mean(x, na.rm = TRUE),
-          y = max(y, na.rm = TRUE) + 0.15, # Slightly higher label position
+          y = mean(y, na.rm = TRUE),
           label = dplyr::first(segment_label),
-          .groups = 'drop'
+          .groups = "drop"
         )
 
       # Add hulls as the FIRST layer (background)
@@ -577,23 +440,14 @@ plot_moneca_ggraph <- function(
       for (i in seq_along(hull_list)) {
         hull_segment <- hull_list[[i]]
         if (nrow(hull_segment) >= 3) {
-          # Use ggforce if available for rounded hulls
-          # Get appropriate colors based on palette type
-          if (
-            color_palette %in%
-              c("viridis", "plasma", "inferno", "cividis", "magma")
+          # Determine fill color from the unified segment_colors map
+          seg_label <- hull_segment$segment_label[1]
+          fill_color <- if (
+            !is.null(segment_colors) && seg_label %in% names(segment_colors)
           ) {
-            # Viridis family palettes
-            segment_colors <- viridis::viridis(
-              length(hull_list),
-              option = color_palette
-            )
+            segment_colors[seg_label]
           } else {
-            # ColorBrewer palettes
-            segment_colors <- RColorBrewer::brewer.pal(
-              max(3, length(hull_list)),
-              color_palette
-            )
+            "grey70"
           }
 
           if (requireNamespace("ggforce", quietly = TRUE)) {
@@ -601,7 +455,7 @@ plot_moneca_ggraph <- function(
               ggforce::geom_shape(
                 data = hull_segment,
                 ggplot2::aes(x = x, y = y),
-                fill = segment_colors[i],
+                fill = fill_color,
                 alpha = segment_alpha,
                 expand = ggplot2::unit(0.02, "npc"),
                 radius = ggplot2::unit(0.03, "npc"),
@@ -613,7 +467,7 @@ plot_moneca_ggraph <- function(
               ggplot2::geom_polygon(
                 data = hull_segment,
                 ggplot2::aes(x = x, y = y),
-                fill = segment_colors[i],
+                fill = fill_color,
                 alpha = segment_alpha,
                 show.legend = FALSE,
                 inherit.aes = FALSE
@@ -659,8 +513,11 @@ plot_moneca_ggraph <- function(
         show.legend = FALSE
       )
 
-    # Add appropriate color scale based on palette type
-    if (
+    # Use unified segment_colors if available, otherwise fall back
+    if (!is.null(segment_colors)) {
+      p <- p +
+        ggplot2::scale_color_manual(values = segment_colors, guide = "none")
+    } else if (
       color_palette %in% c("viridis", "plasma", "inferno", "cividis", "magma")
     ) {
       p <- p +
@@ -691,51 +548,59 @@ plot_moneca_ggraph <- function(
       )
   }
 
-  # Add labels - only show individual node labels when not showing segment hulls
-  if (show_labels && (!show_segments || !identical(node_color, "segment"))) {
-    if (identical(node_color, "segment")) {
-      p <- p +
-        ggraph::geom_node_text(
-          ggplot2::aes(label = segment_label),
-          size = label_size,
-          repel = TRUE
-        )
-    } else {
-      p <- p +
-        ggraph::geom_node_text(
-          ggplot2::aes(label = name),
-          size = label_size,
-          repel = TRUE
-        )
-    }
+  # Add node labels - always show when show_labels = TRUE
+  if (show_labels) {
+    p <- p +
+      ggraph::geom_node_text(
+        ggplot2::aes(label = name),
+        size = label_size,
+        repel = TRUE
+      )
   }
 
   # Add segment labels if we have hull data
   if (!is.null(hull_label_data)) {
-    p <- p +
-      ggplot2::geom_text(
-        data = hull_label_data,
-        ggplot2::aes(x = x, y = y, label = label),
-        size = 4,
-        fontface = "bold",
-        vjust = 0,
-        inherit.aes = FALSE
-      )
+    if (requireNamespace("ggrepel", quietly = TRUE)) {
+      p <- p +
+        ggrepel::geom_text_repel(
+          data = hull_label_data,
+          ggplot2::aes(x = x, y = y, label = label),
+          size = label_size + 1,
+          fontface = "bold",
+          color = "grey30",
+          inherit.aes = FALSE,
+          box.padding = 0.5,
+          point.padding = 0.3,
+          max.overlaps = Inf
+        )
+    } else {
+      p <- p +
+        ggplot2::geom_text(
+          data = hull_label_data,
+          ggplot2::aes(x = x, y = y, label = label),
+          size = label_size + 1,
+          fontface = "bold",
+          color = "grey30",
+          vjust = 0.5,
+          inherit.aes = FALSE
+        )
+    }
   }
 
-  # Apply theme
+  # Apply theme with tighter margins
   if (theme_style == "void") {
     p <- p +
-      ggraph::theme_graph() +
+      ggraph::theme_graph(base_family = "") +
       ggplot2::theme(
         plot.title = ggplot2::element_text(
           size = 11,
           margin = ggplot2::margin(b = 2)
-        )
+        ),
+        plot.margin = ggplot2::margin(2, 2, 2, 2)
       )
   } else if (theme_style == "minimal") {
     p <- p +
-      ggplot2::theme_minimal() +
+      ggplot2::theme_minimal(base_family = "") +
       ggplot2::theme(
         axis.text = ggplot2::element_blank(),
         axis.title = ggplot2::element_blank(),
@@ -743,18 +608,20 @@ plot_moneca_ggraph <- function(
         plot.title = ggplot2::element_text(
           size = 11,
           margin = ggplot2::margin(b = 2)
-        )
+        ),
+        plot.margin = ggplot2::margin(2, 2, 2, 2)
       )
   } else if (theme_style == "classic") {
     p <- p +
-      ggplot2::theme_classic() +
+      ggplot2::theme_classic(base_family = "") +
       ggplot2::theme(
         axis.text = ggplot2::element_blank(),
         axis.title = ggplot2::element_blank(),
         plot.title = ggplot2::element_text(
           size = 11,
           margin = ggplot2::margin(b = 2)
-        )
+        ),
+        plot.margin = ggplot2::margin(2, 2, 2, 2)
       )
   }
 
@@ -767,6 +634,284 @@ plot_moneca_ggraph <- function(
   p <- p + ggplot2::scale_size_continuous(range = c(2, 8), guide = "none")
 
   return(p)
+}
+
+#' Modern Network Visualization for MONECA Results
+#'
+#' Creates sophisticated network visualizations of MONECA clustering results using
+#' ggraph and ggplot2. This function provides modern, highly customizable plots
+#' with support for multiple layout algorithms, node aesthetics, and segment highlighting.
+#'
+#' @param segments A moneca object returned by \code{\link{moneca}}.
+#' @param level Integer vector specifying which hierarchical levels to visualize.
+#'   Default displays all levels except the first (which represents individual categories).
+#' @param layout Character string or matrix specifying the layout algorithm:
+#'   \itemize{
+#'     \item "fr" (default): Fruchterman-Reingold force-directed layout
+#'     \item "kk": Kamada-Kawai layout
+#'     \item "dh": Davidson-Harel layout
+#'     \item "mds": Multidimensional scaling
+#'     \item "stress": Stress majorization
+#'     \item Matrix: Custom coordinate matrix (n_nodes x 2)
+#'   }
+#' @param edges Edge matrix or "auto" to automatically generate using
+#'   \code{\link{segment.edges}}. Default is "auto".
+#' @param node_size Aesthetic mapping for node size:
+#'   \itemize{
+#'     \item "total": Size by total mobility volume (default)
+#'     \item "mobility": Size by off-diagonal mobility rate
+#'     \item Numeric vector: Custom sizes for each node
+#'     \item Single numeric: Fixed size for all nodes
+#'   }
+#' @param node_color Aesthetic mapping for node color:
+#'   \itemize{
+#'     \item "segment" (default): Color by segment membership
+#'     \item "mobility": Color by mobility rate
+#'     \item Character vector: Custom colors for each node
+#'     \item Single color: Fixed color for all nodes
+#'   }
+#' @param node_alpha Numeric value (0-1) for node transparency. Default is 0.8.
+#' @param edge_width Aesthetic for edge width:
+#'   \itemize{
+#'     \item "weight" (default): Width proportional to edge weight
+#'     \item Numeric: Fixed width for all edges
+#'   }
+#' @param edge_color Color for edges. Default is "grey50".
+#' @param edge_alpha Numeric value (0-1) for edge transparency. Default is 0.6.
+#' @param show_labels Logical indicating whether to display node labels. Default is TRUE.
+#' @param label_size Numeric size for node labels. Default is 3.
+#' @param show_segments Logical indicating whether to highlight segment boundaries.
+#'   Default is TRUE.
+#' @param segment_alpha Numeric value (0-1) for segment boundary transparency.
+#'   Default is 0.3.
+#' @param color_palette Character string specifying the color palette for segments.
+#'   Can be any RColorBrewer palette name. Default is "Set3".
+#' @param theme_style Character string specifying the plot theme:
+#'   \itemize{
+#'     \item "void" (default): Clean background with no axes
+#'     \item "minimal": Minimal theme with subtle gridlines
+#'     \item "classic": Traditional ggplot2 theme
+#'   }
+#' @param title Character string for plot title. Default is NULL (no title).
+#' @param segment_naming Specifies how to name segments in the visualization. Can be:
+#'   \itemize{
+#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" -
+#'       these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
+#'     \item data.frame: Custom segment labels with columns "name" (node names from the
+#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete
+#'       control over segment naming
+#'     \item NULL: Uses default "auto" strategy
+#'   }
+#'   When a data.frame is provided, custom labels override automatically generated names.
+#'   The data.frame approach is useful for meaningful business names (e.g., "Upper Management"
+#'   instead of "Segment 1") or multilingual applications.
+#' @param ... Additional arguments passed to ggraph layout functions.
+#'
+#' @return When \code{level} is a single integer, a \code{ggplot2} object that
+#'   can be further customized. When \code{level} is a vector (including the
+#'   default), a \code{gtable} object from \code{gridExtra::grid.arrange()}
+#'   that can be displayed with \code{print()} or saved with
+#'   \code{ggplot2::ggsave()}.
+#'
+#' @details
+#' This function creates publication-quality network visualizations with extensive
+#' customization options. It automatically handles node positioning, edge rendering,
+#' and segment highlighting. The resulting plot can be further modified using
+#' standard ggplot2 syntax.
+#'
+#' For interactive exploration, different layout algorithms may work better with
+#' different network structures. Force-directed layouts ("fr") work well for most
+#' cases, while "stress" layouts often produce cleaner results for dense networks.
+#'
+#' \strong{Segment Naming}: The new data.frame approach for segment_naming provides
+#' complete control over how segments are labeled. This is particularly useful for:
+#' \itemize{
+#'   \item Business applications where meaningful names are essential (e.g., "Senior Management" vs "Segment 1")
+#'   \item Multilingual visualizations where labels need translation
+#'   \item Presentations where consistent, professional terminology is required
+#'   \item Partial customization where only specific segments need custom names
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' # Generate synthetic data and run MONECA
+#' mobility_data <- generate_mobility_data(n_classes = 6, seed = 123)
+#' seg <- moneca(mobility_data, segment.levels = 3)
+#'
+#' # Basic network plot
+#' plot_moneca_ggraph(seg)
+#'
+#' # Customized plot with different aesthetics
+#' plot_moneca_ggraph(seg,
+#'   layout = "stress",
+#'   node_color = "mobility",
+#'   color_palette = "Spectral",
+#'   title = "Social Mobility Network"
+#' )
+#' }
+#'
+#' @seealso
+#' \code{\link{moneca}} for the main analysis function,
+#' \code{\link{plot_ego_ggraph}} for ego network visualization,
+#' \code{\link{plot_stair_ggraph}} for multi-level visualization,
+#' \code{\link{segment.edges}} for edge matrix generation
+#'
+#' @export
+plot_moneca_ggraph <- function(
+  segments,
+  level = NULL,
+  layout = "fr",
+  edges = "auto",
+  node_size = "total",
+  node_color = "segment",
+  node_alpha = 0.8,
+  edge_width = "weight",
+  edge_color = "grey50",
+  edge_alpha = 0.6,
+  show_labels = TRUE,
+  label_size = 3,
+  show_segments = TRUE,
+  segment_alpha = 0.3,
+  color_palette = "Set3",
+  theme_style = "void",
+  title = NULL,
+  segment_naming = "auto",
+  ...
+) {
+  # 1. Package checks
+  if (!requireNamespace("ggraph", quietly = TRUE)) {
+    stop("Package 'ggraph' is required for this function. Please install it.")
+  }
+  if (!requireNamespace("tidygraph", quietly = TRUE)) {
+    stop(
+      "Package 'tidygraph' is required for this function. Please install it."
+    )
+  }
+  if (!requireNamespace("dplyr", quietly = TRUE)) {
+    stop("Package 'dplyr' is required for this function. Please install it.")
+  }
+
+  # 2. Validate segments object
+  if (is.null(segments)) {
+    stop("segments object is NULL")
+  }
+  if (!inherits(segments, "moneca")) {
+    stop("segments must be a moneca object created by the moneca() function")
+  }
+  if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
+    stop(
+      "segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function."
+    )
+  }
+  if (is.null(segments$mat.list[[1]])) {
+    stop(
+      "segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function."
+    )
+  }
+
+  # 3. Canonical metadata
+  meta <- .get_metadata(segments)
+
+  # 4. Set default level
+  if (is.null(level)) {
+    level <- seq_len(meta$n_levels)[-1]
+  }
+
+  # 5. Compute edge matrix once
+  if (identical(edges, "auto")) {
+    edge_matrix <- segment.edges(segments, level = 1)
+  } else {
+    edge_matrix <- edges
+  }
+
+  # 6. Validate edge matrix
+  if (nrow(edge_matrix) == 0 || ncol(edge_matrix) == 0) {
+    stop("Edge matrix is empty - cannot create network plot")
+  }
+  if (all(edge_matrix == 0, na.rm = TRUE)) {
+    warning("Edge matrix contains no non-zero values - plot may be empty")
+  }
+
+  # 7. Compute unified color palette once
+  if (show_segments && identical(node_color, "segment")) {
+    segment_colors <- .compute_segment_colors(meta, level, color_palette)
+  } else {
+    segment_colors <- NULL
+  }
+
+  # 8. Single level: return ggplot directly
+  if (length(level) == 1L) {
+    return(.plot_single_level(
+      segments = segments,
+      meta = meta,
+      level = level,
+      layout = layout,
+      edge_matrix = edge_matrix,
+      node_size = node_size,
+      node_color = node_color,
+      node_alpha = node_alpha,
+      edge_width = edge_width,
+      edge_color = edge_color,
+      edge_alpha = edge_alpha,
+      show_labels = show_labels,
+      label_size = label_size,
+      show_segments = show_segments,
+      segment_alpha = segment_alpha,
+      color_palette = color_palette,
+      theme_style = theme_style,
+      title = title,
+      segment_naming = segment_naming,
+      segment_colors = segment_colors,
+      ...
+    ))
+  }
+
+  # 9. Multi-level: compute shared layout for consistent node positions
+  if (is.character(layout)) {
+    g_tmp <- moneca_graph_from_adjacency(
+      edge_matrix,
+      mode = "directed",
+      weighted = TRUE
+    )
+    tidy_tmp <- tidygraph::as_tbl_graph(g_tmp)
+    layout_obj <- ggraph::create_layout(tidy_tmp, layout = layout, ...)
+    shared_layout <- as.matrix(layout_obj[, c("x", "y")])
+  } else {
+    shared_layout <- layout
+  }
+
+  # 10. Create one panel per level
+  plots <- lapply(level, function(lvl) {
+    .plot_single_level(
+      segments = segments,
+      meta = meta,
+      level = lvl,
+      layout = shared_layout,
+      edge_matrix = edge_matrix,
+      node_size = node_size,
+      node_color = node_color,
+      node_alpha = node_alpha,
+      edge_width = edge_width,
+      edge_color = edge_color,
+      edge_alpha = edge_alpha,
+      show_labels = show_labels,
+      label_size = label_size,
+      show_segments = show_segments,
+      segment_alpha = segment_alpha,
+      color_palette = color_palette,
+      theme_style = theme_style,
+      title = paste("Level", lvl),
+      segment_naming = segment_naming,
+      segment_colors = segment_colors,
+      ...
+    )
+  })
+
+  gridExtra::grid.arrange(
+    grobs = plots,
+    ncol = min(2L, length(plots)),
+    top = title
+  )
 }
 
 #' Ego Network Visualization with ggraph
@@ -1262,7 +1407,7 @@ plot_stair_ggraph <- function(
         c(
           list(
             segments = segments,
-            level = 1:level_idx,
+            level = level_idx,
             layout = layout,
             segment_naming = segment_naming
           ),
@@ -1276,7 +1421,7 @@ plot_stair_ggraph <- function(
         c(
           list(
             segments = segments,
-            level = 1:level_idx,
+            level = level_idx,
             layout = layout,
             segment_naming = segment_naming,
             title = paste("Level", level_idx, "Segmentation")

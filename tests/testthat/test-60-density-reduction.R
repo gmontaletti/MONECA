@@ -379,7 +379,7 @@ test_that("full pipeline works: reduce_density() -> moneca() -> plot", {
 
   # Should be able to create a plot (don't actually render)
   expect_no_error({
-    p <- plot_moneca_ggraph(seg)
+    p <- plot_moneca_ggraph(seg, level = 2)
     expect_s3_class(p, "gg")
   })
 })
