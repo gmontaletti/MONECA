@@ -32,15 +32,15 @@ Default is 2. Set to 1 for vertical arrangement.}
 
 \item{segment_naming}{Specifies how to name segments across all visualization levels. Can be:
 \itemize{
-  \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+  \item Character string: "auto" (default), "concat", "pattern", or "custom" -
     these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
-  \item data.frame: Custom segment labels with columns "name" (node names from the 
-    mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+  \item data.frame: Custom segment labels with columns "name" (node names from the
+    mobility matrix) and "segment_label" (desired custom labels). This allows complete
     control over segment naming across all hierarchical levels
   \item NULL: Uses default "auto" strategy
 }
 When a data.frame is provided, custom labels override automatically generated names
-consistently across all levels. The data.frame approach is particularly useful for 
+consistently across all levels. The data.frame approach is particularly useful for
 stair plots as it maintains consistent naming across the hierarchical progression.}
 
 \item{include_first_level}{Logical indicating whether to include the first level

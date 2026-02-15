@@ -33,7 +33,7 @@ Should include row and column totals.}
 
 \item{min_weight}{Numeric threshold for minimum edge weight to include nodes.
 Only nodes connected to the ego with edge weights >= min_weight will be shown.
-Default is 0 (show all connected nodes). Use higher values to focus on 
+Default is 0 (show all connected nodes). Use higher values to focus on
 stronger mobility flows.}
 
 \item{layout}{Character string specifying the layout algorithm. Default is "stress"
@@ -54,10 +54,10 @@ Default is c(0.5, 3).}
 
 \item{segment_naming}{Specifies how to name segments in the visualization. Can be:
 \itemize{
-  \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+  \item Character string: "auto" (default), "concat", "pattern", or "custom" -
     these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
-  \item data.frame: Custom segment labels with columns "name" (node names from the 
-    mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+  \item data.frame: Custom segment labels with columns "name" (node names from the
+    mobility matrix) and "segment_label" (desired custom labels). This allows complete
     control over segment naming
   \item NULL: Uses default "auto" strategy
 }

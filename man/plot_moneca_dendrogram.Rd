@@ -81,7 +81,7 @@ categories merge simultaneously.
 
 The algorithm processes segments from the most aggregated level down,
 ensuring that at each level, categories are grouped optimally to prevent any
-crossing lines. This creates the clearest possible visualization of the 
+crossing lines. This creates the clearest possible visualization of the
 hierarchical structure.
 }
 \examples{

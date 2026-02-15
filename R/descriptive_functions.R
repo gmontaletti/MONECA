@@ -904,36 +904,48 @@ segment.quality <- function(
       # Add Segment column that plotting functions expect (same as Membership for final solution)
       tsm$Segment <- tsm$Membership
 
-      # Add proper segment naming for final solution
-      # Extract both level and segment numbers from Membership (format is "level.segment")
-      membership_parts <- strsplit(as.character(tsm$Membership), "\\.")
+      # Add proper segment naming from canonical metadata
+      meta <- if (!is.null(segments$segment_metadata)) {
+        segments$segment_metadata
+      } else {
+        moneca_segments(segments)
+      }
 
+      membership_parts <- strsplit(as.character(tsm$Membership), "\\.")
       segment_labels <- character(nrow(tsm))
       for (i in seq_along(membership_parts)) {
         parts <- membership_parts[[i]]
         if (length(parts) >= 2) {
-          level_num <- as.numeric(parts[1])
-          segment_num <- as.numeric(parts[2])
-
-          # Use the create_segment_labels function with the correct level for each segment
-          tryCatch(
-            {
-              segment_label <- create_segment_labels(
-                segments,
-                level_num,
-                segment_num,
-                segment_naming
-              )
-              segment_labels[i] <- segment_label
-            },
-            error = function(e) {
-              # Fallback to simple segment labeling if helper function fails
+          level_num <- as.integer(parts[1])
+          segment_num <- as.integer(parts[2])
+          if (is.na(level_num) || is.na(segment_num)) {
+            segment_labels[i] <- paste("Segment", i)
+          } else if (level_num >= 1 && level_num <= meta$n_levels) {
+            map_df <- meta$levels[[level_num]]$map
+            if (segment_num >= 1 && segment_num <= nrow(map_df)) {
+              segment_labels[i] <- map_df$label[segment_num]
+            } else {
               segment_labels[i] <- paste("Segment", segment_num)
             }
-          )
+          } else {
+            segment_labels[i] <- paste("Segment", segment_num)
+          }
         } else {
-          # Malformed membership string, use fallback
           segment_labels[i] <- paste("Segment", i)
+        }
+      }
+
+      # Override with custom dataframe if provided
+      if (is.data.frame(segment_naming)) {
+        if (all(c("name", "segment_label") %in% colnames(segment_naming))) {
+          for (i in seq_len(nrow(tsm))) {
+            lbl <- segment_labels[i]
+            base_name <- sub("\\+[0-9]+$", "", lbl)
+            custom_idx <- match(base_name, segment_naming$name)
+            if (!is.na(custom_idx)) {
+              segment_labels[i] <- segment_naming$segment_label[custom_idx]
+            }
+          }
         }
       }
 
@@ -1231,85 +1243,19 @@ level.matrix <- function(segments, level = 2, include_total = FALSE) {
     return(mx)
   }
 
-  # 5. Compute asymmetric weight matrix for centrality -----
-  wm <- weight.matrix(
-    segments$mat.list[[1]],
-    cut.off = 1,
-    symmetric = FALSE,
-    small.cell.reduction = segments$small.cell.reduction
-  )
-  wm[is.na(wm)] <- 0
-
-  # 6. Build effective groups by progressively merging across levels -----
-  # segment.list uses original node indices.  At each level, cliques merge
-
-  # groups from the previous level; remaining groups carry forward unchanged.
-  groups <- as.list(seq_along(original_names)) # level 1: each node alone
-
-  for (lvl in seq_len(level)[-1]) {
-    cliques_lvl <- segments$segment.list[[lvl]]
-    new_groups <- list()
-    merged <- logical(length(groups))
-
-    for (cl in cliques_lvl) {
-      to_merge <- which(vapply(
-        groups,
-        function(g) {
-          all(g %in% cl)
-        },
-        logical(1)
-      ))
-      new_groups <- c(new_groups, list(unlist(groups[to_merge])))
-      merged[to_merge] <- TRUE
-    }
-
-    # Carry forward groups not absorbed by any clique
-    remaining <- which(!merged)
-    for (idx in remaining) {
-      new_groups <- c(new_groups, list(groups[[idx]]))
-    }
-
-    groups <- new_groups
+  # 5. Get canonical metadata and apply labels -----
+  meta <- if (!is.null(segments$segment_metadata)) {
+    segments$segment_metadata
+  } else {
+    moneca_segments(segments)
   }
 
-  full_groups <- groups
-  n_groups <- length(full_groups)
-
-  # 7. Label each group by its most central node -----
-  main_nodes <- character(n_groups)
-
-  segment_map <- data.frame(
-    segment = integer(n_groups),
-    main_node = character(n_groups),
-    members = character(n_groups),
-    n_members = integer(n_groups),
-    stringsAsFactors = FALSE
-  )
-
-  for (i in seq_len(n_groups)) {
-    members <- full_groups[[i]]
-    member_names <- original_names[members]
-
-    if (length(members) == 1L) {
-      main_node <- member_names
-    } else {
-      sub_wm <- wm[members, members, drop = FALSE]
-      str <- rowSums(sub_wm) + colSums(sub_wm)
-      main_node <- member_names[which.max(str)]
-    }
-
-    n_extra <- length(members) - 1L
-    main_nodes[i] <- if (n_extra > 0L) {
-      paste0(main_node, "+", n_extra)
-    } else {
-      main_node
-    }
-
-    segment_map$segment[i] <- i
-    segment_map$main_node[i] <- main_node
-    segment_map$members[i] <- paste(member_names, collapse = ", ")
-    segment_map$n_members[i] <- length(members)
-  }
+  map_df <- meta$levels[[level]]$map
+  main_nodes <- map_df$label
+  segment_map <- map_df[,
+    c("segment", "main_node", "members", "n_members"),
+    drop = FALSE
+  ]
 
   rownames(mx) <- main_nodes
   colnames(mx) <- main_nodes

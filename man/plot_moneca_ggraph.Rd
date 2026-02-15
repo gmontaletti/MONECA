@@ -36,13 +36,13 @@ Default displays all levels except the first (which represents individual catego
 \itemize{
   \item "fr" (default): Fruchterman-Reingold force-directed layout
   \item "kk": Kamada-Kawai layout
-  \item "dh": Davidson-Harel layout  
+  \item "dh": Davidson-Harel layout
   \item "mds": Multidimensional scaling
   \item "stress": Stress majorization
   \item Matrix: Custom coordinate matrix (n_nodes x 2)
 }}
 
-\item{edges}{Edge matrix or "auto" to automatically generate using 
+\item{edges}{Edge matrix or "auto" to automatically generate using
 \code{\link{segment.edges}}. Default is "auto".}
 
 \item{node_size}{Aesthetic mapping for node size:
@@ -97,10 +97,10 @@ Can be any RColorBrewer palette name. Default is "Set3".}
 
 \item{segment_naming}{Specifies how to name segments in the visualization. Can be:
 \itemize{
-  \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+  \item Character string: "auto" (default), "concat", "pattern", or "custom" -
     these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
-  \item data.frame: Custom segment labels with columns "name" (node names from the 
-    mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+  \item data.frame: Custom segment labels with columns "name" (node names from the
+    mobility matrix) and "segment_label" (desired custom labels). This allows complete
     control over segment naming
   \item NULL: Uses default "auto" strategy
 }

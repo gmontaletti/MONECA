@@ -702,6 +702,7 @@ moneca_fast <- function(
       out$isolates_summary <- isolates_summary
     }
     class(out) <- "moneca"
+    out$segment_metadata <- moneca_segments(out)
     return(out)
   }
 
@@ -802,6 +803,7 @@ moneca_fast <- function(
   }
 
   class(out) <- "moneca"
+  out$segment_metadata <- moneca_segments(out)
 
   return(out)
 }

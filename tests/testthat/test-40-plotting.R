@@ -81,9 +81,12 @@ test_that("plot_ego_ggraph handles different ego_id formats", {
   })
 
   # Test invalid ID
-  expect_error({
-    p3 <- plot_ego_ggraph(seg, test_data, ego_id = "NonExistent")
-  }, "ego_id not found")
+  expect_error(
+    {
+      p3 <- plot_ego_ggraph(seg, test_data, ego_id = "NonExistent")
+    },
+    "ego_id not found"
+  )
 })
 
 test_that("plot_stair_ggraph creates list of plots", {
@@ -109,7 +112,7 @@ test_that("plotting functions handle missing packages gracefully", {
 
   # The functions should give informative error messages when packages are missing
   # This is handled by the requireNamespace checks in the functions
-  expect_true(TRUE)  # Placeholder - actual implementation would test error handling
+  expect_true(TRUE) # Placeholder - actual implementation would test error handling
 })
 
 test_that("plotting functions respect color and size parameters", {
@@ -128,7 +131,9 @@ test_that("plotting functions respect color and size parameters", {
   expect_s3_class(p2, "ggplot")
 
   # The plots should be different (this is a basic check)
-  expect_true(!identical(p1$layers, p2$layers) || !identical(p1$scales, p2$scales))
+  expect_true(
+    !identical(p1$layers, p2$layers) || !identical(p1$scales, p2$scales)
+  )
 })
 
 test_that("plot_segment_quality cohesion plot prevents duplicate segments", {
@@ -155,26 +160,44 @@ test_that("plot_segment_quality cohesion plot prevents duplicate segments", {
   expect_s3_class(p, "ggplot")
 
   # Test with custom segment naming
-  membership <- segment.membership.enhanced(seg, level = 2, naming_strategy = "auto")
+  membership <- segment.membership.enhanced(
+    seg,
+    level = 2,
+    naming_strategy = "auto"
+  )
   level2_members <- membership[grepl("^2\\.", membership$membership), ]
 
   # Create custom names using any member from each segment (flexible approach)
   unique_segments <- unique(gsub("^2\\.", "", level2_members$membership))
   if (length(unique_segments) >= 2) {
     custom_names <- data.frame(
-      name = c(level2_members$name[level2_members$membership == paste0("2.", unique_segments[1])][1],
-               level2_members$name[level2_members$membership == paste0("2.", unique_segments[2])][1]),
+      name = c(
+        level2_members$name[
+          level2_members$membership == paste0("2.", unique_segments[1])
+        ][1],
+        level2_members$name[
+          level2_members$membership == paste0("2.", unique_segments[2])
+        ][1]
+      ),
       segment_label = c("executives", "specialists"),
       stringsAsFactors = FALSE
     )
 
     expect_no_error({
-      p_custom <- plot_segment_quality(seg, plot_type = "cohesion", level = 2,
-                                      segment_naming = custom_names)
+      p_custom <- plot_segment_quality(
+        seg,
+        plot_type = "cohesion",
+        level = 2,
+        segment_naming = custom_names
+      )
     })
 
-    p_custom <- plot_segment_quality(seg, plot_type = "cohesion", level = 2,
-                                    segment_naming = custom_names)
+    p_custom <- plot_segment_quality(
+      seg,
+      plot_type = "cohesion",
+      level = 2,
+      segment_naming = custom_names
+    )
     expect_s3_class(p_custom, "ggplot")
   }
 })
@@ -193,9 +216,17 @@ test_that("plot_segment_quality aggregation logic works correctly", {
   # Test the underlying data aggregation
   quality_data <- segment.quality(seg, final.solution = FALSE)
   level <- 2
-  level_cols <- grep(paste0("^", level, ": "), colnames(quality_data), value = TRUE)
+  level_cols <- grep(
+    paste0("^", level, ": "),
+    colnames(quality_data),
+    value = TRUE
+  )
   level_data <- quality_data[, c("Membership", level_cols), drop = FALSE]
-  colnames(level_data) <- gsub(paste0("^", level, ": "), "", colnames(level_data))
+  colnames(level_data) <- gsub(
+    paste0("^", level, ": "),
+    "",
+    colnames(level_data)
+  )
 
   # Before aggregation, we might have duplicates
   n_rows_before <- nrow(level_data)
@@ -257,25 +288,40 @@ test_that("create_segment_labels function works with custom dataframes", {
   segment_numbers <- c(1, 2)
   basic_labels <- create_segment_labels(seg, 2, segment_numbers, "auto")
   expect_length(basic_labels, 2)
-  expect_true(all(grepl("^Segment", basic_labels)))
+  # Labels are now metadata-based (e.g. "Class1+2"), not "Segment N" format
+  expect_true(all(nchar(basic_labels) > 0))
 
   # Test custom dataframe functionality
-  membership <- segment.membership.enhanced(seg, level = 2, naming_strategy = "auto")
+  membership <- segment.membership.enhanced(
+    seg,
+    level = 2,
+    naming_strategy = "auto"
+  )
   level2_members <- membership[grepl("^2\\.", membership$membership), ]
 
   if (nrow(level2_members) > 0) {
     # Create custom names using any member from segments (flexible approach)
     custom_names <- data.frame(
-      name = c(level2_members$name[1], level2_members$name[length(level2_members$name)]),
+      name = c(
+        level2_members$name[1],
+        level2_members$name[length(level2_members$name)]
+      ),
       segment_label = c("custom1", "custom2"),
       stringsAsFactors = FALSE
     )
 
-    custom_labels <- create_segment_labels(seg, 2, segment_numbers, custom_names)
+    custom_labels <- create_segment_labels(
+      seg,
+      2,
+      segment_numbers,
+      custom_names
+    )
     expect_length(custom_labels, 2)
     # At least one should match custom labels (depending on membership structure)
-    expect_true(any(custom_labels %in% c("custom1", "custom2")) ||
-                all(grepl("^Segment", custom_labels)))
+    expect_true(
+      any(custom_labels %in% c("custom1", "custom2")) ||
+        all(grepl("^Segment", custom_labels))
+    )
   }
 
   # Test error handling
@@ -301,7 +347,11 @@ test_that("segment.quality and plot_segment_quality integration works", {
   )
 
   # Test segment.quality with segment_naming parameter
-  quality_data <- segment.quality(seg, final.solution = TRUE, segment_naming = custom_names)
+  quality_data <- segment.quality(
+    seg,
+    final.solution = TRUE,
+    segment_naming = custom_names
+  )
 
   # Check that segment_label column is created
   expect_true("segment_label" %in% colnames(quality_data))
@@ -309,18 +359,35 @@ test_that("segment.quality and plot_segment_quality integration works", {
 
   # Test that plot_segment_quality uses segment labels correctly
   expect_no_error({
-    p <- plot_segment_quality(seg, plot_type = "cohesion", segment_naming = custom_names)
+    p <- plot_segment_quality(
+      seg,
+      plot_type = "cohesion",
+      segment_naming = custom_names
+    )
   })
 
   # Test with string-based segment naming
   expect_no_error({
-    quality_auto <- segment.quality(seg, final.solution = TRUE, segment_naming = "auto")
-    p_auto <- plot_segment_quality(seg, plot_type = "cohesion", segment_naming = "auto")
+    quality_auto <- segment.quality(
+      seg,
+      final.solution = TRUE,
+      segment_naming = "auto"
+    )
+    p_auto <- plot_segment_quality(
+      seg,
+      plot_type = "cohesion",
+      segment_naming = "auto"
+    )
   })
 
-  quality_auto <- segment.quality(seg, final.solution = TRUE, segment_naming = "auto")
+  quality_auto <- segment.quality(
+    seg,
+    final.solution = TRUE,
+    segment_naming = "auto"
+  )
   expect_true("segment_label" %in% colnames(quality_auto))
-  expect_true(all(grepl("^Segment", quality_auto$segment_label)))
+  # Labels are now metadata-based (e.g. "Class1+2"), not "Segment N" format
+  expect_true(all(nchar(quality_auto$segment_label) > 0))
 })
 
 test_that("plot_segment_quality cohesion plot uses segment_label correctly", {
@@ -339,7 +406,11 @@ test_that("plot_segment_quality cohesion plot uses segment_label correctly", {
   )
 
   # Test that cohesion plot works and uses segment labels
-  p <- plot_segment_quality(seg, plot_type = "cohesion", segment_naming = custom_names)
+  p <- plot_segment_quality(
+    seg,
+    plot_type = "cohesion",
+    segment_naming = custom_names
+  )
 
   # Extract the underlying data from the plot
   plot_data <- p$data
@@ -349,8 +420,9 @@ test_that("plot_segment_quality cohesion plot uses segment_label correctly", {
 
   # Check that custom labels appear in the data (at least one should match)
   has_custom <- any(plot_data$segment_label %in% c("Group A", "Group B"))
-  has_default <- all(grepl("^Segment", plot_data$segment_label))
+  # Labels are now metadata-based by default, not "Segment N" format
+  has_labels <- all(nchar(as.character(plot_data$segment_label)) > 0)
 
-  # Either custom labels were applied OR default labels were used as fallback
-  expect_true(has_custom || has_default)
+  # Either custom labels were applied OR metadata-based labels were used
+  expect_true(has_custom || has_labels)
 })

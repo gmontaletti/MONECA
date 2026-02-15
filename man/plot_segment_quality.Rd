@@ -29,17 +29,17 @@ plot_segment_quality(
   \item "evolution": Line plot showing metric evolution across levels
 }}
 
-\item{level}{Integer specifying which hierarchical level to visualize. 
+\item{level}{Integer specifying which hierarchical level to visualize.
 Default is 2. Use NULL for all levels (only valid for some plot types).}
 
 \item{metrics}{Character vector of metrics to include. Default includes all.
-Options: "within.mobility", "share.of.mobility", "Density", "Nodes", 
+Options: "within.mobility", "share.of.mobility", "Density", "Nodes",
 "Max.path", "share.of.total"}
 
 \item{color_palette}{Character string specifying the RColorBrewer palette.
 Default is "Set3" for categorical data, "RdYlBu" for continuous.}
 
-\item{theme_style}{Character string specifying the plot theme: "minimal" 
+\item{theme_style}{Character string specifying the plot theme: "minimal"
 (default), "classic", or "void".}
 
 \item{title}{Character string for plot title. Default is auto-generated
@@ -52,7 +52,7 @@ Default is TRUE.}
 
 \item{segment_naming}{Specifies how to name segments in the visualization. Can be:
 \itemize{
-  \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+  \item Character string: "auto" (default), "concat", "pattern", or "custom" -
     these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
   \item data.frame: Custom segment labels with required columns "name" and "segment_label".
     \strong{This parameter accepts the direct output from \code{\link{segment.membership.enhanced}},}
@@ -64,8 +64,8 @@ Default is TRUE.}
     }
   \item NULL: Uses default "auto" strategy
 }
-\strong{Recommended workflow:} Generate enhanced membership with 
-\code{enhanced <- segment.membership.enhanced(segments, naming_strategy = "pattern")} 
+\strong{Recommended workflow:} Generate enhanced membership with
+\code{enhanced <- segment.membership.enhanced(segments, naming_strategy = "pattern")}
 and pass directly: \code{plot_segment_quality(segments, segment_naming = enhanced)}.
 This ensures consistent, meaningful segment names across all plot types and visualizations.}
 }
@@ -73,8 +73,8 @@ This ensures consistent, meaningful segment names across all plot types and visu
 A ggplot2 object (or list of ggplot2 objects for "overview" type).
 }
 \description{
-Creates comprehensive visualizations of segment quality metrics from MONECA 
-analysis. This function provides multiple plot types to help assess the 
+Creates comprehensive visualizations of segment quality metrics from MONECA
+analysis. This function provides multiple plot types to help assess the
 quality and characteristics of the segmentation.
 }
 \details{
@@ -83,7 +83,7 @@ Each plot type serves a different analytical purpose:
 \strong{Overview}: Four-panel display showing:
 \itemize{
   \item Within-mobility by segment (bar chart)
-  \item Segment sizes (nodes) 
+  \item Segment sizes (nodes)
   \item Network density
   \item Share of total mobility
 }
@@ -98,7 +98,7 @@ to 0-1 scale. Useful for comparing segment profiles.
 \strong{Heatmap}: Shows all metrics across all levels and segments. Colors
 indicate metric values, making patterns easy to spot.
 
-\strong{Evolution}: Line plots showing how each metric changes across 
+\strong{Evolution}: Line plots showing how each metric changes across
 hierarchical levels for each segment lineage.
 }
 \examples{

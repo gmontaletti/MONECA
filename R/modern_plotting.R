@@ -9,13 +9,38 @@
 NULL
 
 # Global variable declarations to avoid R CMD check warnings
-if(getRversion() >= "2.15.1") {
+if (getRversion() >= "2.15.1") {
   utils::globalVariables(c(
-    "weight", "nodes", "node_size", "is_ego", "same_segment", "node_name",
-    "level_name", "mobility_rate", "name", "segment", "x", "y",
-    "Membership", "within.mobility", "Nodes", "Density", "share.of.mobility",
-    "share.of.total", "Level_Metric", "Level", "Metric", "Value", "Max.path",
-    "color", "x1", "y1", "x2", "y2", "node_id", "label"
+    "weight",
+    "nodes",
+    "node_size",
+    "is_ego",
+    "same_segment",
+    "node_name",
+    "level_name",
+    "mobility_rate",
+    "name",
+    "segment",
+    "x",
+    "y",
+    "Membership",
+    "within.mobility",
+    "Nodes",
+    "Density",
+    "share.of.mobility",
+    "share.of.total",
+    "Level_Metric",
+    "Level",
+    "Metric",
+    "Value",
+    "Max.path",
+    "color",
+    "x1",
+    "y1",
+    "x2",
+    "y2",
+    "node_id",
+    "label"
   ))
 }
 
@@ -25,57 +50,61 @@ if(getRversion() >= "2.15.1") {
 }
 
 # Helper function to create segment labels based on segment_naming parameter
-create_segment_labels <- function(segments, level, segment_numbers, segment_naming) {
-  # Get base segment names first
-  if (is.data.frame(segment_naming)) {
-    # Custom dataframe provided - validate structure
-    if (!all(c("name", "segment_label") %in% colnames(segment_naming))) {
-      stop("segment_naming dataframe must have columns 'name' and 'segment_label'")
-    }
-    
-    # Get enhanced membership to get segment-to-name mapping
-    membership <- segment.membership.enhanced(segments, level = level, naming_strategy = "auto")
-    
-    # For each segment number, find representatives and check for custom label
+create_segment_labels <- function(
+  segments,
+  level,
+  segment_numbers,
+  segment_naming
+) {
+  # Get canonical metadata
+  meta <- if (!is.null(segments$segment_metadata)) {
+    segments$segment_metadata
+  } else {
+    moneca_segments(segments)
+  }
+
+  # Default labels from metadata
+  if (level >= 1 && level <= meta$n_levels) {
+    map_df <- meta$levels[[level]]$map
     segment_labels <- character(length(segment_numbers))
     for (i in seq_along(segment_numbers)) {
       seg_num <- segment_numbers[i]
-      # Find names in this segment
-      seg_members <- which(membership$membership == paste0(level, ".", seg_num))
-      
-      if (length(seg_members) > 0) {
-        # Try to match any member of the segment with custom names
-        segment_member_names <- membership$name[seg_members]
-        custom_match <- match(segment_member_names, segment_naming$name)
-        valid_matches <- which(!is.na(custom_match))
-        
-        if (length(valid_matches) > 0) {
-          # Use the first valid custom match
-          first_valid_idx <- custom_match[valid_matches[1]]
-          segment_labels[i] <- segment_naming$segment_label[first_valid_idx]
-        } else {
-          # No custom match found, use default
-          segment_labels[i] <- paste0("Segment ", seg_num)
-        }
+      if (is.na(seg_num)) {
+        segment_labels[i] <- paste0("Segment ", i)
+      } else if (seg_num >= 1 && seg_num <= nrow(map_df)) {
+        segment_labels[i] <- map_df$label[seg_num]
       } else {
         segment_labels[i] <- paste0("Segment ", seg_num)
       }
     }
-    return(segment_labels)
-    
   } else {
-    # Handle character string or NULL input
-    naming_strategy <- if (is.null(segment_naming)) "auto" else segment_naming
-    
-    # Validate character string input
-    if (!is.character(naming_strategy) || 
-        !naming_strategy %in% c("auto", "concat", "pattern", "custom")) {
-      stop("segment_naming must be 'auto', 'concat', 'pattern', 'custom', a dataframe, or NULL")
-    }
-    
-    # For character strategies, just create basic segment labels
-    return(paste0("Segment ", segment_numbers))
+    segment_labels <- paste0("Segment ", segment_numbers)
   }
+
+  # Override with custom dataframe if provided
+  if (is.data.frame(segment_naming)) {
+    if (!all(c("name", "segment_label") %in% colnames(segment_naming))) {
+      stop(
+        "segment_naming dataframe must have columns 'name' and 'segment_label'"
+      )
+    }
+    for (i in seq_along(segment_labels)) {
+      # Match by representative name (strip +N suffix)
+      base_name <- sub("\\+[0-9]+$", "", segment_labels[i])
+      custom_idx <- match(base_name, segment_naming$name)
+      if (!is.na(custom_idx)) {
+        segment_labels[i] <- segment_naming$segment_label[custom_idx]
+      }
+    }
+  } else if (!is.null(segment_naming) && is.character(segment_naming)) {
+    if (!segment_naming %in% c("auto", "concat", "pattern", "custom")) {
+      stop(
+        "segment_naming must be 'auto', 'concat', 'pattern', 'custom', a dataframe, or NULL"
+      )
+    }
+  }
+
+  segment_labels
 }
 
 #' Modern Network Visualization for MONECA Results
@@ -91,12 +120,12 @@ create_segment_labels <- function(segments, level, segment_numbers, segment_nami
 #'   \itemize{
 #'     \item "fr" (default): Fruchterman-Reingold force-directed layout
 #'     \item "kk": Kamada-Kawai layout
-#'     \item "dh": Davidson-Harel layout  
+#'     \item "dh": Davidson-Harel layout
 #'     \item "mds": Multidimensional scaling
 #'     \item "stress": Stress majorization
 #'     \item Matrix: Custom coordinate matrix (n_nodes x 2)
 #'   }
-#' @param edges Edge matrix or "auto" to automatically generate using 
+#' @param edges Edge matrix or "auto" to automatically generate using
 #'   \code{\link{segment.edges}}. Default is "auto".
 #' @param node_size Aesthetic mapping for node size:
 #'   \itemize{
@@ -137,10 +166,10 @@ create_segment_labels <- function(segments, level, segment_numbers, segment_nami
 #' @param title Character string for plot title. Default is NULL (no title).
 #' @param segment_naming Specifies how to name segments in the visualization. Can be:
 #'   \itemize{
-#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" -
 #'       these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
-#'     \item data.frame: Custom segment labels with columns "name" (node names from the 
-#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+#'     \item data.frame: Custom segment labels with columns "name" (node names from the
+#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete
 #'       control over segment naming
 #'     \item NULL: Uses default "auto" strategy
 #'   }
@@ -156,11 +185,11 @@ create_segment_labels <- function(segments, level, segment_numbers, segment_nami
 #' customization options. It automatically handles node positioning, edge rendering,
 #' and segment highlighting. The resulting plot can be further modified using
 #' standard ggplot2 syntax.
-#' 
+#'
 #' For interactive exploration, different layout algorithms may work better with
 #' different network structures. Force-directed layouts ("fr") work well for most
 #' cases, while "stress" layouts often produce cleaner results for dense networks.
-#' 
+#'
 #' \strong{Segment Naming}: The new data.frame approach for segment_naming provides
 #' complete control over how segments are labeled. This is particularly useful for:
 #' \itemize{
@@ -187,45 +216,48 @@ create_segment_labels <- function(segments, level, segment_numbers, segment_nami
 #'   title = "Social Mobility Network"
 #' )
 #' }
-#' 
-#' @seealso 
+#'
+#' @seealso
 #' \code{\link{moneca}} for the main analysis function,
 #' \code{\link{plot_ego_ggraph}} for ego network visualization,
 #' \code{\link{plot_stair_ggraph}} for multi-level visualization,
 #' \code{\link{segment.edges}} for edge matrix generation
-#' 
+#'
 #' @export
-plot_moneca_ggraph <- function(segments,
-                              level = NULL,
-                              layout = "fr",
-                              edges = "auto",
-                              node_size = "total",
-                              node_color = "segment",
-                              node_alpha = 0.8,
-                              edge_width = "weight",
-                              edge_color = "grey50",
-                              edge_alpha = 0.6,
-                              show_labels = TRUE,
-                              label_size = 3,
-                              show_segments = TRUE,
-                              segment_alpha = 0.3,
-                              color_palette = "Set3",
-                              theme_style = "void",
-                              title = NULL,
-                              segment_naming = "auto",
-                              ...) {
-  
+plot_moneca_ggraph <- function(
+  segments,
+  level = NULL,
+  layout = "fr",
+  edges = "auto",
+  node_size = "total",
+  node_color = "segment",
+  node_alpha = 0.8,
+  edge_width = "weight",
+  edge_color = "grey50",
+  edge_alpha = 0.6,
+  show_labels = TRUE,
+  label_size = 3,
+  show_segments = TRUE,
+  segment_alpha = 0.3,
+  color_palette = "Set3",
+  theme_style = "void",
+  title = NULL,
+  segment_naming = "auto",
+  ...
+) {
   # Load required packages
   if (!requireNamespace("ggraph", quietly = TRUE)) {
     stop("Package 'ggraph' is required for this function. Please install it.")
   }
   if (!requireNamespace("tidygraph", quietly = TRUE)) {
-    stop("Package 'tidygraph' is required for this function. Please install it.")
+    stop(
+      "Package 'tidygraph' is required for this function. Please install it."
+    )
   }
   if (!requireNamespace("dplyr", quietly = TRUE)) {
     stop("Package 'dplyr' is required for this function. Please install it.")
   }
-  
+
   # Validate segments object
   if (is.null(segments)) {
     stop("segments object is NULL")
@@ -234,24 +266,28 @@ plot_moneca_ggraph <- function(segments,
     stop("segments must be a moneca object created by the moneca() function")
   }
   if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
-    stop("segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function.")
+    stop(
+      "segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function."
+    )
   }
   if (is.null(segments$mat.list[[1]])) {
-    stop("segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function.")
+    stop(
+      "segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function."
+    )
   }
-  
+
   # Set default level after validation
   if (is.null(level)) {
     level <- seq(segments$segment.list)[-1]
   }
-  
+
   # Get edge matrix
   if (identical(edges, "auto")) {
     edge_matrix <- segment.edges(segments, level = 1)
   } else {
     edge_matrix <- edges
   }
-  
+
   # Create igraph object with validation
   # Check if edge matrix has valid structure
   if (nrow(edge_matrix) == 0 || ncol(edge_matrix) == 0) {
@@ -260,9 +296,13 @@ plot_moneca_ggraph <- function(segments,
   if (all(edge_matrix == 0, na.rm = TRUE)) {
     warning("Edge matrix contains no non-zero values - plot may be empty")
   }
-  
-  g <- moneca_graph_from_adjacency(edge_matrix, mode = "directed", weighted = TRUE)
-  
+
+  g <- moneca_graph_from_adjacency(
+    edge_matrix,
+    mode = "directed",
+    weighted = TRUE
+  )
+
   # Get node information
   n_nodes <- length(V(g))
   node_names <- V(g)$name
@@ -270,87 +310,115 @@ plot_moneca_ggraph <- function(segments,
     node_names <- paste0("Node_", 1:n_nodes)
     V(g)$name <- node_names
   }
-  
+
   # Convert to tidygraph
   tidy_graph <- tidygraph::as_tbl_graph(g)
-  
+
   # Add node attributes
   mobility_matrix <- segments$mat.list[[1]]
-  
+
   # Calculate node sizes
   if (identical(node_size, "total")) {
-    node_totals <- (mobility_matrix[nrow(mobility_matrix), ] + 
-                   mobility_matrix[, nrow(mobility_matrix)]) / 2
+    node_totals <- (mobility_matrix[nrow(mobility_matrix), ] +
+      mobility_matrix[, nrow(mobility_matrix)]) /
+      2
     node_totals <- node_totals[-length(node_totals)]
-    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
-          dplyr::mutate(node_size = node_totals)
+    tidy_graph <- tidy_graph %>%
+      tidygraph::activate(nodes) %>%
+      dplyr::mutate(node_size = node_totals)
   } else if (identical(node_size, "mobility")) {
     # Calculate mobility rates (off-diagonal mobility)
-    mobility_rates <- 1 - diag(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)]) / 
-                     rowSums(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)])
-    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
-          dplyr::mutate(node_size = mobility_rates)
+    mobility_rates <- 1 -
+      diag(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)]) /
+        rowSums(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)])
+    tidy_graph <- tidy_graph %>%
+      tidygraph::activate(nodes) %>%
+      dplyr::mutate(node_size = mobility_rates)
   } else if (is.numeric(node_size) && length(node_size) == n_nodes) {
-    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
-          dplyr::mutate(node_size = node_size)
+    tidy_graph <- tidy_graph %>%
+      tidygraph::activate(nodes) %>%
+      dplyr::mutate(node_size = node_size)
   } else {
-    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
-          dplyr::mutate(node_size = 5)
+    tidy_graph <- tidy_graph %>%
+      tidygraph::activate(nodes) %>%
+      dplyr::mutate(node_size = 5)
   }
-  
+
   # Add segment membership with enhanced names
   if (identical(node_color, "segment")) {
     # Handle different types of segment_naming input
     if (is.data.frame(segment_naming)) {
       # Custom dataframe provided - validate structure
       if (!all(c("name", "segment_label") %in% colnames(segment_naming))) {
-        stop("segment_naming dataframe must have columns 'name' and 'segment_label'")
+        stop(
+          "segment_naming dataframe must have columns 'name' and 'segment_label'"
+        )
       }
-      
+
       # Get basic membership first - IMPORTANT: Pass "auto" as character string
-      membership <- segment.membership.enhanced(segments, level = level, naming_strategy = "auto")
-      
+      membership <- segment.membership.enhanced(
+        segments,
+        level = level,
+        naming_strategy = "auto"
+      )
+
       # Override segment_label with custom labels where available
       custom_match <- match(membership$name, segment_naming$name)
       custom_labels <- segment_naming$segment_label[custom_match]
-      
+
       # Use custom labels where available, fallback to generated names
-      membership$segment_label <- ifelse(is.na(custom_labels), 
-                                     membership$segment_label, 
-                                     custom_labels)
+      membership$segment_label <- ifelse(
+        is.na(custom_labels),
+        membership$segment_label,
+        custom_labels
+      )
     } else {
       # Handle character string or NULL input
       naming_strategy <- if (is.null(segment_naming)) "auto" else segment_naming
-      
+
       # Validate character string input
-      if (!is.character(naming_strategy) || 
-          !naming_strategy %in% c("auto", "concat", "pattern", "custom")) {
-        stop("segment_naming must be 'auto', 'concat', 'pattern', 'custom', a dataframe, or NULL")
+      if (
+        !is.character(naming_strategy) ||
+          !naming_strategy %in% c("auto", "concat", "pattern", "custom")
+      ) {
+        stop(
+          "segment_naming must be 'auto', 'concat', 'pattern', 'custom', a dataframe, or NULL"
+        )
       }
-      
-      membership <- segment.membership.enhanced(segments, level = level, naming_strategy = naming_strategy)
+
+      membership <- segment.membership.enhanced(
+        segments,
+        level = level,
+        naming_strategy = naming_strategy
+      )
     }
-    
+
     # Match node names to membership
     node_segments <- membership$membership[match(node_names, membership$name)]
     node_segments[is.na(node_segments)] <- "Unassigned"
-    
+
     # Get enhanced segment labels for better legends
-    node_segment_labels <- membership$segment_label[match(node_names, membership$name)]
+    node_segment_labels <- membership$segment_label[match(
+      node_names,
+      membership$name
+    )]
     node_segment_labels[is.na(node_segment_labels)] <- "Unassigned"
-    
-    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
-          dplyr::mutate(
-            segment = as.factor(node_segments),
-            segment_label = as.factor(node_segment_labels)
-          )
+
+    tidy_graph <- tidy_graph %>%
+      tidygraph::activate(nodes) %>%
+      dplyr::mutate(
+        segment = as.factor(node_segments),
+        segment_label = as.factor(node_segment_labels)
+      )
   } else if (identical(node_color, "mobility")) {
-    mobility_rates <- 1 - diag(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)]) / 
-                     rowSums(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)])
-    tidy_graph <- tidy_graph %>% tidygraph::activate(nodes) %>% 
-          dplyr::mutate(mobility_rate = mobility_rates)
+    mobility_rates <- 1 -
+      diag(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)]) /
+        rowSums(mobility_matrix[-nrow(mobility_matrix), -ncol(mobility_matrix)])
+    tidy_graph <- tidy_graph %>%
+      tidygraph::activate(nodes) %>%
+      dplyr::mutate(mobility_rate = mobility_rates)
   }
-  
+
   # Create consistent layout first that will be used for BOTH plotting and hulls
   if (is.character(layout)) {
     # Validate that the graph has nodes
@@ -371,25 +439,30 @@ plot_moneca_ggraph <- function(segments,
     if (ncol(layout) < 2) {
       stop("Layout must have at least 2 columns (x, y coordinates)")
     }
-    
+
     # Check for valid coordinates (not all the same, not infinite, not NA)
     x_coords <- layout[, 1]
     y_coords <- layout[, 2]
-    
+
     if (all(is.na(x_coords)) || all(is.na(y_coords))) {
       stop("Layout coordinates cannot be all NA")
     }
     if (any(is.infinite(x_coords)) || any(is.infinite(y_coords))) {
-      warning("Layout contains infinite coordinates, replacing with finite values")
+      warning(
+        "Layout contains infinite coordinates, replacing with finite values"
+      )
       x_coords[is.infinite(x_coords)] <- 0
       y_coords[is.infinite(y_coords)] <- 0
     }
-    if (length(unique(x_coords[!is.na(x_coords)])) == 1 && length(unique(y_coords[!is.na(y_coords)])) == 1) {
+    if (
+      length(unique(x_coords[!is.na(x_coords)])) == 1 &&
+        length(unique(y_coords[!is.na(y_coords)])) == 1
+    ) {
       warning("All layout coordinates are the same, adding small random jitter")
       x_coords <- x_coords + runif(length(x_coords), -0.1, 0.1)
       y_coords <- y_coords + runif(length(y_coords), -0.1, 0.1)
     }
-    
+
     # Create manual layout object with all necessary attributes
     actual_layout <- data.frame(
       x = x_coords,
@@ -401,15 +474,20 @@ plot_moneca_ggraph <- function(segments,
     node_data <- tidy_graph %>%
       tidygraph::activate(nodes) %>%
       tidygraph::as_tibble()
-    
+
     actual_layout <- merge(actual_layout, node_data, by = "name", all.x = TRUE)
-    p <- ggraph::ggraph(tidy_graph, layout = "manual", x = x_coords, y = y_coords)
+    p <- ggraph::ggraph(
+      tidy_graph,
+      layout = "manual",
+      x = x_coords,
+      y = y_coords
+    )
   }
-  
+
   # Add segment boundaries (convex hulls) FIRST as background layer
   if (show_segments && identical(node_color, "segment")) {
     # Use the SAME layout coordinates that the plot is using
-    
+
     # Add segment information to layout if not already present
     if (!"segment" %in% colnames(actual_layout)) {
       actual_layout$segment <- tidy_graph %>%
@@ -417,14 +495,14 @@ plot_moneca_ggraph <- function(segments,
         tidygraph::pull(segment) %>%
         as.character()
     }
-    
+
     if (!"segment_label" %in% colnames(actual_layout)) {
       actual_layout$segment_label <- tidy_graph %>%
         tidygraph::activate(nodes) %>%
         tidygraph::pull(segment_label) %>%
         as.character()
     }
-    
+
     # Create hull data
     hull_data <- actual_layout %>%
       dplyr::group_by(segment) %>%
@@ -434,62 +512,78 @@ plot_moneca_ggraph <- function(segments,
           hull_indices <- grDevices::chull(.$x, .$y)
           .[hull_indices, c("x", "y", "segment", "segment_label")]
         } else {
-          data.frame(x = numeric(0), y = numeric(0), segment = character(0), segment_label = character(0))
+          data.frame(
+            x = numeric(0),
+            y = numeric(0),
+            segment = character(0),
+            segment_label = character(0)
+          )
         }
       }) %>%
       dplyr::ungroup()
-    
+
     if (nrow(hull_data) > 0) {
       # Calculate label positions
       label_data <- hull_data %>%
         dplyr::group_by(segment) %>%
         dplyr::summarise(
           x = mean(x, na.rm = TRUE),
-          y = max(y, na.rm = TRUE) + 0.15,  # Slightly higher label position
+          y = max(y, na.rm = TRUE) + 0.15, # Slightly higher label position
           label = dplyr::first(segment_label),
           .groups = 'drop'
         )
-      
+
       # Add hulls as the FIRST layer (background)
       hull_list <- split(hull_data, hull_data$segment)
-      
+
       for (i in seq_along(hull_list)) {
         hull_segment <- hull_list[[i]]
         if (nrow(hull_segment) >= 3) {
           # Use ggforce if available for rounded hulls
           # Get appropriate colors based on palette type
-          if (color_palette %in% c("viridis", "plasma", "inferno", "cividis", "magma")) {
+          if (
+            color_palette %in%
+              c("viridis", "plasma", "inferno", "cividis", "magma")
+          ) {
             # Viridis family palettes
-            segment_colors <- viridis::viridis(length(hull_list), option = color_palette)
+            segment_colors <- viridis::viridis(
+              length(hull_list),
+              option = color_palette
+            )
           } else {
             # ColorBrewer palettes
-            segment_colors <- RColorBrewer::brewer.pal(max(3, length(hull_list)), color_palette)
+            segment_colors <- RColorBrewer::brewer.pal(
+              max(3, length(hull_list)),
+              color_palette
+            )
           }
-          
+
           if (requireNamespace("ggforce", quietly = TRUE)) {
-            p <- p + ggforce::geom_shape(
-              data = hull_segment,
-              ggplot2::aes(x = x, y = y),
-              fill = segment_colors[i],
-              alpha = segment_alpha,
-              expand = ggplot2::unit(0.02, "npc"),
-              radius = ggplot2::unit(0.03, "npc"),
-              show.legend = FALSE,
-              inherit.aes = FALSE
-            )
+            p <- p +
+              ggforce::geom_shape(
+                data = hull_segment,
+                ggplot2::aes(x = x, y = y),
+                fill = segment_colors[i],
+                alpha = segment_alpha,
+                expand = ggplot2::unit(0.02, "npc"),
+                radius = ggplot2::unit(0.03, "npc"),
+                show.legend = FALSE,
+                inherit.aes = FALSE
+              )
           } else {
-            p <- p + ggplot2::geom_polygon(
-              data = hull_segment,
-              ggplot2::aes(x = x, y = y),
-              fill = segment_colors[i],
-              alpha = segment_alpha,
-              show.legend = FALSE,
-              inherit.aes = FALSE
-            )
+            p <- p +
+              ggplot2::geom_polygon(
+                data = hull_segment,
+                ggplot2::aes(x = x, y = y),
+                fill = segment_colors[i],
+                alpha = segment_alpha,
+                show.legend = FALSE,
+                inherit.aes = FALSE
+              )
           }
         }
       }
-      
+
       # Store label data for later use
       hull_label_data <- label_data
     } else {
@@ -498,115 +592,142 @@ plot_moneca_ggraph <- function(segments,
   } else {
     hull_label_data <- NULL
   }
-  
+
   # Add edges (second layer)
   if (identical(edge_width, "weight")) {
-    p <- p + ggraph::geom_edge_link(
-      ggplot2::aes(width = weight, alpha = weight),
-      color = edge_color
-    ) +
-    ggraph::scale_edge_width_continuous(range = c(0.2, 2), guide = "none") +
-    ggraph::scale_edge_alpha_continuous(range = c(0.2, 0.9), guide = "none")
+    p <- p +
+      ggraph::geom_edge_link(
+        ggplot2::aes(width = weight, alpha = weight),
+        color = edge_color
+      ) +
+      ggraph::scale_edge_width_continuous(range = c(0.2, 2), guide = "none") +
+      ggraph::scale_edge_alpha_continuous(range = c(0.2, 0.9), guide = "none")
   } else {
     edge_width_val <- if (is.numeric(edge_width)) edge_width else 0.5
-    p <- p + ggraph::geom_edge_link(
-      color = edge_color,
-      alpha = edge_alpha,
-      width = edge_width_val
-    )
+    p <- p +
+      ggraph::geom_edge_link(
+        color = edge_color,
+        alpha = edge_alpha,
+        width = edge_width_val
+      )
   }
-  
+
   # Add nodes (third layer - on top)
   if (identical(node_color, "segment")) {
-    p <- p + ggraph::geom_node_point(
-      ggplot2::aes(size = node_size, color = segment_label),
-      alpha = node_alpha,
-      show.legend = FALSE
-    )
-    
+    p <- p +
+      ggraph::geom_node_point(
+        ggplot2::aes(size = node_size, color = segment_label),
+        alpha = node_alpha,
+        show.legend = FALSE
+      )
+
     # Add appropriate color scale based on palette type
-    if (color_palette %in% c("viridis", "plasma", "inferno", "cividis", "magma")) {
-      p <- p + ggplot2::scale_color_viridis_d(option = color_palette, guide = "none")
+    if (
+      color_palette %in% c("viridis", "plasma", "inferno", "cividis", "magma")
+    ) {
+      p <- p +
+        ggplot2::scale_color_viridis_d(option = color_palette, guide = "none")
     } else {
-      p <- p + ggplot2::scale_color_brewer(type = "qual", palette = color_palette, guide = "none")
+      p <- p +
+        ggplot2::scale_color_brewer(
+          type = "qual",
+          palette = color_palette,
+          guide = "none"
+        )
     }
   } else if (identical(node_color, "mobility")) {
-    p <- p + ggraph::geom_node_point(
-      ggplot2::aes(size = node_size, color = mobility_rate),
-      alpha = node_alpha,
-      show.legend = FALSE
-    ) +
-    ggplot2::scale_color_gradient(low = "blue", high = "red", guide = "none")
+    p <- p +
+      ggraph::geom_node_point(
+        ggplot2::aes(size = node_size, color = mobility_rate),
+        alpha = node_alpha,
+        show.legend = FALSE
+      ) +
+      ggplot2::scale_color_gradient(low = "blue", high = "red", guide = "none")
   } else {
-    p <- p + ggraph::geom_node_point(
-      ggplot2::aes(size = node_size),
-      color = node_color,
-      alpha = node_alpha,
-      show.legend = FALSE
-    )
+    p <- p +
+      ggraph::geom_node_point(
+        ggplot2::aes(size = node_size),
+        color = node_color,
+        alpha = node_alpha,
+        show.legend = FALSE
+      )
   }
-  
+
   # Add labels - only show individual node labels when not showing segment hulls
   if (show_labels && (!show_segments || !identical(node_color, "segment"))) {
     if (identical(node_color, "segment")) {
-      p <- p + ggraph::geom_node_text(
-        ggplot2::aes(label = segment_label),
-        size = label_size,
-        repel = TRUE
-      )
+      p <- p +
+        ggraph::geom_node_text(
+          ggplot2::aes(label = segment_label),
+          size = label_size,
+          repel = TRUE
+        )
     } else {
-      p <- p + ggraph::geom_node_text(
-        ggplot2::aes(label = name),
-        size = label_size,
-        repel = TRUE
-      )
+      p <- p +
+        ggraph::geom_node_text(
+          ggplot2::aes(label = name),
+          size = label_size,
+          repel = TRUE
+        )
     }
   }
-  
+
   # Add segment labels if we have hull data
   if (!is.null(hull_label_data)) {
-    p <- p + ggplot2::geom_text(
-      data = hull_label_data,
-      ggplot2::aes(x = x, y = y, label = label),
-      size = 4,
-      fontface = "bold",
-      vjust = 0,
-      inherit.aes = FALSE
-    )
+    p <- p +
+      ggplot2::geom_text(
+        data = hull_label_data,
+        ggplot2::aes(x = x, y = y, label = label),
+        size = 4,
+        fontface = "bold",
+        vjust = 0,
+        inherit.aes = FALSE
+      )
   }
-  
-  
+
   # Apply theme
   if (theme_style == "void") {
-    p <- p + ggraph::theme_graph() +
-           ggplot2::theme(
-             plot.title = ggplot2::element_text(size = 11, margin = ggplot2::margin(b = 2))
-           )
+    p <- p +
+      ggraph::theme_graph() +
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(
+          size = 11,
+          margin = ggplot2::margin(b = 2)
+        )
+      )
   } else if (theme_style == "minimal") {
-    p <- p + ggplot2::theme_minimal() +
-           ggplot2::theme(
-             axis.text = ggplot2::element_blank(),
-             axis.title = ggplot2::element_blank(),
-             panel.grid = ggplot2::element_blank(),
-             plot.title = ggplot2::element_text(size = 11, margin = ggplot2::margin(b = 2))
-           )
+    p <- p +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(
+        axis.text = ggplot2::element_blank(),
+        axis.title = ggplot2::element_blank(),
+        panel.grid = ggplot2::element_blank(),
+        plot.title = ggplot2::element_text(
+          size = 11,
+          margin = ggplot2::margin(b = 2)
+        )
+      )
   } else if (theme_style == "classic") {
-    p <- p + ggplot2::theme_classic() +
-           ggplot2::theme(
-             axis.text = ggplot2::element_blank(),
-             axis.title = ggplot2::element_blank(),
-             plot.title = ggplot2::element_text(size = 11, margin = ggplot2::margin(b = 2))
-           )
+    p <- p +
+      ggplot2::theme_classic() +
+      ggplot2::theme(
+        axis.text = ggplot2::element_blank(),
+        axis.title = ggplot2::element_blank(),
+        plot.title = ggplot2::element_text(
+          size = 11,
+          margin = ggplot2::margin(b = 2)
+        )
+      )
   }
-  
+
   # Add title
   if (!is.null(title)) {
     p <- p + ggplot2::ggtitle(title)
   }
-  
+
   # Scale node sizes without legend
   p <- p + ggplot2::scale_size_continuous(range = c(2, 8), guide = "none")
-  
+
   return(p)
 }
 
@@ -626,7 +747,7 @@ plot_moneca_ggraph <- function(segments,
 #'   }
 #' @param min_weight Numeric threshold for minimum edge weight to include nodes.
 #'   Only nodes connected to the ego with edge weights >= min_weight will be shown.
-#'   Default is 0 (show all connected nodes). Use higher values to focus on 
+#'   Default is 0 (show all connected nodes). Use higher values to focus on
 #'   stronger mobility flows.
 #' @param layout Character string specifying the layout algorithm. Default is "stress"
 #'   which often works well for ego networks. Other options include "fr", "kk", "dh".
@@ -640,10 +761,10 @@ plot_moneca_ggraph <- function(segments,
 #' @param title Character string for plot title. Default is NULL.
 #' @param segment_naming Specifies how to name segments in the visualization. Can be:
 #'   \itemize{
-#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" -
 #'       these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
-#'     \item data.frame: Custom segment labels with columns "name" (node names from the 
-#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+#'     \item data.frame: Custom segment labels with columns "name" (node names from the
+#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete
 #'       control over segment naming
 #'     \item NULL: Uses default "auto" strategy
 #'   }
@@ -662,7 +783,7 @@ plot_moneca_ggraph <- function(segments,
 #'   \item Outgoing mobility flows (edges from ego)
 #'   \item The relative strength of different flows through edge width and color
 #' }
-#' 
+#'
 #' Only non-zero mobility flows are displayed to reduce visual clutter.
 #' Edge colors and widths are scaled to represent the volume of mobility flows.
 #'
@@ -676,38 +797,41 @@ plot_moneca_ggraph <- function(segments,
 #' plot_ego_ggraph(seg, mobility_data, ego_id = 3,
 #'                 title = "Mobility from Middle Class")
 #' }
-#' 
-#' @seealso 
+#'
+#' @seealso
 #' \code{\link{plot_moneca_ggraph}} for full network visualization,
 #' \code{\link{plot_stair_ggraph}} for multi-level visualization,
 #' \code{\link{moneca}} for the main analysis function
-#' 
+#'
 #' @export
-plot_ego_ggraph <- function(segments,
-                           mobility_matrix,
-                           ego_id,
-                           min_weight = 0,
-                           layout = "stress",
-                           highlight_color = "red",
-                           flow_color = "viridis",
-                           node_size_range = c(2, 8),
-                           edge_width_range = c(0.2, 3),
-                           title = NULL,
-                           segment_naming = "auto",
-                           ...) {
-  
+plot_ego_ggraph <- function(
+  segments,
+  mobility_matrix,
+  ego_id,
+  min_weight = 0,
+  layout = "stress",
+  highlight_color = "red",
+  flow_color = "viridis",
+  node_size_range = c(2, 8),
+  edge_width_range = c(0.2, 3),
+  title = NULL,
+  segment_naming = "auto",
+  ...
+) {
   # Load required packages
   if (!requireNamespace("ggraph", quietly = TRUE)) {
     stop("Package 'ggraph' is required for this function. Please install it.")
   }
   if (!requireNamespace("tidygraph", quietly = TRUE)) {
-    stop("Package 'tidygraph' is required for this function. Please install it.")
+    stop(
+      "Package 'tidygraph' is required for this function. Please install it."
+    )
   }
-  
+
   # Extract the core mobility matrix (without totals)
   n_classes <- nrow(mobility_matrix) - 1
   core_matrix <- mobility_matrix[1:n_classes, 1:n_classes]
-  
+
   # Convert ego_id to numeric if character
   if (is.character(ego_id)) {
     ego_id <- which(rownames(core_matrix) == ego_id)
@@ -715,34 +839,38 @@ plot_ego_ggraph <- function(segments,
       stop("ego_id not found in matrix row names")
     }
   }
-  
+
   # Create ego network matrix (only flows from/to ego)
   ego_matrix <- matrix(0, nrow = n_classes, ncol = n_classes)
-  ego_matrix[ego_id, ] <- core_matrix[ego_id, ]  # Outflows
-  ego_matrix[, ego_id] <- core_matrix[, ego_id]  # Inflows
-  
+  ego_matrix[ego_id, ] <- core_matrix[ego_id, ] # Outflows
+  ego_matrix[, ego_id] <- core_matrix[, ego_id] # Inflows
+
   # Apply weight threshold - set edges below min_weight to 0
   ego_matrix[ego_matrix < min_weight] <- 0
-  
+
   # Identify nodes that have connections above the threshold
   connected_nodes <- which(rowSums(ego_matrix) > 0 | colSums(ego_matrix) > 0)
-  
+
   # Always include the ego node even if it has no connections above threshold
   connected_nodes <- unique(c(ego_id, connected_nodes))
   connected_nodes <- sort(connected_nodes)
-  
+
   # Filter matrix to only include connected nodes
   filtered_matrix <- ego_matrix[connected_nodes, connected_nodes, drop = FALSE]
-  
+
   # Create graph from filtered matrix
-  g <- moneca_graph_from_adjacency(filtered_matrix, mode = "directed", weighted = TRUE)
-  
+  g <- moneca_graph_from_adjacency(
+    filtered_matrix,
+    mode = "directed",
+    weighted = TRUE
+  )
+
   # Convert to tidygraph and filter out zero-weight edges
   ego_network <- tidygraph::as_tbl_graph(g)
-  ego_network <- ego_network %>% 
+  ego_network <- ego_network %>%
     tidygraph::activate(edges) %>%
     dplyr::filter(weight > 0)
-  
+
   # Add node attributes
   node_names <- V(g)$name
   if (is.null(node_names)) {
@@ -753,65 +881,82 @@ plot_ego_ggraph <- function(segments,
       node_names <- paste0("Node_", connected_nodes)
     }
   }
-  
+
   # Node sizes based on total mobility (for connected nodes only)
   node_totals_full <- rowSums(core_matrix) + colSums(core_matrix)
   node_totals <- node_totals_full[connected_nodes]
-  
+
   # Find which filtered node is the ego
   ego_position_in_filtered <- which(connected_nodes == ego_id)
-  
+
   # Get enhanced segment membership for all nodes
   # Handle different types of segment_naming input
   if (is.data.frame(segment_naming)) {
     # Custom dataframe provided - validate structure
     if (!all(c("name", "segment_label") %in% colnames(segment_naming))) {
-      stop("segment_naming dataframe must have columns 'name' and 'segment_label'")
+      stop(
+        "segment_naming dataframe must have columns 'name' and 'segment_label'"
+      )
     }
-    
+
     # Get basic membership first
-    membership <- segment.membership.enhanced(segments, level = 1:length(segments$segment.list), naming_strategy = "auto")
-    
+    membership <- segment.membership.enhanced(
+      segments,
+      level = 1:length(segments$segment.list),
+      naming_strategy = "auto"
+    )
+
     # Override level_name with custom labels where available
     custom_match <- match(membership$name, segment_naming$name)
     custom_labels <- segment_naming$segment_label[custom_match]
-    
+
     # Use custom labels where available, fallback to generated names
-    membership$segment_label <- ifelse(is.na(custom_labels), 
-                                   membership$segment_label, 
-                                   custom_labels)
+    membership$segment_label <- ifelse(
+      is.na(custom_labels),
+      membership$segment_label,
+      custom_labels
+    )
   } else {
     # Handle character string or NULL input
     naming_strategy <- if (is.null(segment_naming)) "auto" else segment_naming
-    
+
     # Validate character string input
-    if (!is.character(naming_strategy) || 
-        !naming_strategy %in% c("auto", "concat", "pattern", "custom")) {
-      stop("segment_naming must be 'auto', 'concat', 'pattern', 'custom', a dataframe, or NULL")
+    if (
+      !is.character(naming_strategy) ||
+        !naming_strategy %in% c("auto", "concat", "pattern", "custom")
+    ) {
+      stop(
+        "segment_naming must be 'auto', 'concat', 'pattern', 'custom', a dataframe, or NULL"
+      )
     }
-    
-    membership <- segment.membership.enhanced(segments, level = 1:length(segments$segment.list), naming_strategy = naming_strategy)
+
+    membership <- segment.membership.enhanced(
+      segments,
+      level = 1:length(segments$segment.list),
+      naming_strategy = naming_strategy
+    )
   }
-  
+
   # Find ego's segment
   ego_segment <- membership$membership[ego_id]
   ego_segment_label <- membership$segment_label[ego_id]
-  
+
   # Determine which nodes belong to the same segment as ego
   same_segment_as_ego <- membership$membership[connected_nodes] == ego_segment
-  
+
   # Get segment labels for connected nodes
   connected_segment_labels <- membership$segment_label[connected_nodes]
-  
-  ego_network <- ego_network %>% tidygraph::activate(nodes) %>%
-        dplyr::mutate(
-          node_size = node_totals,
-          is_ego = 1:tidygraph::graph_order() == ego_position_in_filtered,
-          same_segment = same_segment_as_ego,
-          node_name = node_names,
-          segment_label = connected_segment_labels
-        )
-  
+
+  ego_network <- ego_network %>%
+    tidygraph::activate(nodes) %>%
+    dplyr::mutate(
+      node_size = node_totals,
+      is_ego = 1:tidygraph::graph_order() == ego_position_in_filtered,
+      same_segment = same_segment_as_ego,
+      node_name = node_names,
+      segment_label = connected_segment_labels
+    )
+
   # Create plot with validation
   if (length(V(g)) == 0) {
     stop("Cannot create ego plot: no nodes connected to ego node")
@@ -819,57 +964,75 @@ plot_ego_ggraph <- function(segments,
   if (length(E(g)) == 0) {
     warning("Ego plot has no edges - ego node may be isolated")
   }
-  
+
   p <- ggraph::ggraph(ego_network, layout = layout)
-  
+
   # Add edges with width based on flow volume
-  p <- p + ggraph::geom_edge_link(
-    ggplot2::aes(width = weight, color = weight, alpha = weight),
-    end_cap = ggraph::circle(0.05, "cm")
-  ) +
-  ggraph::scale_edge_width_continuous(range = edge_width_range, guide = "none") +
-  ggraph::scale_edge_color_viridis(name = "Flow Volume", guide = "none") +
-  ggraph::scale_edge_alpha_continuous(range = c(0.3, 0.9), guide = "none")
-  
+  p <- p +
+    ggraph::geom_edge_link(
+      ggplot2::aes(width = weight, color = weight, alpha = weight),
+      end_cap = ggraph::circle(0.05, "cm")
+    ) +
+    ggraph::scale_edge_width_continuous(
+      range = edge_width_range,
+      guide = "none"
+    ) +
+    ggraph::scale_edge_color_viridis(name = "Flow Volume", guide = "none") +
+    ggraph::scale_edge_alpha_continuous(range = c(0.3, 0.9), guide = "none")
+
   # Add nodes with coloring based on segment membership
-  p <- p + ggraph::geom_node_point(
-    ggplot2::aes(size = node_size, color = interaction(is_ego, same_segment)),
-    alpha = 0.8
-  ) +
-  ggplot2::scale_color_manual(
-    values = c("FALSE.FALSE" = "steelblue", 
-               "FALSE.TRUE" = highlight_color, 
-               "TRUE.FALSE" = highlight_color,
-               "TRUE.TRUE" = highlight_color),
-    guide = "none"
-  ) +
-  ggplot2::scale_size_continuous(range = node_size_range, name = "Total Mobility")
-  
+  p <- p +
+    ggraph::geom_node_point(
+      ggplot2::aes(size = node_size, color = interaction(is_ego, same_segment)),
+      alpha = 0.8
+    ) +
+    ggplot2::scale_color_manual(
+      values = c(
+        "FALSE.FALSE" = "steelblue",
+        "FALSE.TRUE" = highlight_color,
+        "TRUE.FALSE" = highlight_color,
+        "TRUE.TRUE" = highlight_color
+      ),
+      guide = "none"
+    ) +
+    ggplot2::scale_size_continuous(
+      range = node_size_range,
+      name = "Total Mobility"
+    )
+
   # Add labels - use individual node names (professions)
-  p <- p + ggraph::geom_node_text(
-    ggplot2::aes(label = node_name),
-    size = 3,
-    repel = TRUE
-  )
-  
+  p <- p +
+    ggraph::geom_node_text(
+      ggplot2::aes(label = node_name),
+      size = 3,
+      repel = TRUE
+    )
+
   # Apply theme with reduced title spacing
-  p <- p + ggraph::theme_graph() +
-         ggplot2::theme(
-           plot.title = ggplot2::element_text(size = 11, margin = ggplot2::margin(b = 2))
-         )
-  
+  p <- p +
+    ggraph::theme_graph() +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(
+        size = 11,
+        margin = ggplot2::margin(b = 2)
+      )
+    )
+
   # Add title
   if (is.null(title)) {
     ego_name <- node_names[ego_position_in_filtered]
     if (min_weight > 0) {
-      title <- paste("Mobility Network for", ego_name, 
-                     paste0("(min weight: ", min_weight, ")"))
+      title <- paste(
+        "Mobility Network for",
+        ego_name,
+        paste0("(min weight: ", min_weight, ")")
+      )
     } else {
       title <- paste("Mobility Network for", ego_name)
     }
   }
   p <- p + ggplot2::ggtitle(title)
-  
+
   return(p)
 }
 
@@ -892,21 +1055,21 @@ plot_ego_ggraph <- function(segments,
 #'   Default is 2. Set to 1 for vertical arrangement.
 #' @param segment_naming Specifies how to name segments across all visualization levels. Can be:
 #'   \itemize{
-#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" -
 #'       these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
-#'     \item data.frame: Custom segment labels with columns "name" (node names from the 
-#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete 
+#'     \item data.frame: Custom segment labels with columns "name" (node names from the
+#'       mobility matrix) and "segment_label" (desired custom labels). This allows complete
 #'       control over segment naming across all hierarchical levels
 #'     \item NULL: Uses default "auto" strategy
 #'   }
 #'   When a data.frame is provided, custom labels override automatically generated names
-#'   consistently across all levels. The data.frame approach is particularly useful for 
+#'   consistently across all levels. The data.frame approach is particularly useful for
 #'   stair plots as it maintains consistent naming across the hierarchical progression.
 #' @param include_first_level Logical indicating whether to include the first level
 #'   (individual classes without segmentation). Default is TRUE.
 #' @param ... Additional arguments passed to \code{\link{plot_moneca_ggraph}}.
 #'
-#' @return 
+#' @return
 #' If \code{combine_plots = TRUE}, returns a combined plot grid object.
 #' If \code{combine_plots = FALSE}, returns a list of ggplot objects, one for each level.
 #'
@@ -920,7 +1083,7 @@ plot_ego_ggraph <- function(segments,
 #'   \item Presenting results to different audiences
 #'   \item Comparing segmentation stability across levels
 #' }
-#' 
+#'
 #' When using a consistent layout across all plots, the relative positions of
 #' nodes remain the same, making it easier to track how segments evolve.
 #'
@@ -939,22 +1102,23 @@ plot_ego_ggraph <- function(segments,
 #'                                  layout = "stress",
 #'                                  ncol = 1)
 #' }
-#' 
-#' @seealso 
+#'
+#' @seealso
 #' \code{\link{plot_moneca_ggraph}} for single-level visualization,
 #' \code{\link{plot_ego_ggraph}} for ego network analysis,
 #' \code{\link{layout.matrix}} for consistent layouts,
 #' \code{\link{moneca}} for the main analysis function
-#' 
+#'
 #' @export
-plot_stair_ggraph <- function(segments,
-                             levels = seq_along(segments$segment.list),
-                             layout = NULL,
-                             ncol = 2,
-                             segment_naming = "auto",
-                             include_first_level = TRUE,
-                             ...) {
-  
+plot_stair_ggraph <- function(
+  segments,
+  levels = seq_along(segments$segment.list),
+  layout = NULL,
+  ncol = 2,
+  segment_naming = "auto",
+  include_first_level = TRUE,
+  ...
+) {
   # Validate segments object
   if (is.null(segments)) {
     stop("segments object is NULL")
@@ -963,62 +1127,72 @@ plot_stair_ggraph <- function(segments,
     stop("segments must be a moneca object created by the moneca() function")
   }
   if (is.null(segments$mat.list) || length(segments$mat.list) == 0) {
-    stop("segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function.")
+    stop(
+      "segments$mat.list is empty - the moneca object appears to be incomplete. Please re-run the moneca() function."
+    )
   }
   if (is.null(segments$mat.list[[1]])) {
-    stop("segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function.")
+    stop(
+      "segments$mat.list[[1]] is NULL - the moneca object appears to be incomplete. Please re-run the moneca() function."
+    )
   }
-  
+
   # Create consistent layout if not provided
   if (is.null(layout)) {
     # Use the layout.matrix function from MONECA
     layout <- layout.matrix(segments)
   }
-  
+
   plots <- list()
-  
+
   # Add first level plot (individual nodes) if requested
   if (include_first_level) {
     # Extract arguments from ... and handle show_segments specially
     dots <- list(...)
     # Remove show_segments from dots since we want to control it for level 1
     dots$show_segments <- NULL
-    
+
     if ("title" %in% names(dots)) {
       # User provided a title - don't override it
-      p_first <- do.call(plot_moneca_ggraph, c(
-        list(
-          segments = segments,
-          level = 1,
-          layout = layout,
-          segment_naming = segment_naming,
-          show_segments = FALSE,  # No hulls for individual level
-          show_labels = TRUE
-        ),
-        dots
-      ))
+      p_first <- do.call(
+        plot_moneca_ggraph,
+        c(
+          list(
+            segments = segments,
+            level = 1,
+            layout = layout,
+            segment_naming = segment_naming,
+            show_segments = FALSE, # No hulls for individual level
+            show_labels = TRUE
+          ),
+          dots
+        )
+      )
     } else {
       # Use default title
-      p_first <- do.call(plot_moneca_ggraph, c(
-        list(
-          segments = segments,
-          level = 1,
-          layout = layout,
-          segment_naming = segment_naming,
-          show_segments = FALSE,  # No hulls for individual level
-          show_labels = TRUE,
-          title = "Level 1: Individual Classes"
-        ),
-        dots
-      ))
+      p_first <- do.call(
+        plot_moneca_ggraph,
+        c(
+          list(
+            segments = segments,
+            level = 1,
+            layout = layout,
+            segment_naming = segment_naming,
+            show_segments = FALSE, # No hulls for individual level
+            show_labels = TRUE,
+            title = "Level 1: Individual Classes"
+          ),
+          dots
+        )
+      )
     }
-    
+
     # Remove all legends
     p_first <- p_first + ggplot2::theme(legend.position = "none")
-    
+
     plots[[1]] <- p_first
     plot_names <- c("Level 1")
-    
+
     # Adjust levels to start from 2
     plot_levels <- levels[levels > 1]
     start_idx <- 2
@@ -1027,48 +1201,54 @@ plot_stair_ggraph <- function(segments,
     start_idx <- 1
     plot_names <- character(0)
   }
-  
+
   # Add subsequent level plots
   for (i in seq_along(plot_levels)) {
     level_idx <- plot_levels[i]
-    
+
     # Extract arguments from ... (for subsequent levels, we preserve user's show_segments preference)
     dots <- list(...)
-    
+
     if ("title" %in% names(dots)) {
       # User provided a title - don't override it
-      p <- do.call(plot_moneca_ggraph, c(
-        list(
-          segments = segments,
-          level = 1:level_idx,
-          layout = layout,
-          segment_naming = segment_naming
-        ),
-        dots
-      ))
+      p <- do.call(
+        plot_moneca_ggraph,
+        c(
+          list(
+            segments = segments,
+            level = 1:level_idx,
+            layout = layout,
+            segment_naming = segment_naming
+          ),
+          dots
+        )
+      )
     } else {
       # Use default title
-      p <- do.call(plot_moneca_ggraph, c(
-        list(
-          segments = segments,
-          level = 1:level_idx,
-          layout = layout,
-          segment_naming = segment_naming,
-          title = paste("Level", level_idx, "Segmentation")
-        ),
-        dots
-      ))
+      p <- do.call(
+        plot_moneca_ggraph,
+        c(
+          list(
+            segments = segments,
+            level = 1:level_idx,
+            layout = layout,
+            segment_naming = segment_naming,
+            title = paste("Level", level_idx, "Segmentation")
+          ),
+          dots
+        )
+      )
     }
-    
+
     # Remove all legends - hulls are now handled by plot_moneca_ggraph() in proper layer order
     p <- p + ggplot2::theme(legend.position = "none")
-    
+
     plots[[start_idx + i - 1]] <- p
     plot_names <- c(plot_names, paste("Level", level_idx))
   }
-  
+
   names(plots) <- plot_names
-  
+
   return(plots)
 }
 
@@ -1109,22 +1289,22 @@ plot_stair_ggraph <- function(segments,
 #'   \item The hierarchical relationships between segments
 #'   \item The progressive aggregation from individual categories to larger segments
 #' }
-#' 
+#'
 #' The dendrogram branches show merging points where categories or segments are
 #' combined based on the MONECA algorithm's clique detection. Unlike traditional
 #' hierarchical clustering, MONECA can create non-binary trees where multiple
 #' categories merge simultaneously.
-#' 
+#'
 #' \strong{Visual Features:}
 #' \itemize{
 #'   \item \strong{Curved branches}: Uses smooth curves instead of angular segments for better aesthetics
 #'   \item \strong{Horizontal layout}: Levels progress horizontally (left to right) with categories arranged vertically
 #'   \item \strong{No-Crossing Layout}: Categories are automatically ordered using a hierarchical algorithm that completely eliminates line crossings between all levels
 #' }
-#' 
+#'
 #' The algorithm processes segments from the most aggregated level down,
 #' ensuring that at each level, categories are grouped optimally to prevent any
-#' crossing lines. This creates the clearest possible visualization of the 
+#' crossing lines. This creates the clearest possible visualization of the
 #' hierarchical structure.
 #'
 #' @examples
@@ -1143,52 +1323,64 @@ plot_stair_ggraph <- function(segments,
 #' \code{\link{plot_stair_ggraph}} for multi-level visualization
 #'
 #' @export
-plot_moneca_dendrogram <- function(segments,
-                                  height_method = "uniform",
-                                  color_segments = TRUE,
-                                  show_labels = TRUE,
-                                  label_size = 3,
-                                  branch_width = 1,
-                                  title = "MONECA Hierarchical Clustering",
-                                  subtitle = NULL,
-                                  color_palette = "Set3",
-                                  theme_style = "minimal",
-                                  vertical = TRUE) {
-  
+plot_moneca_dendrogram <- function(
+  segments,
+  height_method = "uniform",
+  color_segments = TRUE,
+  show_labels = TRUE,
+  label_size = 3,
+  branch_width = 1,
+  title = "MONECA Hierarchical Clustering",
+  subtitle = NULL,
+  color_palette = "Set3",
+  theme_style = "minimal",
+  vertical = TRUE
+) {
   # Input validation
   if (!inherits(segments, "moneca")) {
     stop("segments must be a moneca object created by the moneca() function")
   }
-  
+
   # Extract segment list and original names
   seg_list <- segments$segment.list
   n_levels <- length(seg_list)
-  
+
   # Get original category names
   mat <- segments$mat.list[[1]]
-  cat_names <- rownames(mat)[-nrow(mat)]  # Remove "Total" row
+  cat_names <- rownames(mat)[-nrow(mat)] # Remove "Total" row
   n_categories <- length(cat_names)
-  
+
   # Initialize data structures for dendrogram
   # Note: x and y are flipped - x represents height (levels), y represents position
-  edges <- data.frame(from = character(), to = character(), 
-                     x1 = numeric(), y1 = numeric(), 
-                     x2 = numeric(), y2 = numeric(),
-                     level = integer(), segment = character(),
-                     stringsAsFactors = FALSE)
-  
+  edges <- data.frame(
+    from = character(),
+    to = character(),
+    x1 = numeric(),
+    y1 = numeric(),
+    x2 = numeric(),
+    y2 = numeric(),
+    level = integer(),
+    segment = character(),
+    stringsAsFactors = FALSE
+  )
+
   # Calculate heights for each level
-  heights <- switch(height_method,
+  heights <- switch(
+    height_method,
     "uniform" = seq(0, n_levels - 1),
     "mobility" = {
       # Calculate mobility reduction at each level
       mob_rates <- sapply(seq_len(n_levels), function(i) {
         mat <- segments$mat.list[[i]]
         l <- nrow(mat)
-        if (l <= 1) return(1)
+        if (l <= 1) {
+          return(1)
+        }
         diag_sum <- sum(diag(mat)[-l])
         total_sum <- sum(mat[-l, -l])
-        if (total_sum == 0) return(1)
+        if (total_sum == 0) {
+          return(1)
+        }
         diag_sum / total_sum
       })
       cumsum(c(0, diff(mob_rates)))
@@ -1200,15 +1392,15 @@ plot_moneca_dendrogram <- function(segments,
     },
     stop("Invalid height_method. Choose 'uniform', 'mobility', or 'segments'")
   )
-  
+
   # Normalize heights to 0-1 range
   if (length(heights) > 1 && max(heights) > min(heights)) {
     heights <- (heights - min(heights)) / (max(heights) - min(heights))
   }
-  
+
   # Create node positions for each level
   node_positions <- list()
-  
+
   # Determine optimal x-axis ordering to completely eliminate line crossings
   # Algorithm: Process levels from most aggregated to least aggregated,
   # grouping categories by their segment membership at each level
@@ -1216,32 +1408,40 @@ plot_moneca_dendrogram <- function(segments,
   if (n_levels > 1) {
     # Start with the highest level (most aggregated) and work down
     ordered_cats <- seq_len(n_categories)
-    
+
     # Process levels from most aggregated to least aggregated
     for (level in n_levels:2) {
       segments_at_level <- seg_list[[level]]
-      
-      if (length(segments_at_level) == 0) next
-      
+
+      if (length(segments_at_level) == 0) {
+        next
+      }
+
       # Create new ordering based on this level's segments
       new_order <- integer(0)
-      
+
       # Add categories in segment order
       for (seg_idx in seq_along(segments_at_level)) {
         segment_members <- segments_at_level[[seg_idx]]
         # Sort members within segment by their current order
-        segment_members_ordered <- segment_members[order(match(segment_members, ordered_cats))]
+        segment_members_ordered <- segment_members[order(match(
+          segment_members,
+          ordered_cats
+        ))]
         new_order <- c(new_order, segment_members_ordered)
       }
-      
+
       # Add any missing categories (those not in any segment at this level) at the end
       missing_cats <- setdiff(ordered_cats, new_order)
       if (length(missing_cats) > 0) {
         # Sort missing categories by their current order
-        missing_cats_ordered <- missing_cats[order(match(missing_cats, ordered_cats))]
+        missing_cats_ordered <- missing_cats[order(match(
+          missing_cats,
+          ordered_cats
+        ))]
         new_order <- c(new_order, missing_cats_ordered)
       }
-      
+
       # Update the ordering
       ordered_cats <- new_order
     }
@@ -1249,7 +1449,7 @@ plot_moneca_dendrogram <- function(segments,
     # If only one level, keep original order
     ordered_cats <- seq_len(n_categories)
   }
-  
+
   # Level 1: Individual categories with optimized positions
   # Note: coordinates flipped - x is now height (level), y is position
   node_positions[[1]] <- data.frame(
@@ -1262,48 +1462,58 @@ plot_moneca_dendrogram <- function(segments,
     original_index = seq_len(n_categories), # Keep track of original indices
     stringsAsFactors = FALSE
   )
-  
+
   # Process each subsequent level
   for (level in 2:n_levels) {
     segments_at_level <- seg_list[[level]]
     n_segments <- length(segments_at_level)
-    
-    if (n_segments == 0) next
-    
-    # Calculate y positions as centers of constituent nodes  
+
+    if (n_segments == 0) {
+      next
+    }
+
+    # Calculate y positions as centers of constituent nodes
     # Note: coordinates flipped - y positions are now the main positioning axis
     y_positions <- numeric(n_segments)
     segment_labels <- character(n_segments)
-    
+
     for (i in seq_len(n_segments)) {
       members <- segments_at_level[[i]]
       # Find y positions of members from level 1
       member_y <- node_positions[[1]]$y[members]
       y_positions[i] <- mean(member_y)
-      
+
       # Create segment label
       if (length(members) <= 3) {
         segment_labels[i] <- paste(cat_names[members], collapse = "-")
       } else {
-        segment_labels[i] <- paste0("S", level, ".", i, " (", length(members), " nodes)")
+        segment_labels[i] <- paste0(
+          "S",
+          level,
+          ".",
+          i,
+          " (",
+          length(members),
+          " nodes)"
+        )
       }
     }
-    
+
     node_positions[[level]] <- data.frame(
       node_id = paste0("L", level, "_", seq_len(n_segments)),
       label = segment_labels,
       x = heights[level], # Height (level) - now on x-axis
-      y = y_positions,    # Position - now on y-axis
+      y = y_positions, # Position - now on y-axis
       level = level,
       segment_id = seq_len(n_segments),
       original_index = NA, # Add consistent column structure
       stringsAsFactors = FALSE
     )
-    
+
     # Create edges from previous level to current level
     for (i in seq_len(n_segments)) {
       members <- segments_at_level[[i]]
-      
+
       # Find which nodes from previous level map to this segment
       if (level == 2) {
         # Direct mapping from categories
@@ -1316,18 +1526,18 @@ plot_moneca_dendrogram <- function(segments,
         }))
         prev_nodes <- node_positions[[level - 1]][prev_indices, ]
       }
-      
+
       current_node <- node_positions[[level]][i, ]
-      
+
       # Create edges with flipped coordinates
       for (j in seq_len(nrow(prev_nodes))) {
         new_edge <- data.frame(
           from = prev_nodes$node_id[j],
           to = current_node$node_id,
-          x1 = prev_nodes$x[j],  # Previous level height
-          y1 = prev_nodes$y[j],  # Previous node position
-          x2 = current_node$x,   # Current level height
-          y2 = current_node$y,   # Current node position
+          x1 = prev_nodes$x[j], # Previous level height
+          y1 = prev_nodes$y[j], # Previous node position
+          x2 = current_node$x, # Current level height
+          y2 = current_node$y, # Current node position
           level = level,
           segment = paste0("S", level, ".", i),
           stringsAsFactors = FALSE
@@ -1336,24 +1546,27 @@ plot_moneca_dendrogram <- function(segments,
       }
     }
   }
-  
+
   # Combine all node positions
   all_nodes <- do.call(rbind, node_positions)
-  
+
   # Assign colors based on final segment membership
   if (color_segments && n_levels > 1) {
     final_segments <- seg_list[[n_levels]]
     n_final_segments <- length(final_segments)
-    
+
     # Get colors from palette
     if (n_final_segments <= 12) {
-      segment_colors <- RColorBrewer::brewer.pal(max(3, n_final_segments), color_palette)
+      segment_colors <- RColorBrewer::brewer.pal(
+        max(3, n_final_segments),
+        color_palette
+      )
     } else {
       segment_colors <- grDevices::colorRampPalette(
         RColorBrewer::brewer.pal(12, color_palette)
       )(n_final_segments)
     }
-    
+
     # Assign colors to edges based on final segment membership
     edge_colors <- character(nrow(edges))
     for (i in seq_len(nrow(edges))) {
@@ -1373,31 +1586,33 @@ plot_moneca_dendrogram <- function(segments,
   } else {
     edges$color <- "black"
   }
-  
+
   # Create the plot
   p <- ggplot2::ggplot()
-  
+
   # Add edges (dendrogram branches) using curves
   if (nrow(edges) > 0) {
-    p <- p + ggplot2::geom_curve(
-      data = edges,
-      ggplot2::aes(x = x1, y = y1, xend = x2, yend = y2, color = color),
-      size = branch_width,
-      curvature = 0.2,  # Moderate curve
-      angle = 90,       # Curve angle
-      ncp = 5,          # Number of control points
-      lineend = "round"
-    )
+    p <- p +
+      ggplot2::geom_curve(
+        data = edges,
+        ggplot2::aes(x = x1, y = y1, xend = x2, yend = y2, color = color),
+        size = branch_width,
+        curvature = 0.2, # Moderate curve
+        angle = 90, # Curve angle
+        ncp = 5, # Number of control points
+        lineend = "round"
+      )
   }
-  
+
   # Add node points
-  p <- p + ggplot2::geom_point(
-    data = all_nodes,
-    ggplot2::aes(x = x, y = y),
-    size = 3,
-    color = "black"
-  )
-  
+  p <- p +
+    ggplot2::geom_point(
+      data = all_nodes,
+      ggplot2::aes(x = x, y = y),
+      size = 3,
+      color = "black"
+    )
+
   # Add labels for bottom level (in optimized order)
   if (show_labels) {
     bottom_nodes <- all_nodes[all_nodes$level == 1, ]
@@ -1405,68 +1620,74 @@ plot_moneca_dendrogram <- function(segments,
     bottom_nodes <- bottom_nodes[order(bottom_nodes$y), ]
     # Update labels to show categories in their new positions
     bottom_nodes$label <- cat_names[ordered_cats]
-    
-    p <- p + ggplot2::geom_text(
-      data = bottom_nodes,
-      ggplot2::aes(x = x, y = y, label = label),
-      hjust = -0.1,  # Position to the left of the leftmost points (since x is now height)
-      size = label_size,
-      angle = if (vertical) 0 else 45,  # Adjust angles for flipped orientation
-      vjust = 0.5
-    )
+
+    p <- p +
+      ggplot2::geom_text(
+        data = bottom_nodes,
+        ggplot2::aes(x = x, y = y, label = label),
+        hjust = -0.1, # Position to the left of the leftmost points (since x is now height)
+        size = label_size,
+        angle = if (vertical) 0 else 45, # Adjust angles for flipped orientation
+        vjust = 0.5
+      )
   }
-  
+
   # Apply theme
-  p <- p + switch(theme_style,
-    "minimal" = ggplot2::theme_minimal(),
-    "classic" = ggplot2::theme_classic(),
-    "void" = ggplot2::theme_void(),
-    ggplot2::theme_minimal()
-  )
-  
+  p <- p +
+    switch(
+      theme_style,
+      "minimal" = ggplot2::theme_minimal(),
+      "classic" = ggplot2::theme_classic(),
+      "void" = ggplot2::theme_void(),
+      ggplot2::theme_minimal()
+    )
+
   # Customize theme
-  p <- p + ggplot2::theme(
-    legend.position = "none",
-    axis.text = ggplot2::element_blank(),
-    axis.title = ggplot2::element_blank(),
-    axis.ticks = ggplot2::element_blank(),
-    panel.grid = ggplot2::element_blank(),
-    plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
-    plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5)
-  )
-  
+  p <- p +
+    ggplot2::theme(
+      legend.position = "none",
+      axis.text = ggplot2::element_blank(),
+      axis.title = ggplot2::element_blank(),
+      axis.ticks = ggplot2::element_blank(),
+      panel.grid = ggplot2::element_blank(),
+      plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
+      plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5)
+    )
+
   # Add titles
   p <- p + ggplot2::labs(title = title, subtitle = subtitle)
-  
+
   # Set scale to use actual colors
   if (color_segments) {
     p <- p + ggplot2::scale_color_identity()
   }
-  
+
   # Since coordinates are now flipped by default (x=height, y=position),
   # the vertical parameter behavior is reversed
   if (vertical) {
     p <- p + ggplot2::coord_flip()
   }
-  
+
   # Expand limits slightly (adjust for flipped coordinates)
   if (vertical) {
-    p <- p + ggplot2::expand_limits(
-      x = c(min(heights) - 0.1, max(heights) + 0.1)
-    )
+    p <- p +
+      ggplot2::expand_limits(
+        x = c(min(heights) - 0.1, max(heights) + 0.1)
+      )
   } else {
-    p <- p + ggplot2::expand_limits(
-      y = c(min(heights) - 0.1, max(heights) + 0.1)
-    )
+    p <- p +
+      ggplot2::expand_limits(
+        y = c(min(heights) - 0.1, max(heights) + 0.1)
+      )
   }
-  
+
   return(p)
 }
 
 #' Visualize Segment Quality Metrics
 #'
-#' Creates comprehensive visualizations of segment quality metrics from MONECA 
-#' analysis. This function provides multiple plot types to help assess the 
+#' Creates comprehensive visualizations of segment quality metrics from MONECA
+#' analysis. This function provides multiple plot types to help assess the
 #' quality and characteristics of the segmentation.
 #'
 #' @param segments A moneca object returned by \code{\link{moneca}}.
@@ -1478,14 +1699,14 @@ plot_moneca_dendrogram <- function(segments,
 #'     \item "heatmap": Heatmap of all metrics across levels
 #'     \item "evolution": Line plot showing metric evolution across levels
 #'   }
-#' @param level Integer specifying which hierarchical level to visualize. 
+#' @param level Integer specifying which hierarchical level to visualize.
 #'   Default is 2. Use NULL for all levels (only valid for some plot types).
 #' @param metrics Character vector of metrics to include. Default includes all.
-#'   Options: "within.mobility", "share.of.mobility", "Density", "Nodes", 
+#'   Options: "within.mobility", "share.of.mobility", "Density", "Nodes",
 #'   "Max.path", "share.of.total"
 #' @param color_palette Character string specifying the RColorBrewer palette.
 #'   Default is "Set3" for categorical data, "RdYlBu" for continuous.
-#' @param theme_style Character string specifying the plot theme: "minimal" 
+#' @param theme_style Character string specifying the plot theme: "minimal"
 #'   (default), "classic", or "void".
 #' @param title Character string for plot title. Default is auto-generated
 #'   based on plot type.
@@ -1494,7 +1715,7 @@ plot_moneca_dendrogram <- function(segments,
 #' @param label_size Numeric size for labels. Default is 3.
 #' @param segment_naming Specifies how to name segments in the visualization. Can be:
 #'   \itemize{
-#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" - 
+#'     \item Character string: "auto" (default), "concat", "pattern", or "custom" -
 #'       these are passed to \code{\link{segment.membership.enhanced}} for automatic naming
 #'     \item data.frame: Custom segment labels with required columns "name" and "segment_label".
 #'       \strong{This parameter accepts the direct output from \code{\link{segment.membership.enhanced}},}
@@ -1506,8 +1727,8 @@ plot_moneca_dendrogram <- function(segments,
 #'       }
 #'     \item NULL: Uses default "auto" strategy
 #'   }
-#'   \strong{Recommended workflow:} Generate enhanced membership with 
-#'   \code{enhanced <- segment.membership.enhanced(segments, naming_strategy = "pattern")} 
+#'   \strong{Recommended workflow:} Generate enhanced membership with
+#'   \code{enhanced <- segment.membership.enhanced(segments, naming_strategy = "pattern")}
 #'   and pass directly: \code{plot_segment_quality(segments, segment_naming = enhanced)}.
 #'   This ensures consistent, meaningful segment names across all plot types and visualizations.
 #'
@@ -1515,26 +1736,26 @@ plot_moneca_dendrogram <- function(segments,
 #'
 #' @details
 #' Each plot type serves a different analytical purpose:
-#' 
+#'
 #' \strong{Overview}: Four-panel display showing:
 #' \itemize{
 #'   \item Within-mobility by segment (bar chart)
-#'   \item Segment sizes (nodes) 
+#'   \item Segment sizes (nodes)
 #'   \item Network density
 #'   \item Share of total mobility
 #' }
-#' 
+#'
 #' \strong{Cohesion}: Scatter plot with within-mobility on y-axis and segment
 #' size on x-axis. Ideal segments appear in the upper-right (large and cohesive).
 #' Points are sized by share of mobility.
-#' 
+#'
 #' \strong{Radar}: Multi-dimensional comparison showing all metrics normalized
 #' to 0-1 scale. Useful for comparing segment profiles.
-#' 
+#'
 #' \strong{Heatmap}: Shows all metrics across all levels and segments. Colors
 #' indicate metric values, making patterns easy to spot.
-#' 
-#' \strong{Evolution}: Line plots showing how each metric changes across 
+#'
+#' \strong{Evolution}: Line plots showing how each metric changes across
 #' hierarchical levels for each segment lineage.
 #'
 #' @examples
@@ -1550,76 +1771,107 @@ plot_moneca_dendrogram <- function(segments,
 #' plot_segment_quality(seg, plot_type = "radar", level = 2)
 #' }
 #'
-#' @seealso 
+#' @seealso
 #' \code{\link{segment.quality}} for the underlying metrics,
 #' \code{\link{moneca}} for the main analysis function,
 #' \code{\link{plot_moneca_ggraph}} for network visualization
 #'
 #' @export
-plot_segment_quality <- function(segments,
-                                plot_type = "overview",
-                                level = 2,
-                                metrics = NULL,
-                                color_palette = NULL,
-                                theme_style = "minimal",
-                                title = NULL,
-                                show_labels = TRUE,
-                                label_size = 3,
-                                segment_naming = "auto") {
-  
+plot_segment_quality <- function(
+  segments,
+  plot_type = "overview",
+  level = 2,
+  metrics = NULL,
+  color_palette = NULL,
+  theme_style = "minimal",
+  title = NULL,
+  show_labels = TRUE,
+  label_size = 3,
+  segment_naming = "auto"
+) {
   # Input validation
   if (!inherits(segments, "moneca")) {
     stop("segments must be a moneca object created by the moneca() function")
   }
-  
+
   # Get quality data
   quality_data <- segment.quality(segments, final.solution = FALSE)
-  
+
   # Set default metrics if not provided
   if (is.null(metrics)) {
-    metrics <- c("within.mobility", "share.of.mobility", "Density", 
-                "Nodes", "Max.path", "share.of.total")
+    metrics <- c(
+      "within.mobility",
+      "share.of.mobility",
+      "Density",
+      "Nodes",
+      "Max.path",
+      "share.of.total"
+    )
   }
-  
+
   # Set default color palette based on plot type
   if (is.null(color_palette)) {
-    color_palette <- if (plot_type %in% c("heatmap", "cohesion")) "RdYlBu" else "Set3"
+    color_palette <- if (plot_type %in% c("heatmap", "cohesion")) {
+      "RdYlBu"
+    } else {
+      "Set3"
+    }
   }
-  
+
   # Apply theme
-  theme_base <- switch(theme_style,
+  theme_base <- switch(
+    theme_style,
     "minimal" = ggplot2::theme_minimal(),
     "classic" = ggplot2::theme_classic(),
     "void" = ggplot2::theme_void(),
     ggplot2::theme_minimal()
   )
-  
+
   # Generate plots based on type
   if (plot_type == "overview") {
     # Multi-panel overview
-    if (is.null(level)) level <- 2
-    
+    if (is.null(level)) {
+      level <- 2
+    }
+
     # Extract data for specified level
-    level_cols <- grep(paste0("^", level, ": "), colnames(quality_data), value = TRUE)
-    
+    level_cols <- grep(
+      paste0("^", level, ": "),
+      colnames(quality_data),
+      value = TRUE
+    )
+
     # Check if we found any columns for this level
     if (length(level_cols) == 0) {
       # Extract available levels from column names
       all_level_cols <- grep("^[0-9]+:", colnames(quality_data), value = TRUE)
       available_levels <- unique(gsub(":.*", "", all_level_cols))
-      stop(paste("No data found for level", level, ". Available levels:", 
-                 paste(available_levels, collapse = ", ")))
+      stop(paste(
+        "No data found for level",
+        level,
+        ". Available levels:",
+        paste(available_levels, collapse = ", ")
+      ))
     }
-    
+
     # Ensure we get a data frame even with single column
     level_data <- quality_data[, c("Membership", level_cols), drop = FALSE]
-    
+
     # Clean column names
-    colnames(level_data) <- gsub(paste0("^", level, ": "), "", colnames(level_data))
-    
+    colnames(level_data) <- gsub(
+      paste0("^", level, ": "),
+      "",
+      colnames(level_data)
+    )
+
     # Apply segment naming for better labels
     if ("Segment" %in% colnames(level_data)) {
-      segment_labels <- create_segment_labels(segments, level, level_data$Segment, segment_naming)
+      segment_labels <- create_segment_labels(
+        segments,
+        level,
+        level_data$Segment,
+        segment_naming
+      )
       level_data$segment_label <- segment_labels
       # Use segment labels instead of membership for x-axis
       level_data$plot_label <- level_data$segment_label
@@ -1627,357 +1879,532 @@ plot_segment_quality <- function(segments,
       # Fallback to membership if Segment column not available
       level_data$plot_label <- level_data$Membership
     }
-    
+
     # Create individual plots
     plots <- list()
-    
+
     # 1. Within-mobility bar chart
-    p1 <- ggplot2::ggplot(level_data, ggplot2::aes(x = plot_label, y = within.mobility)) +
+    p1 <- ggplot2::ggplot(
+      level_data,
+      ggplot2::aes(x = plot_label, y = within.mobility)
+    ) +
       ggplot2::geom_bar(stat = "identity", fill = "steelblue") +
-      ggplot2::geom_hline(yintercept = 0.7, linetype = "dashed", color = "red", alpha = 0.5) +
-      ggplot2::labs(x = "Segment", y = "Within-mobility", 
-                   title = "Segment Cohesion") +
+      ggplot2::geom_hline(
+        yintercept = 0.7,
+        linetype = "dashed",
+        color = "red",
+        alpha = 0.5
+      ) +
+      ggplot2::labs(
+        x = "Segment",
+        y = "Within-mobility",
+        title = "Segment Cohesion"
+      ) +
       theme_base +
       ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
-    
+
     if (show_labels && nrow(level_data) <= 10) {
-      p1 <- p1 + ggplot2::geom_text(ggplot2::aes(label = round(within.mobility, 2)), 
-                                    vjust = -0.5, size = label_size)
+      p1 <- p1 +
+        ggplot2::geom_text(
+          ggplot2::aes(label = round(within.mobility, 2)),
+          vjust = -0.5,
+          size = label_size
+        )
     }
     plots[[1]] <- p1
-    
+
     # 2. Segment size (nodes)
     p2 <- ggplot2::ggplot(level_data, ggplot2::aes(x = plot_label, y = Nodes)) +
       ggplot2::geom_bar(stat = "identity", fill = "darkgreen") +
-      ggplot2::labs(x = "Segment", y = "Number of Nodes", 
-                   title = "Segment Size") +
+      ggplot2::labs(
+        x = "Segment",
+        y = "Number of Nodes",
+        title = "Segment Size"
+      ) +
       theme_base +
       ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
-    
+
     if (show_labels && nrow(level_data) <= 10) {
-      p2 <- p2 + ggplot2::geom_text(ggplot2::aes(label = Nodes), 
-                                    vjust = -0.5, size = label_size)
+      p2 <- p2 +
+        ggplot2::geom_text(
+          ggplot2::aes(label = Nodes),
+          vjust = -0.5,
+          size = label_size
+        )
     }
     plots[[2]] <- p2
-    
+
     # 3. Network density
-    p3 <- ggplot2::ggplot(level_data, ggplot2::aes(x = plot_label, y = Density)) +
+    p3 <- ggplot2::ggplot(
+      level_data,
+      ggplot2::aes(x = plot_label, y = Density)
+    ) +
       ggplot2::geom_bar(stat = "identity", fill = "orange") +
-      ggplot2::geom_hline(yintercept = 0.5, linetype = "dashed", color = "red", alpha = 0.5) +
-      ggplot2::labs(x = "Segment", y = "Network Density", 
-                   title = "Internal Connectivity") +
+      ggplot2::geom_hline(
+        yintercept = 0.5,
+        linetype = "dashed",
+        color = "red",
+        alpha = 0.5
+      ) +
+      ggplot2::labs(
+        x = "Segment",
+        y = "Network Density",
+        title = "Internal Connectivity"
+      ) +
       theme_base +
       ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
-    
+
     if (show_labels && nrow(level_data) <= 10) {
-      p3 <- p3 + ggplot2::geom_text(ggplot2::aes(label = round(Density, 2)), 
-                                    vjust = -0.5, size = label_size)
+      p3 <- p3 +
+        ggplot2::geom_text(
+          ggplot2::aes(label = round(Density, 2)),
+          vjust = -0.5,
+          size = label_size
+        )
     }
     plots[[3]] <- p3
-    
+
     # 4. Share of mobility
-    p4 <- ggplot2::ggplot(level_data, ggplot2::aes(x = plot_label, y = share.of.mobility)) +
+    p4 <- ggplot2::ggplot(
+      level_data,
+      ggplot2::aes(x = plot_label, y = share.of.mobility)
+    ) +
       ggplot2::geom_bar(stat = "identity", fill = "purple") +
-      ggplot2::labs(x = "Segment", y = "Share of Total Mobility", 
-                   title = "Relative Importance") +
+      ggplot2::labs(
+        x = "Segment",
+        y = "Share of Total Mobility",
+        title = "Relative Importance"
+      ) +
       theme_base +
       ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
-    
+
     if (show_labels && nrow(level_data) <= 10) {
-      p4 <- p4 + ggplot2::geom_text(ggplot2::aes(label = round(share.of.mobility, 2)), 
-                                    vjust = -0.5, size = label_size)
+      p4 <- p4 +
+        ggplot2::geom_text(
+          ggplot2::aes(label = round(share.of.mobility, 2)),
+          vjust = -0.5,
+          size = label_size
+        )
     }
     plots[[4]] <- p4
-    
+
     # Combine plots
     combined <- gridExtra::grid.arrange(
       grobs = plots,
       ncol = 2,
       top = title %||% paste("Segment Quality Overview - Level", level)
     )
-    
+
     return(combined)
-    
   } else if (plot_type == "cohesion") {
     # Cohesion vs size scatter plot - use final solution data (already aggregated)
     # Get quality data with final.solution = TRUE to get one row per final segment
-    final_quality_data <- segment.quality(segments, final.solution = TRUE, segment_naming = segment_naming)
-    
+    final_quality_data <- segment.quality(
+      segments,
+      final.solution = TRUE,
+      segment_naming = segment_naming
+    )
+
     # Validate that we have the expected columns
     if (!"Segment" %in% colnames(final_quality_data)) {
       stop("Expected 'Segment' column not found in final quality data")
     }
-    
+
     # Check for required metrics
-    required_cols <- c("within.mobility", "share.of.mobility", "Density", "Nodes", "Max.path", "share.of.total")
+    required_cols <- c(
+      "within.mobility",
+      "share.of.mobility",
+      "Density",
+      "Nodes",
+      "Max.path",
+      "share.of.total"
+    )
     missing_cols <- setdiff(required_cols, colnames(final_quality_data))
     if (length(missing_cols) > 0) {
-      stop(paste("Required columns missing from final quality data:", paste(missing_cols, collapse = ", ")))
+      stop(paste(
+        "Required columns missing from final quality data:",
+        paste(missing_cols, collapse = ", ")
+      ))
     }
-    
+
     level_data <- final_quality_data
-    
+
     # Validation: Ensure we have exactly one row per unique segment (should be guaranteed by final.solution=TRUE)
     if (length(unique(level_data$Segment)) != nrow(level_data)) {
-      stop("Final solution data has multiple rows for the same segment - this should not happen")
+      stop(
+        "Final solution data has multiple rows for the same segment - this should not happen"
+      )
     }
-    
+
     # Use segment_label if available, otherwise create fallback labels
     if (!"segment_label" %in% colnames(level_data)) {
       level_data$segment_label <- paste("Segment", level_data$Segment)
     }
-    
+
     # Additional validation: Ensure unique segment labels for plotting
     if (length(unique(level_data$segment_label)) != nrow(level_data)) {
-      warning("Multiple segments have the same label - this may cause plotting issues")
+      warning(
+        "Multiple segments have the same label - this may cause plotting issues"
+      )
       # Add suffix to make labels unique
-      level_data$segment_label <- make.unique(level_data$segment_label, sep = " (")
+      level_data$segment_label <- make.unique(
+        level_data$segment_label,
+        sep = " ("
+      )
     }
-    
+
     # Create scatter plot
-    p <- ggplot2::ggplot(level_data, 
-                        ggplot2::aes(x = Nodes, y = within.mobility, 
-                                    size = share.of.mobility, color = segment_label)) +
+    p <- ggplot2::ggplot(
+      level_data,
+      ggplot2::aes(
+        x = Nodes,
+        y = within.mobility,
+        size = share.of.mobility,
+        color = segment_label
+      )
+    ) +
       ggplot2::geom_point(alpha = 0.7) +
-      ggplot2::scale_size_continuous(range = c(3, 10), name = "Share of Mobility") +
-      ggplot2::geom_hline(yintercept = 0.7, linetype = "dashed", color = "red", alpha = 0.5) +
-      ggplot2::geom_vline(xintercept = 2, linetype = "dashed", color = "blue", alpha = 0.5) +
-      ggplot2::labs(x = "Number of Nodes", 
-                   y = "Within-mobility (Cohesion)",
-                   title = title %||% "Final Segment Quality Analysis",
-                   subtitle = "Ideal segments: upper-right quadrant") +
+      ggplot2::scale_size_continuous(
+        range = c(3, 10),
+        name = "Share of Mobility"
+      ) +
+      ggplot2::geom_hline(
+        yintercept = 0.7,
+        linetype = "dashed",
+        color = "red",
+        alpha = 0.5
+      ) +
+      ggplot2::geom_vline(
+        xintercept = 2,
+        linetype = "dashed",
+        color = "blue",
+        alpha = 0.5
+      ) +
+      ggplot2::labs(
+        x = "Number of Nodes",
+        y = "Within-mobility (Cohesion)",
+        title = title %||% "Final Segment Quality Analysis",
+        subtitle = "Ideal segments: upper-right quadrant"
+      ) +
       theme_base
-    
+
     # Add labels if requested - use segment labels instead of membership
     if (show_labels) {
-      p <- p + ggplot2::geom_text(ggplot2::aes(label = segment_label), 
-                                  vjust = -1, size = label_size)
+      p <- p +
+        ggplot2::geom_text(
+          ggplot2::aes(label = segment_label),
+          vjust = -1,
+          size = label_size
+        )
     }
-    
+
     # Color palette - Remove the Membership legend since labels are on points
     n_segments <- nrow(level_data)
     if (n_segments <= 12) {
-      p <- p + ggplot2::scale_color_brewer(palette = color_palette, guide = "none")
+      p <- p +
+        ggplot2::scale_color_brewer(palette = color_palette, guide = "none")
     } else {
-      p <- p + ggplot2::scale_color_manual(
-        values = grDevices::colorRampPalette(
-          RColorBrewer::brewer.pal(12, color_palette)
-        )(n_segments),
-        guide = "none"
-      )
+      p <- p +
+        ggplot2::scale_color_manual(
+          values = grDevices::colorRampPalette(
+            RColorBrewer::brewer.pal(12, color_palette)
+          )(n_segments),
+          guide = "none"
+        )
     }
-    
+
     return(p)
-    
   } else if (plot_type == "radar") {
     # Radar plot
-    if (is.null(level)) level <- 2
-    
+    if (is.null(level)) {
+      level <- 2
+    }
+
     # Extract and prepare data
-    level_cols <- grep(paste0("^", level, ": "), colnames(quality_data), value = TRUE)
-    
+    level_cols <- grep(
+      paste0("^", level, ": "),
+      colnames(quality_data),
+      value = TRUE
+    )
+
     # Check if we found any columns for this level
     if (length(level_cols) == 0) {
       # Extract available levels from column names
       all_level_cols <- grep("^[0-9]+:", colnames(quality_data), value = TRUE)
       available_levels <- unique(gsub(":.*", "", all_level_cols))
-      stop(paste("No data found for level", level, ". Available levels:", 
-                 paste(available_levels, collapse = ", ")))
+      stop(paste(
+        "No data found for level",
+        level,
+        ". Available levels:",
+        paste(available_levels, collapse = ", ")
+      ))
     }
-    
+
     level_data <- quality_data[, c("Membership", level_cols), drop = FALSE]
-    colnames(level_data) <- gsub(paste0("^", level, ": "), "", colnames(level_data))
-    
+    colnames(level_data) <- gsub(
+      paste0("^", level, ": "),
+      "",
+      colnames(level_data)
+    )
+
     # Select only requested metrics
     metric_cols <- intersect(metrics, colnames(level_data))
     radar_data <- level_data[, c("Membership", metric_cols), drop = FALSE]
-    
+
     # Apply segment naming for better labels
     if ("Segment" %in% colnames(level_data)) {
-      segment_labels <- create_segment_labels(segments, level, level_data$Segment, segment_naming)
+      segment_labels <- create_segment_labels(
+        segments,
+        level,
+        level_data$Segment,
+        segment_naming
+      )
       radar_data$segment_label <- segment_labels
     } else {
       # Create numeric-based labels if Segment column not available
       radar_data$segment_label <- paste("Segment", 1:nrow(radar_data))
     }
-    
+
     # Normalize metrics to 0-1 scale
     for (col in metric_cols) {
       if (col != "Membership") {
         col_data <- radar_data[[col]]
-        radar_data[[col]] <- (col_data - min(col_data, na.rm = TRUE)) / 
-                            (max(col_data, na.rm = TRUE) - min(col_data, na.rm = TRUE))
+        radar_data[[col]] <- (col_data - min(col_data, na.rm = TRUE)) /
+          (max(col_data, na.rm = TRUE) - min(col_data, na.rm = TRUE))
       }
     }
-    
+
     # Reshape data for plotting
-    radar_long <- tidyr::pivot_longer(radar_data, 
-                                     cols = -c(Membership, segment_label), 
-                                     names_to = "Metric", 
-                                     values_to = "Value")
-    
+    radar_long <- tidyr::pivot_longer(
+      radar_data,
+      cols = -c(Membership, segment_label),
+      names_to = "Metric",
+      values_to = "Value"
+    )
+
     # Create radar plot using coord_polar
-    p <- ggplot2::ggplot(radar_long, 
-                        ggplot2::aes(x = Metric, y = Value, group = segment_label, 
-                                    color = segment_label)) +
+    p <- ggplot2::ggplot(
+      radar_long,
+      ggplot2::aes(
+        x = Metric,
+        y = Value,
+        group = segment_label,
+        color = segment_label
+      )
+    ) +
       ggplot2::geom_line(linewidth = 1) +
       ggplot2::geom_point(size = 3) +
       ggplot2::coord_polar() +
       ggplot2::ylim(0, 1) +
-      ggplot2::labs(title = title %||% paste("Segment Profiles - Level", level),
-                   subtitle = "Normalized metrics (0-1 scale)") +
+      ggplot2::labs(
+        title = title %||% paste("Segment Profiles - Level", level),
+        subtitle = "Normalized metrics (0-1 scale)"
+      ) +
       theme_base +
       ggplot2::theme(axis.text.x = ggplot2::element_text(size = 10))
-    
+
     # Color palette
     n_segments <- length(unique(radar_long$segment_label))
     if (n_segments <= 12) {
       p <- p + ggplot2::scale_color_brewer(palette = color_palette)
     } else {
-      p <- p + ggplot2::scale_color_manual(
-        values = grDevices::colorRampPalette(
-          RColorBrewer::brewer.pal(12, color_palette)
-        )(n_segments)
-      )
+      p <- p +
+        ggplot2::scale_color_manual(
+          values = grDevices::colorRampPalette(
+            RColorBrewer::brewer.pal(12, color_palette)
+          )(n_segments)
+        )
     }
-    
+
     return(p)
-    
   } else if (plot_type == "heatmap") {
     # Heatmap of all metrics
-    
+
     # Select metrics columns
     all_metric_cols <- character()
     for (m in metrics) {
       cols <- grep(paste0(": ", m, "$"), colnames(quality_data), value = TRUE)
       all_metric_cols <- c(all_metric_cols, cols)
     }
-    
+
     # Prepare data
-    heatmap_data <- quality_data[, c("Membership", all_metric_cols), drop = FALSE]
-    
+    heatmap_data <- quality_data[,
+      c("Membership", all_metric_cols),
+      drop = FALSE
+    ]
+
     # Apply segment naming for better labels
     # Get segment numbers from the first available level
     if (length(segments$segment.list) > 0) {
       # Use level 1 as reference for segment numbering
       first_level_membership <- segment.membership(segments, level = 1)
-      segment_labels <- create_segment_labels(segments, 1, 1:length(unique(first_level_membership$membership)), segment_naming)
-      
+      segment_labels <- create_segment_labels(
+        segments,
+        1,
+        1:length(unique(first_level_membership$membership)),
+        segment_naming
+      )
+
       # Create a mapping from membership to segment labels
       membership_mapping <- data.frame(
         Membership = unique(heatmap_data$Membership),
-        segment_label = segment_labels[match(unique(heatmap_data$Membership), paste0("1.", 1:length(segment_labels)))]
+        segment_label = segment_labels[match(
+          unique(heatmap_data$Membership),
+          paste0("1.", 1:length(segment_labels))
+        )]
       )
-      
+
       # Handle potential NA values by falling back to membership
-      membership_mapping$segment_label[is.na(membership_mapping$segment_label)] <- 
+      membership_mapping$segment_label[is.na(
+        membership_mapping$segment_label
+      )] <-
         membership_mapping$Membership[is.na(membership_mapping$segment_label)]
-      
-      heatmap_data$segment_label <- membership_mapping$segment_label[match(heatmap_data$Membership, membership_mapping$Membership)]
+
+      heatmap_data$segment_label <- membership_mapping$segment_label[match(
+        heatmap_data$Membership,
+        membership_mapping$Membership
+      )]
     } else {
       heatmap_data$segment_label <- heatmap_data$Membership
     }
-    
+
     # Reshape to long format, excluding both Membership and segment_label
-    heatmap_long <- tidyr::pivot_longer(heatmap_data,
-                                       cols = -c(Membership, segment_label),
-                                       names_to = "Level_Metric",
-                                       values_to = "Value")
-    
+    heatmap_long <- tidyr::pivot_longer(
+      heatmap_data,
+      cols = -c(Membership, segment_label),
+      names_to = "Level_Metric",
+      values_to = "Value"
+    )
+
     # Separate level and metric
     heatmap_long$Level <- gsub(": .*", "", heatmap_long$Level_Metric)
     heatmap_long$Metric <- gsub("^[0-9]+: ", "", heatmap_long$Level_Metric)
-    
+
     # FIX: Create more informative x-axis labels instead of just "1", "2", "3"
     # Convert numeric levels to descriptive labels
     heatmap_long$Level_Label <- paste("Level", heatmap_long$Level)
-    
+
     # Add segment labels to long format data
-    heatmap_long$segment_label <- heatmap_data$segment_label[match(heatmap_long$Membership, heatmap_data$Membership)]
-    
+    heatmap_long$segment_label <- heatmap_data$segment_label[match(
+      heatmap_long$Membership,
+      heatmap_data$Membership
+    )]
+
     # Create heatmap
-    p <- ggplot2::ggplot(heatmap_long, 
-                        ggplot2::aes(x = Level_Label, y = segment_label, fill = Value)) +
+    p <- ggplot2::ggplot(
+      heatmap_long,
+      ggplot2::aes(x = Level_Label, y = segment_label, fill = Value)
+    ) +
       ggplot2::geom_tile() +
-      ggplot2::facet_wrap(~ Metric, scales = "free", ncol = 3) +
+      ggplot2::facet_wrap(~Metric, scales = "free", ncol = 3) +
       ggplot2::scale_fill_distiller(palette = color_palette, direction = 1) +
-      ggplot2::labs(title = title %||% "Segment Quality Metrics Across Levels",
-                   x = "Hierarchical Level", y = "Segment") +
+      ggplot2::labs(
+        title = title %||% "Segment Quality Metrics Across Levels",
+        x = "Hierarchical Level",
+        y = "Segment"
+      ) +
       theme_base +
       ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
-    
+
     return(p)
-    
   } else if (plot_type == "evolution") {
     # Evolution across levels
-    
+
     # Prepare data for evolution plot
     evolution_data <- list()
-    
+
     for (m in metrics) {
-      metric_cols <- grep(paste0(": ", m, "$"), colnames(quality_data), value = TRUE)
+      metric_cols <- grep(
+        paste0(": ", m, "$"),
+        colnames(quality_data),
+        value = TRUE
+      )
       if (length(metric_cols) > 0) {
-        metric_data <- quality_data[, c("Membership", metric_cols), drop = FALSE]
-        
+        metric_data <- quality_data[,
+          c("Membership", metric_cols),
+          drop = FALSE
+        ]
+
         # Reshape to long format
-        metric_long <- tidyr::pivot_longer(metric_data,
-                                         cols = -Membership,
-                                         names_to = "Level",
-                                         values_to = "Value")
+        metric_long <- tidyr::pivot_longer(
+          metric_data,
+          cols = -Membership,
+          names_to = "Level",
+          values_to = "Value"
+        )
         metric_long$Level <- as.numeric(gsub(": .*", "", metric_long$Level))
         metric_long$Metric <- m
-        
+
         evolution_data[[m]] <- metric_long
       }
     }
-    
+
     # Combine all metrics
     evolution_combined <- do.call(rbind, evolution_data)
-    
+
     # Apply segment naming for better labels
     if (nrow(evolution_combined) > 0 && length(segments$segment.list) > 0) {
       # Create segment labels mapping
       unique_memberships <- unique(evolution_combined$Membership)
-      segment_labels <- create_segment_labels(segments, 1, 1:length(unique_memberships), segment_naming)
-      
+      segment_labels <- create_segment_labels(
+        segments,
+        1,
+        1:length(unique_memberships),
+        segment_naming
+      )
+
       # Create mapping
       membership_mapping <- data.frame(
         Membership = unique_memberships,
         segment_label = segment_labels[1:length(unique_memberships)]
       )
-      
+
       # Apply mapping
-      evolution_combined$segment_label <- membership_mapping$segment_label[match(evolution_combined$Membership, membership_mapping$Membership)]
+      evolution_combined$segment_label <- membership_mapping$segment_label[match(
+        evolution_combined$Membership,
+        membership_mapping$Membership
+      )]
     } else {
       evolution_combined$segment_label <- evolution_combined$Membership
     }
-    
+
     # Create line plot
-    p <- ggplot2::ggplot(evolution_combined, 
-                        ggplot2::aes(x = Level, y = Value, color = segment_label, 
-                                    group = segment_label)) +
+    p <- ggplot2::ggplot(
+      evolution_combined,
+      ggplot2::aes(
+        x = Level,
+        y = Value,
+        color = segment_label,
+        group = segment_label
+      )
+    ) +
       ggplot2::geom_line(linewidth = 1) +
       ggplot2::geom_point(size = 3) +
-      ggplot2::facet_wrap(~ Metric, scales = "free_y", ncol = 2) +
-      ggplot2::labs(title = title %||% "Metric Evolution Across Hierarchical Levels",
-                   x = "Hierarchical Level", y = "Metric Value") +
+      ggplot2::facet_wrap(~Metric, scales = "free_y", ncol = 2) +
+      ggplot2::labs(
+        title = title %||% "Metric Evolution Across Hierarchical Levels",
+        x = "Hierarchical Level",
+        y = "Metric Value"
+      ) +
       theme_base
-    
+
     # Color palette
     n_segments <- length(unique(evolution_combined$segment_label))
     if (n_segments <= 12) {
       p <- p + ggplot2::scale_color_brewer(palette = color_palette)
     } else {
-      p <- p + ggplot2::scale_color_manual(
-        values = grDevices::colorRampPalette(
-          RColorBrewer::brewer.pal(12, color_palette)
-        )(n_segments)
-      )
+      p <- p +
+        ggplot2::scale_color_manual(
+          values = grDevices::colorRampPalette(
+            RColorBrewer::brewer.pal(12, color_palette)
+          )(n_segments)
+        )
     }
-    
+
     return(p)
-    
   } else {
-    stop("Invalid plot_type. Choose 'overview', 'cohesion', 'radar', 'heatmap', or 'evolution'")
+    stop(
+      "Invalid plot_type. Choose 'overview', 'cohesion', 'radar', 'heatmap', or 'evolution'"
+    )
   }
 }
