@@ -15,7 +15,7 @@ plot_moneca_ggraph(
   edge_width = "weight",
   edge_color = "grey50",
   edge_alpha = 0.6,
-  show_labels = TRUE,
+  show_labels = FALSE,
   label_size = 3,
   show_segments = TRUE,
   segment_alpha = 0.3,
@@ -73,7 +73,8 @@ Default displays all levels except the first (which represents individual catego
 
 \item{edge_alpha}{Numeric value (0-1) for edge transparency. Default is 0.6.}
 
-\item{show_labels}{Logical indicating whether to display node labels. Default is TRUE.}
+\item{show_labels}{Logical indicating whether to display individual node labels.
+Default is FALSE (only segment/cluster labels are shown).}
 
 \item{label_size}{Numeric size for node labels. Default is 3.}
 
@@ -113,9 +114,9 @@ instead of "Segment 1") or multilingual applications.}
 \value{
 When \code{level} is a single integer, a \code{ggplot2} object that
   can be further customized. When \code{level} is a vector (including the
-  default), a \code{gtable} object from \code{gridExtra::grid.arrange()}
-  that can be displayed with \code{print()} or saved with
-  \code{ggplot2::ggsave()}.
+  default), a named list of \code{ggplot2} objects (one per level), each
+  viewable individually at full size. Names are \code{"level_2"},
+  \code{"level_3"}, etc.
 }
 \description{
 Creates sophisticated network visualizations of MONECA clustering results using

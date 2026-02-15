@@ -20,7 +20,7 @@ test_that("plot_moneca_ggraph single level returns ggplot", {
   expect_s3_class(p, "ggplot")
 })
 
-test_that("plot_moneca_ggraph default (multi-level) returns gtable", {
+test_that("plot_moneca_ggraph default (multi-level) returns named list of ggplots", {
   skip_if_not_installed("ggraph")
   skip_if_not_installed("tidygraph")
   skip_if_not_installed("dplyr")
@@ -33,10 +33,12 @@ test_that("plot_moneca_ggraph default (multi-level) returns gtable", {
   })
 
   result <- plot_moneca_ggraph(seg)
-  expect_s3_class(result, "gtable")
+  expect_type(result, "list")
+  expect_true(all(vapply(result, inherits, logical(1), "ggplot")))
+  expect_true(all(grepl("^level_", names(result))))
 })
 
-test_that("plot_moneca_ggraph multi-level vector returns gtable with correct panels", {
+test_that("plot_moneca_ggraph multi-level vector returns named list with one plot per level", {
   skip_if_not_installed("ggraph")
   skip_if_not_installed("tidygraph")
   skip_if_not_installed("dplyr")
@@ -45,7 +47,11 @@ test_that("plot_moneca_ggraph multi-level vector returns gtable with correct pan
   seg <- moneca(test_data, segment.levels = 3)
 
   result <- plot_moneca_ggraph(seg, level = c(2, 3))
-  expect_s3_class(result, "gtable")
+  expect_type(result, "list")
+  expect_length(result, 2)
+  expect_equal(names(result), c("level_2", "level_3"))
+  expect_s3_class(result[[1]], "ggplot")
+  expect_s3_class(result[[2]], "ggplot")
 })
 
 test_that("plot_moneca_ggraph accepts different parameters", {

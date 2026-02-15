@@ -457,8 +457,8 @@ create_segment_labels <- function(
                 ggplot2::aes(x = x, y = y),
                 fill = fill_color,
                 alpha = segment_alpha,
-                expand = ggplot2::unit(0.02, "npc"),
-                radius = ggplot2::unit(0.03, "npc"),
+                expand = ggplot2::unit(0.15, "cm"),
+                radius = ggplot2::unit(0.25, "cm"),
                 show.legend = FALSE,
                 inherit.aes = FALSE
               )
@@ -678,7 +678,8 @@ create_segment_labels <- function(
 #'   }
 #' @param edge_color Color for edges. Default is "grey50".
 #' @param edge_alpha Numeric value (0-1) for edge transparency. Default is 0.6.
-#' @param show_labels Logical indicating whether to display node labels. Default is TRUE.
+#' @param show_labels Logical indicating whether to display individual node labels.
+#'   Default is FALSE (only segment/cluster labels are shown).
 #' @param label_size Numeric size for node labels. Default is 3.
 #' @param show_segments Logical indicating whether to highlight segment boundaries.
 #'   Default is TRUE.
@@ -709,9 +710,9 @@ create_segment_labels <- function(
 #'
 #' @return When \code{level} is a single integer, a \code{ggplot2} object that
 #'   can be further customized. When \code{level} is a vector (including the
-#'   default), a \code{gtable} object from \code{gridExtra::grid.arrange()}
-#'   that can be displayed with \code{print()} or saved with
-#'   \code{ggplot2::ggsave()}.
+#'   default), a named list of \code{ggplot2} objects (one per level), each
+#'   viewable individually at full size. Names are \code{"level_2"},
+#'   \code{"level_3"}, etc.
 #'
 #' @details
 #' This function creates publication-quality network visualizations with extensive
@@ -768,7 +769,7 @@ plot_moneca_ggraph <- function(
   edge_width = "weight",
   edge_color = "grey50",
   edge_alpha = 0.6,
-  show_labels = TRUE,
+  show_labels = FALSE,
   label_size = 3,
   show_segments = TRUE,
   segment_alpha = 0.3,
@@ -880,7 +881,7 @@ plot_moneca_ggraph <- function(
     shared_layout <- layout
   }
 
-  # 10. Create one panel per level
+  # 10. Create one plot per level, return as named list
   plots <- lapply(level, function(lvl) {
     .plot_single_level(
       segments = segments,
@@ -906,12 +907,8 @@ plot_moneca_ggraph <- function(
       ...
     )
   })
-
-  gridExtra::grid.arrange(
-    grobs = plots,
-    ncol = min(2L, length(plots)),
-    top = title
-  )
+  names(plots) <- paste0("level_", level)
+  plots
 }
 
 #' Ego Network Visualization with ggraph
