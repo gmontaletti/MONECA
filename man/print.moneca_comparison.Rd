@@ -19,3 +19,4 @@ Invisibly returns `x`.
 Displays a structured summary of the comparison between two MONECA
 clustering results.
 }
+\keyword{internal}

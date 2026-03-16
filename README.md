@@ -89,7 +89,7 @@ print(membership)
 
 ## Core Functions
 
-The streamlined moneca API includes 21 key functions organized into functional groups:
+The moneca API includes 23 exported functions organized into functional groups:
 
 ### Core Analysis Functions
 - **moneca()** - Main clustering algorithm with hierarchical segmentation

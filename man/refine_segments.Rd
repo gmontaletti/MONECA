@@ -48,8 +48,11 @@ them into more homogeneous sub-groups. The refined segmentation is returned
 as a modified moneca object with updated `segment.list` and metadata.
 }
 \examples{
+\dontrun{
 mob <- generate_mobility_data(n_classes = 8, seed = 99)
 seg <- moneca(mob, segment.levels = 3)
 refined <- refine_segments(seg, threshold = 0.3, level = 2)
+}
 
 }
+\keyword{internal}

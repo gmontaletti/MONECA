@@ -1087,6 +1087,41 @@ identical(seg_standard$segment.list, seg_fast$segment.list)
 
 The `moneca_fast()` function uses optimized algorithms while maintaining full compatibility with all visualization and analysis functions.
 
+### Directed Clustering with `symmetric_method`
+
+The MONECA algorithm requires a symmetric matrix for clique detection, but the
+relative risk matrix produced by `weight.matrix()` is inherently asymmetric:
+mobility from occupation A to B differs from B to A. The `symmetric_method`
+parameter in `moneca_fast()` controls how this asymmetric matrix is made
+symmetric before clique detection.
+
+Two methods are available:
+
+- **`"sum"` (default)**: The symmetric weight between A and B is the sum of
+  both directed weights. A pair enters the network if the *combined* flow in
+  both directions is high. This is the original MONECA behavior and remains the
+  default for backward compatibility.
+- **`"min"`**: The symmetric weight is the minimum of the two directed weights
+  (min-reciprocity). Both directions must be individually strong for the pair to
+  enter the network. This down-weights one-way bridges and produces tighter
+  clusters on matrices with strong directional asymmetry.
+
+```{r symmetric_method, eval=FALSE}
+# Default behavior (sum symmetrization)
+seg_sum <- moneca_fast(mob, segment.levels = 3)
+
+# Min-reciprocity: require strong flow in both directions
+seg_min <- moneca_fast(mob, segment.levels = 3, symmetric_method = "min")
+```
+
+After clustering, you can diagnose directional asymmetry within segments using
+`compute_asymmetry_scores()`:
+
+```{r asymmetry_scores, eval=FALSE}
+scores <- compute_asymmetry_scores(seg_min)
+head(scores)
+```
+
 ### Auto-Tuning: Automatic Parameter Optimization
 
 The package includes auto-tuning capabilities to automatically optimize the `small.cell.reduction` parameter:

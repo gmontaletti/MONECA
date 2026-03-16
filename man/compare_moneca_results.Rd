@@ -44,11 +44,14 @@ a given hierarchical level. Metrics include segment sizes, pairwise Jaccard
 overlap, Adjusted Rand Index, quality deltas, and asymmetry deltas.
 }
 \examples{
+\dontrun{
 mob <- generate_mobility_data(n_classes = 6, seed = 42)
 seg1 <- moneca(mob, segment.levels = 3)
 seg2 <- refine_segments(seg1, threshold = 0.3, level = 2)
 cmp <- compare_moneca_results(seg1, seg2, level = 2,
   labels = c("Original", "Refined"))
 print(cmp)
+}
 
 }
+\keyword{internal}

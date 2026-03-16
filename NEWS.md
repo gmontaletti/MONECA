@@ -1,3 +1,20 @@
+# moneca 1.2.0.9000
+
+## New Features
+
+* Added `symmetric_method` parameter to `moneca_fast()`: supports `"min"`
+  (min-reciprocity) as alternative to the default `"sum"`. The `"min"` method
+  down-weights one-way bridges and produces tighter clusters on matrices with
+  strong directional asymmetry.
+* New exported functions `compute_asymmetry_scores()` and
+  `flag_asymmetric_segments()` for diagnosing directional asymmetry within
+  segments.
+
+## Internal
+
+* `refine_segments()` and `compare_moneca_results()` demoted to internal
+  functions after evaluation on real data showed limited practical value.
+
 # moneca 0.9.2
 
 ## Maintenance Release

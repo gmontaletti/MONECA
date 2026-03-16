@@ -391,11 +391,13 @@ split_asymmetric_segment <- function(
 #'   with an informational message.
 #'
 #' @examples
+#' \dontrun{
 #' mob <- generate_mobility_data(n_classes = 8, seed = 99)
 #' seg <- moneca(mob, segment.levels = 3)
 #' refined <- refine_segments(seg, threshold = 0.3, level = 2)
+#' }
 #'
-#' @export
+#' @keywords internal
 refine_segments <- function(
   segments,
   threshold = 0.5,
@@ -547,14 +549,16 @@ refine_segments <- function(
 #'   }
 #'
 #' @examples
+#' \dontrun{
 #' mob <- generate_mobility_data(n_classes = 6, seed = 42)
 #' seg1 <- moneca(mob, segment.levels = 3)
 #' seg2 <- refine_segments(seg1, threshold = 0.3, level = 2)
 #' cmp <- compare_moneca_results(seg1, seg2, level = 2,
 #'   labels = c("Original", "Refined"))
 #' print(cmp)
+#' }
 #'
-#' @export
+#' @keywords internal
 compare_moneca_results <- function(
   seg1,
   seg2,
@@ -706,7 +710,7 @@ compare_moneca_results <- function(
 #'
 #' @return Invisibly returns `x`.
 #'
-#' @export
+#' @keywords internal
 print.moneca_comparison <- function(x, ...) {
   cat("=== MONECA Comparison ===\n")
   cat("Level:", x$level, "\n")
