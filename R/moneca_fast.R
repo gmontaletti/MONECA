@@ -47,6 +47,15 @@
 #'   \code{\link{reduce_density}}. For example:
 #'   \code{list(method = "svd", normalization = "ppmi", k = 20)}. See
 #'   \code{\link{reduce_density}} for all available parameters.
+#' @param symmetric_method Character string controlling how the asymmetric relative
+#'   risk matrix is symmetrized before clique-finding. Valid values:
+#'   \itemize{
+#'     \item \code{"sum"} (default): Current behavior — \code{mx + t(mx)}. A pair
+#'       scores high if either direction is strong.
+#'     \item \code{"min"}: Min-reciprocity — \code{pmin(mx, t(mx)) * 2}. A pair
+#'       scores high only if both directions are strong. One-way bridges are
+#'       down-weighted.
+#'   }
 #'
 #' @details
 #' This implementation is optimized for single-core performance using:
@@ -57,6 +66,7 @@
 #'   \item Clique size limiting via \code{max.clique.size} parameter
 #'   \item Pre-computed max clique size for early skip of impossible merges
 #'   \item Optimized node ordering in clique membership tests
+#'   \item Selectable symmetrization via \code{symmetric_method} parameter
 #' }
 #'
 #' \strong{Margin Handling:} When \code{has_margins = "auto"}, the function checks
@@ -66,6 +76,12 @@
 #' \strong{Density Reduction:} Large matrices (30+ categories) with high density
 #' can be preprocessed using \code{\link{reduce_density}} to remove noise before
 #' clustering. This is controlled by \code{reduce_density} and \code{density_params}.
+#'
+#' \strong{Symmetrization Methods:} The default \code{"sum"} method preserves
+#' the original algorithm behavior. The \code{"min"} method uses min-reciprocity
+#' (\code{pmin(mx, t(mx)) * 2}), which down-weights one-way bridges where
+#' only one direction has high relative risk. This can produce tighter clusters
+#' in matrices with strong directional asymmetry.
 #'
 #' \strong{Produces identical results to} \code{\link{moneca}} when using default parameters
 #' and \code{reduce_density = FALSE}.
@@ -118,11 +134,21 @@ moneca_fast <- function(
   isolates = FALSE,
   has_margins = "auto",
   reduce_density = "auto",
-  density_params = list()
+  density_params = list(),
+  symmetric_method = "sum"
 ) {
   # Ensure mx is a regular matrix before margin/density processing
   if (!is.matrix(mx)) {
     mx <- as.matrix(mx)
+  }
+
+  # Validate symmetric_method
+  if (!symmetric_method %in% c("sum", "min")) {
+    stop(
+      "symmetric_method must be 'sum' or 'min', got: '",
+      symmetric_method,
+      "'"
+    )
   }
 
   # 1. Margin auto-detection and generation -----
@@ -530,16 +556,34 @@ moneca_fast <- function(
     cut.off = 1,
     mode = mode,
     delete.upper.tri = delete.upper.tri,
-    small.cell.reduction = small.cell.reduction
+    small.cell.reduction = small.cell.reduction,
+    symmetric_method = symmetric_method
   ) {
-    mx.1i <- weight.matrix(
-      mx,
-      cut.off,
-      small.cell.reduction = small.cell.reduction,
-      auto_tune = auto_tune,
-      tune_method = tune_method,
-      tune_verbose = tune_verbose
-    )
+    if (symmetric_method == "min") {
+      # Min-reciprocity: get asymmetric RR, then pmin(mx, t(mx)) * 2
+      mx.1i <- weight.matrix(
+        mx,
+        cut.off = 0,
+        symmetric = FALSE,
+        small.cell.reduction = small.cell.reduction,
+        auto_tune = auto_tune,
+        tune_method = tune_method,
+        tune_verbose = tune_verbose
+      )
+      mx.1i <- pmin(mx.1i, t(mx.1i)) * 2
+      mx.1i[mx.1i < cut.off] <- NA
+      diag(mx.1i) <- NA
+    } else {
+      # Default "sum": current behavior
+      mx.1i <- weight.matrix(
+        mx,
+        cut.off,
+        small.cell.reduction = small.cell.reduction,
+        auto_tune = auto_tune,
+        tune_method = tune_method,
+        tune_verbose = tune_verbose
+      )
+    }
 
     # Create graph
     mx.1i.graph <- mx.1i
@@ -625,7 +669,8 @@ moneca_fast <- function(
     cut.off = cut.off,
     mode = mode,
     delete.upper.tri = delete.upper.tri,
-    small.cell.reduction = small.cell.reduction
+    small.cell.reduction = small.cell.reduction,
+    symmetric_method = symmetric_method
   )
 
   mx.2g <- segment.matrix.fast(mx, segments)
@@ -696,7 +741,8 @@ moneca_fast <- function(
       mat.list = mat.list,
       small.cell.reduction = small.cell.reduction,
       margins_added = margins_added,
-      density_reduction = density_reduction_info
+      density_reduction = density_reduction_info,
+      symmetric_method = symmetric_method
     )
     if (isolates) {
       out$isolates_summary <- isolates_summary
@@ -714,7 +760,8 @@ moneca_fast <- function(
         cut.off = cut.off,
         mode = mode,
         delete.upper.tri = delete.upper.tri,
-        small.cell.reduction = small.cell.reduction
+        small.cell.reduction = small.cell.reduction,
+        symmetric_method = symmetric_method
       )
 
       mx.2g <- segment.matrix.fast(mx.2g, segments)
@@ -796,7 +843,8 @@ moneca_fast <- function(
     mat.list = mat.list,
     small.cell.reduction = small.cell.reduction,
     margins_added = margins_added,
-    density_reduction = density_reduction_info
+    density_reduction = density_reduction_info,
+    symmetric_method = symmetric_method
   )
   if (isolates) {
     out$isolates_summary <- isolates_summary

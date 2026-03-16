@@ -22,7 +22,8 @@ moneca_fast(
   isolates = FALSE,
   has_margins = "auto",
   reduce_density = "auto",
-  density_params = list()
+  density_params = list(),
+  symmetric_method = "sum"
 )
 
 moneca_fast(
@@ -43,7 +44,8 @@ moneca_fast(
   isolates = FALSE,
   has_margins = "auto",
   reduce_density = "auto",
-  density_params = list()
+  density_params = list(),
+  symmetric_method = "sum"
 )
 }
 \arguments{
@@ -115,6 +117,16 @@ Default is FALSE.}
 \code{\link{reduce_density}}. For example:
 \code{list(method = "svd", normalization = "ppmi", k = 20)}. See
 \code{\link{reduce_density}} for all available parameters.}
+
+\item{symmetric_method}{Character string controlling how the asymmetric relative
+risk matrix is symmetrized before clique-finding. Valid values:
+\itemize{
+  \item \code{"sum"} (default): Current behavior — \code{mx + t(mx)}. A pair
+    scores high if either direction is strong.
+  \item \code{"min"}: Min-reciprocity — \code{pmin(mx, t(mx)) * 2}. A pair
+    scores high only if both directions are strong. One-way bridges are
+    down-weighted.
+}}
 }
 \value{
 An object of class "moneca" containing:
@@ -187,6 +199,7 @@ This implementation is optimized for single-core performance using:
   \item Clique size limiting via \code{max.clique.size} parameter
   \item Pre-computed max clique size for early skip of impossible merges
   \item Optimized node ordering in clique membership tests
+  \item Selectable symmetrization via \code{symmetric_method} parameter
 }
 
 \strong{Margin Handling:} When \code{has_margins = "auto"}, the function checks
@@ -196,6 +209,12 @@ the core matrix. If not detected, margins are generated automatically.
 \strong{Density Reduction:} Large matrices (30+ categories) with high density
 can be preprocessed using \code{\link{reduce_density}} to remove noise before
 clustering. This is controlled by \code{reduce_density} and \code{density_params}.
+
+\strong{Symmetrization Methods:} The default \code{"sum"} method preserves
+the original algorithm behavior. The \code{"min"} method uses min-reciprocity
+(\code{pmin(mx, t(mx)) * 2}), which down-weights one-way bridges where
+only one direction has high relative risk. This can produce tighter clusters
+in matrices with strong directional asymmetry.
 
 \strong{Produces identical results to} \code{\link{moneca}} when using default parameters
 and \code{reduce_density = FALSE}.
