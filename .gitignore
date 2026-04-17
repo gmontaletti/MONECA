@@ -11,3 +11,4 @@ vignettes/figures/
 tests/testthat/*.pdf
 *.pdf
 .claude/settings.local.json
+reference/
