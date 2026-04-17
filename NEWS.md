@@ -1,4 +1,4 @@
-# moneca 1.2.0.9000
+# moneca 1.3.0
 
 ## New Features
 
@@ -10,10 +10,14 @@
   `flag_asymmetric_segments()` for diagnosing directional asymmetry within
   segments.
 
-## Internal
+## Bug Fixes
 
-* `refine_segments()` and `compare_moneca_results()` demoted to internal
-  functions after evaluation on real data showed limited practical value.
+* Fixed `print.moneca_comparison()` registration as S3 method to ensure proper dispatch.
+* Restored `reduce_density()` default method to `"svd"` to maintain compatibility without requiring RcppML dependency.
+
+## Documentation
+
+* Clarified documentation for `compute_asymmetry_scores()` regarding mean-pair weighting in asymmetry calculations.
 
 # moneca 0.9.2
 
