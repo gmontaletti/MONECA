@@ -1,0 +1,73 @@
+# Refine MONECA Segments by Splitting Asymmetric Clusters
+
+Identifies segments with high directional asymmetry and attempts to
+split them into more homogeneous sub-groups. The refined segmentation is
+returned as a modified moneca object with updated \`segment.list\` and
+metadata.
+
+## Usage
+
+``` r
+refine_segments(
+  segments,
+  threshold = 0.5,
+  level = 2,
+  method = "max_pair",
+  max_splits_per_segment = 2,
+  min_segment_size = 2
+)
+```
+
+## Arguments
+
+- segments:
+
+  A moneca object returned by \[moneca()\] or \[moneca_fast()\].
+
+- threshold:
+
+  Numeric in \\0, 1\\. Segments with an asymmetry score strictly above
+  this value are flagged (default 0.5).
+
+- level:
+
+  Integer. Hierarchical level to evaluate (default 2).
+
+- method:
+
+  Character. Aggregation method per segment: \* \`"max_pair"\`
+  (default): maximum pairwise asymmetry. \* \`"mean_pair"\`: mean
+  pairwise asymmetry weighted by the sum of the bidirectional relative
+  risks (\`rr_ij + rr_ji\`). Note: this weights pairs by combined RR
+  intensity, not by raw flow counts.
+
+- max_splits_per_segment:
+
+  Integer. Maximum number of sub-segments allowed per split (default 2).
+
+- min_segment_size:
+
+  Integer. Minimum number of members per resulting sub-segment (default
+  2). Prevents creation of trivially small clusters.
+
+## Value
+
+A moneca object (class preserved) with: \* \`segment.list\[\[level\]\]\`
+updated to replace flagged segments with their splits (inserted in
+order). \* \`asymmetry_refinement\` list attached, containing
+\`scores\`, \`threshold\`, and \`splits_performed\` (a named list
+mapping original segment indices to the number of sub-segments
+produced).
+
+If no segments exceed the threshold, the object is returned unchanged
+with an informational message.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+mob <- generate_mobility_data(n_classes = 8, seed = 99)
+seg <- moneca(mob, segment.levels = 3)
+refined <- refine_segments(seg, threshold = 0.3, level = 2)
+} # }
+```

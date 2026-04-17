@@ -34,10 +34,12 @@ reduce_density(
   Character string specifying the dimensionality reduction method:
 
   - `"svd"` (default): Singular Value Decomposition - fast and
-    memory-efficient, produces continuous values
+    memory-efficient, produces continuous values. Works out of the box
+    without optional dependencies.
 
   - `"nmf"`: Non-negative Matrix Factorization - preserves
-    non-negativity, better interpretability for count data
+    non-negativity, better interpretability for count data. Requires the
+    RcppML package (declared in `Suggests`).
 
 - normalization:
 

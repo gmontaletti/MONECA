@@ -31,7 +31,8 @@ moneca_fast(
   isolates = FALSE,
   has_margins = "auto",
   reduce_density = "auto",
-  density_params = list()
+  density_params = list(),
+  symmetric_method = "sum"
 )
 
 moneca_fast(
@@ -52,7 +53,8 @@ moneca_fast(
   isolates = FALSE,
   has_margins = "auto",
   reduce_density = "auto",
-  density_params = list()
+  density_params = list(),
+  symmetric_method = "sum"
 )
 ```
 
@@ -168,10 +170,22 @@ moneca_fast(
 
   Named list of additional parameters passed to
   [`reduce_density`](https://gmontaletti.github.io/MONECA/reference/reduce_density.md).
-  For example: `list(method = "svd", normalization = "ppmi", k = 20)`.
+  For example: `list(method = "nmf", normalization = "ppmi", k = 20)`.
   See
   [`reduce_density`](https://gmontaletti.github.io/MONECA/reference/reduce_density.md)
   for all available parameters.
+
+- symmetric_method:
+
+  Character string controlling how the asymmetric relative risk matrix
+  is symmetrized before clique-finding. Valid values:
+
+  - `"sum"` (default): Current behavior — `mx + t(mx)`. A pair scores
+    high if either direction is strong.
+
+  - `"min"`: Min-reciprocity — `pmin(mx, t(mx)) * 2`. A pair scores high
+    only if both directions are strong. One-way bridges are
+    down-weighted.
 
 ## Value
 
@@ -265,6 +279,8 @@ This implementation is optimized for single-core performance using:
 
 - Optimized node ordering in clique membership tests
 
+- Selectable symmetrization via `symmetric_method` parameter
+
 **Margin Handling:** When `has_margins = "auto"`, the function checks
 whether the last row and column of the matrix contain the row/column
 sums of the core matrix. If not detected, margins are generated
@@ -275,6 +291,18 @@ can be preprocessed using
 [`reduce_density`](https://gmontaletti.github.io/MONECA/reference/reduce_density.md)
 to remove noise before clustering. This is controlled by
 `reduce_density` and `density_params`.
+
+**Symmetrization Methods:** The default `"sum"` method preserves the
+original algorithm behavior. The `"min"` method uses min-reciprocity
+(`pmin(mx, t(mx)) * 2`), which down-weights one-way bridges where only
+one direction has high relative risk. This can produce tighter clusters
+in matrices with strong directional asymmetry.
+
+**Dual-Matrix System:** When density reduction is active, the reduced
+matrix determines cluster topology (which categories group together),
+while the original unreduced matrix is used for all aggregation, storage
+in `mat.list`, and downstream metrics. This preserves count totals
+across all segmentation levels.
 
 **Produces identical results to**
 [`moneca`](https://gmontaletti.github.io/MONECA/reference/moneca.md)

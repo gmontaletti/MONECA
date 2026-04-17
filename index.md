@@ -99,8 +99,8 @@ print(membership)
 
 ## Core Functions
 
-The streamlined moneca API includes 21 key functions organized into
-functional groups:
+The moneca API includes 23 exported functions organized into functional
+groups:
 
 ### Core Analysis Functions
 
@@ -243,7 +243,7 @@ If you use moneca in your research, please cite:
 
     # Current package:
     Montaletti, G. (2026). moneca: Mobility Network Clustering Analysis.
-    R package version 1.1.0. https://github.com/gmontaletti/moneca
+    R package version 1.3.0. https://github.com/gmontaletti/moneca
 
     # Original algorithm and methodology:
     Touboel, J., & Larsen, A. G. (2017). Mapping the Social Class Structure:

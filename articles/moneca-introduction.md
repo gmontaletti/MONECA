@@ -1699,6 +1699,46 @@ The
 function uses optimized algorithms while maintaining full compatibility
 with all visualization and analysis functions.
 
+### Directed Clustering with `symmetric_method`
+
+The MONECA algorithm requires a symmetric matrix for clique detection,
+but the relative risk matrix produced by
+[`weight.matrix()`](https://gmontaletti.github.io/MONECA/reference/weight.matrix.md)
+is inherently asymmetric: mobility from occupation A to B differs from B
+to A. The `symmetric_method` parameter in
+[`moneca_fast()`](https://gmontaletti.github.io/MONECA/reference/moneca_fast.md)
+controls how this asymmetric matrix is made symmetric before clique
+detection.
+
+Two methods are available:
+
+- **`"sum"` (default)**: The symmetric weight between A and B is the sum
+  of both directed weights. A pair enters the network if the *combined*
+  flow in both directions is high. This is the original MONECA behavior
+  and remains the default for backward compatibility.
+- **`"min"`**: The symmetric weight is the minimum of the two directed
+  weights (min-reciprocity). Both directions must be individually strong
+  for the pair to enter the network. This down-weights one-way bridges
+  and produces tighter clusters on matrices with strong directional
+  asymmetry.
+
+``` r
+# Default behavior (sum symmetrization)
+seg_sum <- moneca_fast(basic_data, segment.levels = 3)
+
+# Min-reciprocity: require strong flow in both directions
+seg_min <- moneca_fast(basic_data, segment.levels = 3, symmetric_method = "min")
+```
+
+After clustering, you can diagnose directional asymmetry within segments
+using
+[`compute_asymmetry_scores()`](https://gmontaletti.github.io/MONECA/reference/compute_asymmetry_scores.md):
+
+``` r
+scores <- compute_asymmetry_scores(seg_min)
+head(scores)
+```
+
 ### Auto-Tuning: Automatic Parameter Optimization
 
 The package includes auto-tuning capabilities to automatically optimize
@@ -1758,9 +1798,9 @@ contexts.
 ``` r
 # Session information for reproducibility
 sessionInfo()
-#> R version 4.5.2 (2025-10-31)
+#> R version 4.5.3 (2026-03-11)
 #> Platform: x86_64-pc-linux-gnu
-#> Running under: Ubuntu 24.04.3 LTS
+#> Running under: Ubuntu 24.04.4 LTS
 #> 
 #> Matrix products: default
 #> BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
@@ -1779,23 +1819,23 @@ sessionInfo()
 #> [1] stats     graphics  grDevices datasets  utils     methods   base     
 #> 
 #> other attached packages:
-#> [1] moneca_1.1.0
+#> [1] moneca_1.3.0
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] viridis_0.6.5      sass_0.4.10        generics_0.1.4     tidyr_1.3.2       
-#>  [5] renv_1.1.4         digest_0.6.39      magrittr_2.0.4     evaluate_1.0.5    
-#>  [9] grid_4.5.2         RColorBrewer_1.1-3 fastmap_1.2.0      jsonlite_2.0.0    
-#> [13] toOrdinal_1.4-0.0  ggrepel_0.9.6      gridExtra_2.3      purrr_1.2.1       
-#> [17] viridisLite_0.4.3  scales_1.4.0       tweenr_2.0.3       textshaping_1.0.4 
-#> [21] jquerylib_0.1.4    cli_3.6.5          crayon_1.5.3       rlang_1.1.7       
-#> [25] graphlayouts_1.2.2 polyclip_1.10-7    tidygraph_1.3.1    withr_3.0.2       
-#> [29] cachem_1.1.0       yaml_2.3.12        tools_4.5.2        memoise_2.0.1     
-#> [33] dplyr_1.2.0        ggplot2_4.0.2      vctrs_0.7.1        R6_2.6.1          
-#> [37] lifecycle_1.0.5    fs_1.6.6           MASS_7.3-65        ragg_1.5.0        
+#>  [5] renv_1.1.4         digest_0.6.39      magrittr_2.0.5     evaluate_1.0.5    
+#>  [9] grid_4.5.3         RColorBrewer_1.1-3 fastmap_1.2.0      jsonlite_2.0.0    
+#> [13] toOrdinal_1.4-0.0  ggrepel_0.9.8      gridExtra_2.3      purrr_1.2.2       
+#> [17] viridisLite_0.4.3  scales_1.4.0       tweenr_2.0.3       textshaping_1.0.5 
+#> [21] jquerylib_0.1.4    cli_3.6.6          crayon_1.5.3       rlang_1.2.0       
+#> [25] graphlayouts_1.2.3 polyclip_1.10-7    tidygraph_1.3.1    withr_3.0.2       
+#> [29] cachem_1.1.0       yaml_2.3.12        tools_4.5.3        memoise_2.0.1     
+#> [33] dplyr_1.2.1        ggplot2_4.0.2      vctrs_0.7.3        R6_2.6.1          
+#> [37] lifecycle_1.0.5    fs_2.0.1           MASS_7.3-65        ragg_1.5.2        
 #> [41] ggraph_2.2.2       pkgconfig_2.0.3    desc_1.4.3         pkgdown_2.2.0     
-#> [45] pillar_1.11.1      bslib_0.10.0       gtable_0.3.6       glue_1.8.0        
-#> [49] Rcpp_1.1.1         ggforce_0.5.0      systemfonts_1.3.1  xfun_0.56         
+#> [45] pillar_1.11.1      bslib_0.10.0       gtable_0.3.6       glue_1.8.1        
+#> [49] Rcpp_1.1.1-1       ggforce_0.5.0      systemfonts_1.3.2  xfun_0.57         
 #> [53] tibble_3.3.1       tidyselect_1.2.1   knitr_1.51         farver_2.1.2      
-#> [57] htmltools_0.5.9    igraph_2.2.2       labeling_0.4.3     rmarkdown_2.30    
-#> [61] compiler_4.5.2     S7_0.2.1
+#> [57] htmltools_0.5.9    igraph_2.2.3       labeling_0.4.3     rmarkdown_2.31    
+#> [61] compiler_4.5.3     S7_0.2.1-1
 ```

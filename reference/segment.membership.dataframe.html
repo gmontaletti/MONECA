@@ -9,7 +9,7 @@ across all segmentation levels with positional code format."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,6 +27,7 @@ across all segmentation levels with positional code format."></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-news" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">News</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-news"><li><h6 class="dropdown-header" data-toc-skip>Releases</h6></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-130">Version 1.3.0</a></li>
     <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-105">Version 1.0.5</a></li>
     <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-100">Version 1.0.0</a></li>
     <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-09">Version 0.9</a></li>
@@ -92,23 +93,16 @@ the representative node name and count of other members.</p></dd>
 <span class="r-in"><span><span class="co"># Run moneca analysis</span></span></span>
 <span class="r-in"><span><span class="va">seg</span> <span class="op">&lt;-</span> <span class="fu"><a href="moneca_fast.html">moneca_fast</a></span><span class="op">(</span><span class="va">mx</span>, segment.levels <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |======================================================================| 100%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Generate membership dataframe</span></span></span>
 <span class="r-in"><span><span class="va">membership_df</span> <span class="op">&lt;-</span> <span class="fu">segment.membership.dataframe</span><span class="op">(</span><span class="va">seg</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">membership_df</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      name index level_2 name_level_2 level_3 name_level_3 level_4 name_level_4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Class 1     1     002 Class 2 (+1)     002 Class 2 (+1)     001 Class 2 (+4)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Class 2     2     002 Class 2 (+1)     002 Class 2 (+1)     001 Class 2 (+4)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Class 3     3     003 Class 3 (+0)     001 Class 3 (+2)     001 Class 2 (+4)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 Class 4     4     001 Class 4 (+1)     001 Class 3 (+2)     001 Class 2 (+4)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Class 5     5     001 Class 4 (+1)     001 Class 3 (+2)     001 Class 2 (+4)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           id_full</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 001.002.002.001</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 001.002.002.002</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 001.001.003.003</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 001.001.001.004</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 001.001.001.005</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      name index level_2 name_level_2 level_3 name_level_3     id_full</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Class 1     1     001 Class 3 (+2)     001 Class 3 (+4) 001.001.001</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Class 2     2     001 Class 3 (+2)     001 Class 3 (+4) 001.001.002</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Class 3     3     001 Class 3 (+2)     001 Class 3 (+4) 001.001.003</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 Class 4     4     002 Class 4 (+1)     001 Class 3 (+4) 001.002.004</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Class 5     5     002 Class 4 (+1)     001 Class 3 (+4) 001.002.005</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

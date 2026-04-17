@@ -54,6 +54,15 @@ Log-linear models for mobility table analysis
 - [`compare_mobility_models()`](https://gmontaletti.github.io/MONECA/reference/compare_mobility_models.md)
   : Compare Log-Linear Models for Mobility Tables
 
+## Directed Analysis
+
+Diagnostics for directional asymmetry within segments
+
+- [`compute_asymmetry_scores()`](https://gmontaletti.github.io/MONECA/reference/compute_asymmetry_scores.md)
+  : Compute Asymmetry Scores for MONECA Segments
+- [`flag_asymmetric_segments()`](https://gmontaletti.github.io/MONECA/reference/flag_asymmetric_segments.md)
+  : Flag Segments Exceeding an Asymmetry Threshold
+
 ## Auto-Tuning
 
 Automatic parameter optimization

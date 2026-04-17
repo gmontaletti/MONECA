@@ -17,7 +17,7 @@ Supports automatic margin detection and optional density reduction for large mat
 
     <a class="navbar-brand me-2" href="../index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,7 @@ Supports automatic margin detection and optional density reduction for large mat
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-news" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">News</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-news"><li><h6 class="dropdown-header" data-toc-skip>Releases</h6></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-130">Version 1.3.0</a></li>
     <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-105">Version 1.0.5</a></li>
     <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-100">Version 1.0.0</a></li>
     <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-09">Version 0.9</a></li>
@@ -86,7 +87,8 @@ Supports automatic margin detection and optional density reduction for large mat
 <span>  isolates <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  has_margins <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  reduce_density <span class="op">=</span> <span class="st">"auto"</span>,</span>
-<span>  density_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  density_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  symmetric_method <span class="op">=</span> <span class="st">"sum"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">moneca_fast</span><span class="op">(</span></span>
@@ -107,7 +109,8 @@ Supports automatic margin detection and optional density reduction for large mat
 <span>  isolates <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  has_margins <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  reduce_density <span class="op">=</span> <span class="st">"auto"</span>,</span>
-<span>  density_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  density_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  symmetric_method <span class="op">=</span> <span class="st">"sum"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -212,8 +215,18 @@ Default is FALSE.</p></dd>
 <dt id="arg-density-params">density_params<a class="anchor" aria-label="anchor" href="#arg-density-params"></a></dt>
 <dd><p>Named list of additional parameters passed to
 <code><a href="reduce_density.html">reduce_density</a></code>. For example:
-<code>list(method = "svd", normalization = "ppmi", k = 20)</code>. See
+<code>list(method = "nmf", normalization = "ppmi", k = 20)</code>. See
 <code><a href="reduce_density.html">reduce_density</a></code> for all available parameters.</p></dd>
+
+
+<dt id="arg-symmetric-method">symmetric_method<a class="anchor" aria-label="anchor" href="#arg-symmetric-method"></a></dt>
+<dd><p>Character string controlling how the asymmetric relative
+risk matrix is symmetrized before clique-finding. Valid values:</p><ul><li><p><code>"sum"</code> (default): Current behavior — <code>mx + t(mx)</code>. A pair
+    scores high if either direction is strong.</p></li>
+<li><p><code>"min"</code>: Min-reciprocity — <code>pmin(mx, t(mx)) * 2</code>. A pair
+    scores high only if both directions are strong. One-way bridges are
+    down-weighted.</p></li>
+</ul></dd>
 
 </dl></div>
     <div class="section level2">
@@ -275,12 +288,23 @@ nodes collapse into a single segment).</p>
 <li><p>Clique size limiting via <code>max.clique.size</code> parameter</p></li>
 <li><p>Pre-computed max clique size for early skip of impossible merges</p></li>
 <li><p>Optimized node ordering in clique membership tests</p></li>
+<li><p>Selectable symmetrization via <code>symmetric_method</code> parameter</p></li>
 </ul><p><strong>Margin Handling:</strong> When <code>has_margins = "auto"</code>, the function checks
 whether the last row and column of the matrix contain the row/column sums of
 the core matrix. If not detected, margins are generated automatically.</p>
 <p><strong>Density Reduction:</strong> Large matrices (30+ categories) with high density
 can be preprocessed using <code><a href="reduce_density.html">reduce_density</a></code> to remove noise before
 clustering. This is controlled by <code>reduce_density</code> and <code>density_params</code>.</p>
+<p><strong>Symmetrization Methods:</strong> The default <code>"sum"</code> method preserves
+the original algorithm behavior. The <code>"min"</code> method uses min-reciprocity
+(<code>pmin(mx, t(mx)) * 2</code>), which down-weights one-way bridges where
+only one direction has high relative risk. This can produce tighter clusters
+in matrices with strong directional asymmetry.</p>
+<p><strong>Dual-Matrix System:</strong> When density reduction is active, the reduced
+matrix determines cluster topology (which categories group together), while
+the original unreduced matrix is used for all aggregation, storage in
+<code>mat.list</code>, and downstream metrics. This preserves count totals across
+all segmentation levels.</p>
 <p><strong>Produces identical results to</strong> <code><a href="moneca.html">moneca</a></code> when using default parameters
 and <code>reduce_density = FALSE</code>.</p>
 <p><strong>When to use:</strong></p><ul><li><p>Any system - recommended for most use cases</p></li>

@@ -1,5 +1,36 @@
 # Changelog
 
+## moneca 1.3.0
+
+### New Features
+
+- Added `symmetric_method` parameter to
+  [`moneca_fast()`](https://gmontaletti.github.io/MONECA/reference/moneca_fast.md):
+  supports `"min"` (min-reciprocity) as alternative to the default
+  `"sum"`. The `"min"` method down-weights one-way bridges and produces
+  tighter clusters on matrices with strong directional asymmetry.
+- New exported functions
+  [`compute_asymmetry_scores()`](https://gmontaletti.github.io/MONECA/reference/compute_asymmetry_scores.md)
+  and
+  [`flag_asymmetric_segments()`](https://gmontaletti.github.io/MONECA/reference/flag_asymmetric_segments.md)
+  for diagnosing directional asymmetry within segments.
+
+### Bug Fixes
+
+- Fixed
+  [`print.moneca_comparison()`](https://gmontaletti.github.io/MONECA/reference/print.moneca_comparison.md)
+  registration as S3 method to ensure proper dispatch.
+- Restored
+  [`reduce_density()`](https://gmontaletti.github.io/MONECA/reference/reduce_density.md)
+  default method to `"svd"` to maintain compatibility without requiring
+  RcppML dependency.
+
+### Documentation
+
+- Clarified documentation for
+  [`compute_asymmetry_scores()`](https://gmontaletti.github.io/MONECA/reference/compute_asymmetry_scores.md)
+  regarding mean-pair weighting in asymmetry calculations.
+
 ## moneca 0.9.2
 
 ### Maintenance Release

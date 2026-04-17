@@ -372,18 +372,18 @@ print(comp_large)
 #> ===========================
 #> 
 #>                model  deviance  df        aic        bic p_value dissimilarity
-#>       quasi_symmetry    120.32 406   2269.943   4642.326       1         0.008
-#>      moneca_topology  13993.01 746  15462.638  16202.207       0         0.113
-#>  uniform_association  26763.13 840  28044.757  28332.900       0         0.246
-#>   quasi_independence  74820.91 811  76160.538  76587.951       0         0.345
-#>         independence 190407.61 841 191687.230 191970.571       0         0.813
+#>       quasi_symmetry    433.84 406   4777.139   7149.522   0.164         0.015
+#>      moneca_topology  12547.77 746  16211.074  16950.643   0.000         0.113
+#>   quasi_independence  59108.91 811  62642.212  63069.625   0.000         0.315
+#>  uniform_association  95844.28 840  99319.581  99607.725   0.000         0.500
+#>         independence 169465.55 841 172938.844 173222.186   0.000         0.749
 #> 
 #> Likelihood-Ratio Tests:
 #>             model_1             model_2 delta_deviance delta_df p_value
-#>        independence  quasi_independence       115586.7       30       0
-#>        independence uniform_association       163644.5        1       0
-#>  quasi_independence      quasi_symmetry        74700.6      405       0
-#>  quasi_independence     moneca_topology        60827.9       65       0
+#>        independence  quasi_independence      110356.63       30       0
+#>        independence uniform_association       73621.26        1       0
+#>  quasi_independence      quasi_symmetry       58675.07      405       0
+#>  quasi_independence     moneca_topology       46561.14       65       0
 ```
 
 For matrices with 50 or more categories, the quasi-symmetry model fitted

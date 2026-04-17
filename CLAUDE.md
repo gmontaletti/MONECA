@@ -10,12 +10,16 @@ creates weighted networks from mobility tables and uses cliques to
 create discrete and nested clusters. The package analyzes social
 mobility patterns through graph-theoretic approaches.
 
-**Current Status (v0.9.2)**: The package has been streamlined with a
-focused API of 21 exported functions, organized into core analysis, data
-generation, modern visualization, analysis tools, and legacy
-compatibility functions. Recent major revision removed archived
-experimental features and consolidated the codebase around the proven
-core algorithm and modern visualization system.
+**Current Status (v1.2.0.9000)**: The package has a focused API of 23
+exported functions, organized into core analysis, data generation,
+modern visualization, analysis tools, directed analysis, and legacy
+compatibility functions. The `symmetric_method` parameter in
+[`moneca_fast()`](https://gmontaletti.github.io/MONECA/reference/moneca_fast.md)
+supports min-reciprocity clustering, and directed asymmetry diagnostics
+are available via
+[`compute_asymmetry_scores()`](https://gmontaletti.github.io/MONECA/reference/compute_asymmetry_scores.md)
+and
+[`flag_asymmetric_segments()`](https://gmontaletti.github.io/MONECA/reference/flag_asymmetric_segments.md).
 
 ## Package Development Commands
 
@@ -94,15 +98,14 @@ devtools::install_deps()
 - **mat.list**: Mobility matrices for each segmentation level
 - **small.cell.reduction**: Parameter controlling minimum cell sizes
 
-### Streamlined API (21 Exported Functions)
+### Streamlined API (23 Exported Functions)
 
-The package exports exactly 21 functions organized into functional
-groups:
+The package exports 23 functions organized into functional groups:
 
 #### Core Analysis (3)
 
 - moneca() - Main algorithm
-- moneca_fast() - Fast implementation
+- moneca_fast() - Fast implementation (supports `symmetric_method`)
 - weight.matrix() - Weight matrix conversion
 
 #### Data Generation (1)
@@ -125,6 +128,11 @@ groups:
 - segment.edges() - Edge weights
 - segment.colors() - Color assignments
 - vertex.mobility() - Vertex-level metrics
+
+#### Directed Analysis (2)
+
+- compute_asymmetry_scores() - Directional asymmetry diagnostics
+- flag_asymmetric_segments() - Flag segments with high asymmetry
 
 #### Auto-Tuning (1)
 
@@ -395,12 +403,18 @@ devtools::build_vignettes()
 - All new visualization should use ggraph-based modern_plotting.R
   functions
 
-### Recent Major Revision (v0.9.2)
+### Recent Major Revision (v1.2.0.9000)
 
-- Removed experimental/archived features (parallel processing, temporal
-  analysis, advanced tuning variants)
-- Consolidated to 21 well-tested exported functions
-- Simplified vignette to focus on core workflow: moneca() →
-  moneca_fast() → plot\_\*()
-- Updated all documentation to reflect streamlined API
-- Retained full backward compatibility for existing code
+- Added `symmetric_method` parameter to
+  [`moneca_fast()`](https://gmontaletti.github.io/MONECA/reference/moneca_fast.md)
+  for min-reciprocity clustering
+- Added directed asymmetry diagnostics
+  ([`compute_asymmetry_scores()`](https://gmontaletti.github.io/MONECA/reference/compute_asymmetry_scores.md),
+  [`flag_asymmetric_segments()`](https://gmontaletti.github.io/MONECA/reference/flag_asymmetric_segments.md))
+- Demoted
+  [`refine_segments()`](https://gmontaletti.github.io/MONECA/reference/refine_segments.md)
+  and
+  [`compare_moneca_results()`](https://gmontaletti.github.io/MONECA/reference/compare_moneca_results.md)
+  to internal after evaluation on real data
+- 23 exported functions across core analysis, visualization, analysis
+  tools, directed analysis, and legacy compatibility

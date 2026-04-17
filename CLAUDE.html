@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">moneca</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">1.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-news" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">News</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-news"><li><h6 class="dropdown-header" data-toc-skip>Releases</h6></li>
+    <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-130">Version 1.3.0</a></li>
     <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-105">Version 1.0.5</a></li>
     <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-100">Version 1.0.0</a></li>
     <li><a class="dropdown-item" href="https://gmontaletti.github.io/MONECA/news/index.html#moneca-09">Version 0.9</a></li>
@@ -52,7 +53,7 @@
 <div class="section level2">
 <h2 id="about-moneca">About moneca<a class="anchor" aria-label="anchor" href="#about-moneca"></a></h2>
 <p>moneca (Mobility Network Clustering Analysis) is an R package that creates weighted networks from mobility tables and uses cliques to create discrete and nested clusters. The package analyzes social mobility patterns through graph-theoretic approaches.</p>
-<p><strong>Current Status (v0.9.2)</strong>: The package has been streamlined with a focused API of 21 exported functions, organized into core analysis, data generation, modern visualization, analysis tools, and legacy compatibility functions. Recent major revision removed archived experimental features and consolidated the codebase around the proven core algorithm and modern visualization system.</p>
+<p><strong>Current Status (v1.2.0.9000)</strong>: The package has a focused API of 23 exported functions, organized into core analysis, data generation, modern visualization, analysis tools, directed analysis, and legacy compatibility functions. The <code>symmetric_method</code> parameter in <code><a href="reference/moneca_fast.html">moneca_fast()</a></code> supports min-reciprocity clustering, and directed asymmetry diagnostics are available via <code><a href="reference/compute_asymmetry_scores.html">compute_asymmetry_scores()</a></code> and <code><a href="reference/flag_asymmetric_segments.html">flag_asymmetric_segments()</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="package-development-commands">Package Development Commands<a class="anchor" aria-label="anchor" href="#package-development-commands"></a></h2>
@@ -132,12 +133,12 @@
 <strong>small.cell.reduction</strong>: Parameter controlling minimum cell sizes</li>
 </ul></div>
 <div class="section level3">
-<h3 id="streamlined-api-21-exported-functions">Streamlined API (21 Exported Functions)<a class="anchor" aria-label="anchor" href="#streamlined-api-21-exported-functions"></a></h3>
-<p>The package exports exactly 21 functions organized into functional groups:</p>
+<h3 id="streamlined-api-23-exported-functions">Streamlined API (23 Exported Functions)<a class="anchor" aria-label="anchor" href="#streamlined-api-23-exported-functions"></a></h3>
+<p>The package exports 23 functions organized into functional groups:</p>
 <div class="section level4">
 <h4 id="core-analysis-3">Core Analysis (3)<a class="anchor" aria-label="anchor" href="#core-analysis-3"></a></h4>
 <ul><li>moneca() - Main algorithm</li>
-<li>moneca_fast() - Fast implementation</li>
+<li>moneca_fast() - Fast implementation (supports <code>symmetric_method</code>)</li>
 <li>weight.matrix() - Weight matrix conversion</li>
 </ul></div>
 <div class="section level4">
@@ -160,6 +161,11 @@
 <li>segment.edges() - Edge weights</li>
 <li>segment.colors() - Color assignments</li>
 <li>vertex.mobility() - Vertex-level metrics</li>
+</ul></div>
+<div class="section level4">
+<h4 id="directed-analysis-2">Directed Analysis (2)<a class="anchor" aria-label="anchor" href="#directed-analysis-2"></a></h4>
+<ul><li>compute_asymmetry_scores() - Directional asymmetry diagnostics</li>
+<li>flag_asymmetric_segments() - Flag segments with high asymmetry</li>
 </ul></div>
 <div class="section level4">
 <h4 id="auto-tuning-1">Auto-Tuning (1)<a class="anchor" aria-label="anchor" href="#auto-tuning-1"></a></h4>
@@ -433,12 +439,11 @@
 <li>All new visualization should use ggraph-based modern_plotting.R functions</li>
 </ul></div>
 <div class="section level3">
-<h3 id="recent-major-revision-v092">Recent Major Revision (v0.9.2)<a class="anchor" aria-label="anchor" href="#recent-major-revision-v092"></a></h3>
-<ul><li>Removed experimental/archived features (parallel processing, temporal analysis, advanced tuning variants)</li>
-<li>Consolidated to 21 well-tested exported functions</li>
-<li>Simplified vignette to focus on core workflow: moneca() → moneca_fast() → plot_*()</li>
-<li>Updated all documentation to reflect streamlined API</li>
-<li>Retained full backward compatibility for existing code</li>
+<h3 id="recent-major-revision-v1209000">Recent Major Revision (v1.2.0.9000)<a class="anchor" aria-label="anchor" href="#recent-major-revision-v1209000"></a></h3>
+<ul><li>Added <code>symmetric_method</code> parameter to <code><a href="reference/moneca_fast.html">moneca_fast()</a></code> for min-reciprocity clustering</li>
+<li>Added directed asymmetry diagnostics (<code><a href="reference/compute_asymmetry_scores.html">compute_asymmetry_scores()</a></code>, <code><a href="reference/flag_asymmetric_segments.html">flag_asymmetric_segments()</a></code>)</li>
+<li>Demoted <code><a href="reference/refine_segments.html">refine_segments()</a></code> and <code><a href="reference/compare_moneca_results.html">compare_moneca_results()</a></code> to internal after evaluation on real data</li>
+<li>23 exported functions across core analysis, visualization, analysis tools, directed analysis, and legacy compatibility</li>
 </ul></div>
 </div>
 </div>
