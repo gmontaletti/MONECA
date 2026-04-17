@@ -1867,7 +1867,7 @@ plot_moneca_dendrogram <- function(
       ggplot2::geom_curve(
         data = edges,
         ggplot2::aes(x = x1, y = y1, xend = x2, yend = y2, color = color),
-        size = branch_width,
+        linewidth = branch_width,
         curvature = 0.2, # Moderate curve
         angle = 90, # Curve angle
         ncp = 5, # Number of control points
