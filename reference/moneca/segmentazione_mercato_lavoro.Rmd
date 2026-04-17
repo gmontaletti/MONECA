@@ -1,0 +1,590 @@
+---
+title: "Segmentazione del Mercato del Lavoro in Lombardia"
+subtitle: "Analisi MONECA su 127 professioni ISCO-08"
+author: "Giampaolo Montaletti"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: flatly
+    fig_width: 10
+    fig_height: 8
+    self_contained: true
+    code_folding: hide
+---
+
+```{css table-style, echo=FALSE}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1.5em;
+}
+table th, table td {
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+  text-align: left;
+}
+table thead th {
+  background-color: #2c3e50;
+  color: #fff;
+  font-weight: bold;
+  border-bottom: 2px solid #2c3e50;
+}
+table tbody tr:nth-child(even) {
+  background-color: #f5f5f5;
+}
+table tbody tr:hover {
+  background-color: #e8e8e8;
+}
+table caption {
+  caption-side: top;
+  font-weight: bold;
+  margin-bottom: 0.4em;
+  text-align: left;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "#>",
+  warning = FALSE, message = FALSE,
+  fig.width = 10, fig.height = 8, dpi = 150, out.width = "100%"
+)
+devtools::load_all(rprojroot::find_package_root_file())
+library(ggplot2)
+library(knitr)
+```
+
+```{r load-data}
+eval_data <- readRDS("eval_run2.rds")
+seg <- eval_data$segments$min
+
+# mat.list[[1]] è una matrice sparsa (dgCMatrix): convertire a densa
+# per compatibilità con le funzioni di analisi
+seg$mat.list <- lapply(seg$mat.list, as.matrix)
+
+# Verifica struttura dei livelli
+livelli <- sapply(seg$segment.list, length)
+stopifnot(all(livelli == c(127, 31, 21, 14)))
+```
+
+# 1. Introduzione
+
+Il presente rapporto documenta i risultati della segmentazione del mercato del lavoro
+lombardo tramite l'algoritmo MONECA (Mobility Network Clustering Analysis). Il dataset
+comprende **127 categorie professionali** secondo la classificazione ISCO-08 dell'ISTAT,
+derivate da **7.592.506 transizioni** registrate nei dati amministrativi della Regione Lombardia.
+
+MONECA opera costruendo una rete pesata a partire dalla matrice di mobilità professionale.
+I pesi sono calcolati come rischi relativi: valori superiori a 1 indicano transizioni più
+frequenti di quanto atteso sotto ipotesi di indipendenza. L'algoritmo identifica clique
+nella rete pesata e procede iterativamente, aggregando i segmenti trovati e ripetendo
+l'analisi sulla matrice ridotta, producendo una struttura gerarchica di segmenti annidati.
+
+```{r intro-params}
+params <- data.frame(
+  Parametro = c(
+    "Categorie professionali",
+    "Transizioni totali",
+    "Metodo di simmetrizzazione",
+    "Riduzione densità",
+    "Rango NMF (k)",
+    "Quantile di filtraggio",
+    "small.cell.reduction",
+    "Livelli gerarchici"
+  ),
+  Valore = c(
+    "127",
+    format(seg$density_reduction$original_total, big.mark = "."),
+    "min-reciprocity",
+    "NMF (dual-matrix)",
+    as.character(seg$density_reduction$k),
+    as.character(seg$density_reduction$filter_quantile),
+    as.character(seg$small.cell.reduction),
+    as.character(length(seg$segment.list))
+  ),
+  stringsAsFactors = FALSE
+)
+kable(params, align = c("l", "r"))
+```
+
+# 2. Riduzione della densità
+
+Con 127 categorie la matrice di mobilità è altamente connessa: quasi tutte le coppie di
+professioni mostrano almeno qualche transizione. Questa densità rende inefficace
+l'identificazione di clique, dato che il grafo pesato risulta quasi completo.
+
+Per ridurre la densità è stata applicata una fattorizzazione NMF (Non-negative Matrix
+Factorization) con rango $k = 16$, seguita da un filtraggio al quantile 0.25.
+L'approccio dual-matrix preserva separatamente le strutture della matrice originale
+e della matrice ricostruita, mantenendo i flussi empirici ma utilizzando la struttura
+latente NMF per identificare quali connessioni sono strutturalmente rilevanti.
+
+```{r density-stats}
+dr <- seg$density_reduction
+retention <- if (!is.null(dr$retention_pct)) {
+  dr$retention_pct
+} else {
+  round(dr$reduced_total / dr$original_total * 100, 1)
+}
+
+density_df <- data.frame(
+  Metrica = c(
+    "Metodo",
+    "Rango (k)",
+    "Varianza spiegata",
+    "Quantile di filtraggio",
+    "Transizioni originali",
+    "Transizioni dopo riduzione",
+    "Ritenzione (%)"
+  ),
+  Valore = c(
+    toupper(dr$method),
+    as.character(dr$k),
+    if (!is.null(dr$variance_explained)) paste0(round(dr$variance_explained * 100, 1), "%") else "n.d.",
+    as.character(dr$filter_quantile),
+    format(dr$original_total, big.mark = "."),
+    format(dr$reduced_total, big.mark = "."),
+    paste0(round(retention, 1), "%")
+  ),
+  stringsAsFactors = FALSE
+)
+kable(density_df, align = c("l", "r"))
+```
+
+# 3. Struttura gerarchica
+
+L'algoritmo produce `r length(seg$segment.list)` livelli di segmentazione. Il primo
+livello contiene le 127 categorie individuali. Ad ogni livello successivo i segmenti
+vengono aggregati, riducendo progressivamente la granularità.
+
+```{r hierarchy-overview}
+hier_df <- data.frame(
+  Livello = seq_along(seg$segment.list),
+  `N. segmenti` = sapply(seg$segment.list, length),
+  Descrizione = c(
+    "Categorie individuali",
+    "Segmentazione principale",
+    "Aggregazione intermedia",
+    "Macro-segmenti"
+  ),
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+kable(hier_df, align = c("c", "c", "l"))
+```
+
+```{r dendrogram, fig.width=14, fig.height=10}
+plot_moneca_dendrogram(
+  seg,
+  color_palette = "okabe-ito",
+  title = "Dendrogramma gerarchico della segmentazione",
+  label_size = 2
+)
+```
+
+Il dendrogramma mostra la struttura gerarchica completa: le 127 professioni (foglie)
+vengono progressivamente raggruppate in 31 segmenti, poi in 21, infine in 14
+macro-segmenti.
+
+# 4. Segmentazione principale (livello 2)
+
+Il livello 2 rappresenta la segmentazione di riferimento, con 31 segmenti identificati.
+Le professioni non assegnate a nessun segmento (isolate) non presentano transizioni
+sufficientemente concentrate verso altre professioni per formare cluster.
+
+```{r network-lv2, fig.width=14, fig.height=12}
+plot_moneca_ggraph(
+  seg,
+  level = 2,
+  layout = "fr",
+  node_color = "segment",
+  color_palette = "okabe-ito",
+  segment_naming = "auto",
+  show_labels = TRUE,
+  label_size = 2.5,
+  node_shape = "segment",
+  title = "Rete di mobilità professionale — Livello 2 (31 segmenti)"
+)
+```
+
+## 4.1 Composizione dei segmenti
+
+```{r membership-lv2}
+m2 <- segment.membership(seg, level = 2)
+in_seg <- m2[m2$membership != "FALSE", ]
+isolates <- m2[m2$membership == "FALSE", ]
+
+# Costruire tabella raggruppata per segmento
+seg_ids <- sort(unique(in_seg$membership))
+
+membership_rows <- lapply(seg_ids, function(sid) {
+  members <- in_seg$name[in_seg$membership == sid]
+  data.frame(
+    Segmento = sid,
+    `N. membri` = length(members),
+    Professioni = paste(members, collapse = "<br>"),
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
+})
+membership_table <- do.call(rbind, membership_rows)
+membership_table <- membership_table[order(-membership_table$`N. membri`), ]
+
+kable(membership_table, format = "html", escape = FALSE,
+      caption = paste0("Composizione dei 31 segmenti al livello 2 (",
+                       nrow(in_seg), " professioni assegnate, ",
+                       nrow(isolates), " isolate)"))
+```
+
+## 4.2 Professioni isolate
+
+Le seguenti `r nrow(isolates)` professioni non sono state assegnate a nessun segmento
+al livello 2. Si tratta di categorie con pattern di mobilità dispersi, senza
+concentrazione significativa di transizioni verso gruppi specifici.
+
+```{r isolates-lv2}
+isolates_df <- data.frame(
+  `N.` = seq_len(nrow(isolates)),
+  Professione = isolates$name,
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+kable(isolates_df, format = "html")
+```
+
+# 5. Metriche di qualità
+
+Le metriche di qualità valutano la coesione interna dei segmenti e il loro peso
+relativo nel mercato del lavoro.
+
+- **Mobilità interna** (`within.mobility`): quota di transizioni che rimangono
+  all'interno del segmento rispetto al totale delle transizioni dei suoi membri.
+  Valori elevati indicano segmenti con forte mobilità interna.
+- **Quota di mobilità** (`share.of.mobility`): peso del segmento in termini di
+  volume di transizioni rispetto al totale.
+- **Densità**: rapporto tra connessioni effettive e connessioni possibili nel segmento.
+- **Cammino massimo** (`Max.path`): diametro del sottografo del segmento.
+
+```{r quality-table}
+qual <- segment.quality(seg, final.solution = TRUE)
+
+qual_display <- qual[, c("Membership", "within.mobility", "share.of.mobility",
+                          "Density", "Nodes", "Max.path", "share.of.total")]
+colnames(qual_display) <- c("Segmento", "Mobilità interna", "Quota mobilità",
+                             "Densità", "N. nodi", "Cammino max.", "Quota totale")
+qual_display <- qual_display[order(-qual_display$`N. nodi`), ]
+
+kable(qual_display, digits = 3, format = "html",
+      caption = "Metriche di qualità dei segmenti (livello finale)")
+```
+
+```{r quality-plot, fig.width=12, fig.height=8}
+plot_segment_quality(
+  seg,
+  plot_type = "overview",
+  color_palette = "okabe-ito",
+  title = "Panoramica della qualità dei segmenti"
+)
+```
+
+# 6. Asimmetria direzionale
+
+L'asimmetria direzionale misura la differenza tra i flussi in entrata e in uscita
+all'interno di ciascun segmento. Un segmento con elevata asimmetria contiene coppie di
+professioni tra cui le transizioni avvengono prevalentemente in una direzione: questo
+può indicare percorsi di carriera unidirezionali (promozioni, declassamenti) piuttosto
+che mobilità bidirezionale.
+
+Con la simmetrizzazione min-reciprocity, l'asimmetria residua è strutturalmente bassa
+poiché il metodo trattiene solo il flusso minimo reciproco tra ogni coppia.
+
+```{r asymmetry-table}
+asym <- compute_asymmetry_scores(seg, level = 2)
+asym <- asym[order(-asym$asymmetry_score), ]
+
+asym_display <- asym
+colnames(asym_display) <- c("Segmento", "N. membri", "Asimmetria",
+                             "Coppia max (da)", "Coppia max (a)",
+                             "Asimmetria coppia")
+kable(asym_display, digits = 3, format = "html",
+      caption = "Punteggi di asimmetria direzionale per segmento (livello 2)")
+```
+
+```{r asymmetry-flags}
+flags <- flag_asymmetric_segments(seg, threshold = 0.5, level = 2)
+n_flagged <- sum(flags$flagged)
+```
+
+`r if(n_flagged == 0) paste0("Nessun segmento supera la soglia di asimmetria di ", flags$threshold, ". La simmetrizzazione min-reciprocity ha efficacemente ridotto l'asimmetria direzionale in tutti i segmenti.") else paste0(n_flagged, " segmenti superano la soglia di asimmetria di ", flags$threshold, ".")`
+
+```{r asymmetry-flags-table, eval=(n_flagged > 0)}
+flagged_scores <- flags$scores[flags$flagged, ]
+colnames(flagged_scores) <- c("Segmento", "N. membri", "Asimmetria",
+                                "Coppia max (da)", "Coppia max (a)",
+                                "Asimmetria coppia")
+kable(flagged_scores, digits = 3, format = "html",
+      caption = "Segmenti con asimmetria superiore alla soglia")
+```
+
+# 7. Profili dei segmenti principali
+
+Questa sezione presenta i cinque segmenti con il maggior numero di membri al livello 2,
+con il dettaglio delle professioni componenti e la rete ego del membro rappresentativo.
+
+```{r top-segments-setup}
+m2 <- segment.membership(seg, level = 2)
+in_seg <- m2[m2$membership != "FALSE", ]
+sizes <- sort(table(in_seg$membership), decreasing = TRUE)
+top5 <- names(sizes)[1:5]
+
+# Preparare dati per ogni segmento
+top_segments_data <- lapply(top5, function(sid) {
+  members <- in_seg$name[in_seg$membership == sid]
+  list(id = sid, members = members, n = length(members))
+})
+```
+
+```{r top-seg-profiles, results='asis', fig.width=10, fig.height=8}
+for (i in seq_along(top_segments_data)) {
+  ts <- top_segments_data[[i]]
+
+  cat("\n## 7.", i, " Segmento ", ts$id, " (", ts$n, " professioni)\n\n", sep = "")
+
+  cat("**Professioni componenti:**\n\n")
+  for (m in ts$members) {
+    cat("- ", m, "\n")
+  }
+  cat("\n")
+
+  # Rete ego del primo membro
+  ego_id <- ts$members[1]
+  cat("**Rete ego di:** *", ego_id, "*\n\n", sep = "")
+
+  p <- tryCatch(
+    plot_ego_ggraph(
+      seg,
+      mobility_matrix = seg$mat.list[[1]],
+      ego_id = ego_id,
+      layout = "stress",
+      segment_naming = "auto",
+      title = paste0("Rete ego — ", ego_id)
+    ),
+    error = function(e) {
+      cat("*Errore nella generazione del grafico ego:*", e$message, "\n\n")
+      NULL
+    }
+  )
+  if (!is.null(p)) print(p)
+
+  cat("\n\n")
+}
+```
+
+# 8. Livelli gerarchici superiori (3 e 4)
+
+I livelli superiori mostrano come i 31 segmenti del livello 2 vengono progressivamente
+aggregati: al livello 3 si formano 21 gruppi, al livello 4 si riducono a 14
+macro-segmenti.
+
+```{r stair-plot, fig.width=14, fig.height=10}
+stair_plots <- plot_stair_ggraph(
+  seg,
+  levels = 2:4,
+  color_palette = "okabe-ito",
+  segment_naming = "auto"
+)
+print(stair_plots)
+```
+
+## 8.1 Tabella di corrispondenza tra livelli
+
+```{r merge-table}
+mdf <- segment.membership.dataframe(seg)
+
+merge_df <- mdf[, c("name", "level_2", "name_level_2",
+                      "level_3", "name_level_3",
+                      "level_4", "name_level_4")]
+colnames(merge_df) <- c("Professione", "Lv.2", "Etichetta Lv.2",
+                          "Lv.3", "Etichetta Lv.3",
+                          "Lv.4", "Etichetta Lv.4")
+
+# Ordinare per livello 4, poi 3, poi 2
+merge_df <- merge_df[order(merge_df$`Lv.4`, merge_df$`Lv.3`, merge_df$`Lv.2`), ]
+
+kable(merge_df, format = "html", row.names = FALSE,
+      caption = "Corrispondenza gerarchica tra i livelli di segmentazione")
+```
+
+## 8.2 Livello 3 (21 segmenti)
+
+```{r network-lv3, fig.width=12, fig.height=10}
+plot_moneca_ggraph(
+  seg,
+  level = 3,
+  layout = "fr",
+  node_color = "segment",
+  color_palette = "okabe-ito",
+  show_labels = TRUE,
+  label_size = 2.5,
+  title = "Rete di mobilità — Livello 3 (21 segmenti)"
+)
+```
+
+```{r membership-lv3}
+m3 <- segment.membership(seg, level = 3)
+in_seg3 <- m3[m3$membership != "FALSE", ]
+isolates3 <- m3[m3$membership == "FALSE", ]
+
+seg_ids3 <- sort(unique(in_seg3$membership))
+membership_rows3 <- lapply(seg_ids3, function(sid) {
+  members <- in_seg3$name[in_seg3$membership == sid]
+  data.frame(
+    Segmento = sid,
+    `N. membri` = length(members),
+    Professioni = paste(members, collapse = "<br>"),
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
+})
+membership_table3 <- do.call(rbind, membership_rows3)
+membership_table3 <- membership_table3[order(-membership_table3$`N. membri`), ]
+
+kable(membership_table3, format = "html", escape = FALSE,
+      caption = paste0("Composizione dei 21 segmenti al livello 3 (",
+                       nrow(in_seg3), " professioni assegnate, ",
+                       nrow(isolates3), " isolate)"))
+```
+
+### Pesi dei segmenti e degli isolati (livello 3)
+
+La tabella seguente riporta il peso di ciascun segmento e di ciascuna professione
+isolata, calcolato come semi-somma dei flussi in entrata e in uscita dalla matrice
+originale. La quota percentuale indica l'incidenza sul totale delle transizioni.
+
+```{r weights-lv3}
+# Calcolare i margini dalla matrice originale (semi-somma righe + colonne)
+mat_orig <- seg$mat.list[[1]]
+n_orig <- nrow(mat_orig)
+margins <- (rowSums(mat_orig[-n_orig, -n_orig]) +
+              colSums(mat_orig[-n_orig, -n_orig])) / 2
+names(margins) <- rownames(mat_orig)[-n_orig]
+total_margin <- sum(margins)
+
+# Righe per i segmenti
+weight_seg_rows <- lapply(seg_ids3, function(sid) {
+  members <- in_seg3$name[in_seg3$membership == sid]
+  peso <- sum(margins[members])
+  data.frame(
+    Tipo = "Segmento",
+    ID = sid,
+    N_prof = length(members),
+    Transizioni = round(peso),
+    Quota = round(peso / total_margin * 100, 2),
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
+})
+
+# Righe per gli isolati
+weight_iso_rows <- lapply(seq_len(nrow(isolates3)), function(i) {
+  nome <- isolates3$name[i]
+  peso <- margins[nome]
+  data.frame(
+    Tipo = "Isolata",
+    ID = nome,
+    N_prof = 1L,
+    Transizioni = round(as.numeric(peso)),
+    Quota = round(as.numeric(peso) / total_margin * 100, 2),
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
+})
+
+# Unire e ordinare per peso decrescente
+weight_all <- rbind(do.call(rbind, weight_seg_rows),
+                    do.call(rbind, weight_iso_rows))
+weight_all <- weight_all[order(-weight_all$Transizioni), ]
+colnames(weight_all) <- c("Tipo", "ID", "N. professioni",
+                           "Transizioni (peso)", "Quota (%)")
+
+kable(weight_all, format = "html", row.names = FALSE,
+      format.args = list(big.mark = ".", decimal.mark = ","),
+      caption = paste0("Peso dei segmenti e delle professioni isolate al livello 3 ",
+                       "(totale transizioni: ",
+                       format(round(total_margin), big.mark = "."), ")"))
+```
+
+## 8.3 Livello 4 (14 macro-segmenti)
+
+```{r network-lv4, fig.width=12, fig.height=10}
+plot_moneca_ggraph(
+  seg,
+  level = 4,
+  layout = "fr",
+  node_color = "segment",
+  color_palette = "okabe-ito",
+  show_labels = TRUE,
+  label_size = 3,
+  title = "Rete di mobilità — Livello 4 (14 macro-segmenti)"
+)
+```
+
+```{r membership-lv4}
+m4 <- segment.membership(seg, level = 4)
+in_seg4 <- m4[m4$membership != "FALSE", ]
+isolates4 <- m4[m4$membership == "FALSE", ]
+
+seg_ids4 <- sort(unique(in_seg4$membership))
+membership_rows4 <- lapply(seg_ids4, function(sid) {
+  members <- in_seg4$name[in_seg4$membership == sid]
+  data.frame(
+    Segmento = sid,
+    `N. membri` = length(members),
+    Professioni = paste(members, collapse = "<br>"),
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
+})
+membership_table4 <- do.call(rbind, membership_rows4)
+membership_table4 <- membership_table4[order(-membership_table4$`N. membri`), ]
+
+kable(membership_table4, format = "html", escape = FALSE,
+      caption = paste0("Composizione dei 14 macro-segmenti al livello 4 (",
+                       nrow(in_seg4), " professioni assegnate, ",
+                       nrow(isolates4), " isolate)"))
+```
+
+# 9. Sintesi
+
+L'analisi MONECA del mercato del lavoro lombardo su 127 categorie professionali ISCO-08
+ha prodotto una segmentazione gerarchica a 4 livelli:
+
+- **Livello 2**: 31 segmenti, con 77 professioni assegnate e 50 isolate.
+- **Livello 3**: 21 segmenti intermedi.
+- **Livello 4**: 14 macro-segmenti.
+
+```{r synthesis-stats}
+qual_final <- segment.quality(seg, final.solution = TRUE)
+top_cohesion <- qual_final[order(-qual_final$within.mobility), ]
+```
+
+**Segmenti più coesi** (mobilità interna più alta al livello finale):
+
+```{r top-cohesion}
+top_c <- head(top_cohesion[, c("Membership", "within.mobility", "Nodes")], 5)
+colnames(top_c) <- c("Segmento", "Mobilità interna", "N. nodi")
+kable(top_c, digits = 3)
+```
+
+**Asimmetria direzionale**: la simmetrizzazione min-reciprocity ha prodotto segmenti
+con asimmetria contenuta (massima: `r round(max(asym$asymmetry_score, na.rm = TRUE), 3)`).
+Questo indica che i cluster identificati riflettono effettivamente mobilità reciproca
+tra le professioni, piuttosto che flussi unidirezionali.
+
+**Configurazione**: la combinazione di riduzione della densità NMF con sistema
+dual-matrix e simmetrizzazione min-reciprocity si è confermata la configurazione
+ottimale per questo dataset, producendo segmenti interpretabili con bassa asimmetria
+residua e buona copertura del mercato del lavoro.

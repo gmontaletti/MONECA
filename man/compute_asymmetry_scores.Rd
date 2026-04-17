@@ -13,7 +13,9 @@ compute_asymmetry_scores(segments, level = 2, method = "max_pair")
 
 \item{method}{Character. Aggregation method per segment:
 * `"max_pair"` (default): maximum pairwise asymmetry.
-* `"mean_pair"`: mean pairwise asymmetry weighted by flow volume.}
+* `"mean_pair"`: mean pairwise asymmetry weighted by the sum of the
+  bidirectional relative risks (`rr_ij + rr_ji`). Note: this weights
+  pairs by combined RR intensity, not by raw flow counts.}
 }
 \value{
 A `data.frame` with one row per segment and columns:

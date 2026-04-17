@@ -1108,10 +1108,10 @@ Two methods are available:
 
 ```{r symmetric_method, eval=FALSE}
 # Default behavior (sum symmetrization)
-seg_sum <- moneca_fast(mob, segment.levels = 3)
+seg_sum <- moneca_fast(basic_data, segment.levels = 3)
 
 # Min-reciprocity: require strong flow in both directions
-seg_min <- moneca_fast(mob, segment.levels = 3, symmetric_method = "min")
+seg_min <- moneca_fast(basic_data, segment.levels = 3, symmetric_method = "min")
 ```
 
 After clustering, you can diagnose directional asymmetry within segments using

@@ -24,9 +24,11 @@ Must have at least 4 rows/columns (excluding totals).}
 \item{method}{Character string specifying the dimensionality reduction method:
 \itemize{
   \item \code{"svd"} (default): Singular Value Decomposition - fast and
-    memory-efficient, produces continuous values
+    memory-efficient, produces continuous values. Works out of the box
+    without optional dependencies.
   \item \code{"nmf"}: Non-negative Matrix Factorization - preserves
-    non-negativity, better interpretability for count data
+    non-negativity, better interpretability for count data. Requires the
+    \pkg{RcppML} package (declared in \code{Suggests}).
 }}
 
 \item{normalization}{Character string specifying pre-processing normalization:

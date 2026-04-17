@@ -45,7 +45,7 @@
 #'   }
 #' @param density_params Named list of additional parameters passed to
 #'   \code{\link{reduce_density}}. For example:
-#'   \code{list(method = "svd", normalization = "ppmi", k = 20)}. See
+#'   \code{list(method = "nmf", normalization = "ppmi", k = 20)}. See
 #'   \code{\link{reduce_density}} for all available parameters.
 #' @param symmetric_method Character string controlling how the asymmetric relative
 #'   risk matrix is symmetrized before clique-finding. Valid values:
@@ -82,6 +82,12 @@
 #' (\code{pmin(mx, t(mx)) * 2}), which down-weights one-way bridges where
 #' only one direction has high relative risk. This can produce tighter clusters
 #' in matrices with strong directional asymmetry.
+#'
+#' \strong{Dual-Matrix System:} When density reduction is active, the reduced
+#' matrix determines cluster topology (which categories group together), while
+#' the original unreduced matrix is used for all aggregation, storage in
+#' \code{mat.list}, and downstream metrics. This preserves count totals across
+#' all segmentation levels.
 #'
 #' \strong{Produces identical results to} \code{\link{moneca}} when using default parameters
 #' and \code{reduce_density = FALSE}.
@@ -237,17 +243,21 @@ moneca_fast <- function(
       reduced_total = attr(reduced_mx, "reduced_total")
     )
 
-    # Replace mx with unclassed reduced matrix
-    mx <- unclass(reduced_mx)
-    attr(mx, "method") <- NULL
-    attr(mx, "normalization") <- NULL
-    attr(mx, "k") <- NULL
-    attr(mx, "variance_explained") <- NULL
-    attr(mx, "filter_quantile") <- NULL
-    attr(mx, "threshold_applied") <- NULL
-    attr(mx, "original_dims") <- NULL
-    attr(mx, "original_total") <- NULL
-    attr(mx, "reduced_total") <- NULL
+    # Create topology matrix from reduced data; keep mx as original
+    mx_topo <- unclass(reduced_mx)
+    attr(mx_topo, "method") <- NULL
+    attr(mx_topo, "normalization") <- NULL
+    attr(mx_topo, "k") <- NULL
+    attr(mx_topo, "variance_explained") <- NULL
+    attr(mx_topo, "filter_quantile") <- NULL
+    attr(mx_topo, "threshold_applied") <- NULL
+    attr(mx_topo, "original_dims") <- NULL
+    attr(mx_topo, "original_total") <- NULL
+    attr(mx_topo, "reduced_total") <- NULL
+  }
+
+  if (!apply_reduction) {
+    mx_topo <- NULL
   }
 
   # 3. Sparse matrix conversion (after margin and density steps) -----
@@ -259,6 +269,13 @@ moneca_fast <- function(
         requireNamespace("Matrix", quietly = TRUE)
     ) {
       mx <- Matrix::Matrix(mx, sparse = TRUE)
+    }
+    if (
+      !is.null(mx_topo) &&
+        !inherits(mx_topo, "sparseMatrix") &&
+        requireNamespace("Matrix", quietly = TRUE)
+    ) {
+      mx_topo <- Matrix::Matrix(mx_topo, sparse = TRUE)
     }
   }
 
@@ -662,10 +679,12 @@ moneca_fast <- function(
 
   # Main algorithm
   mat.list <- list()
-  mat.list[[1]] <- mx
+  mat.list[[1]] <- mx # always original
 
+  # Topology: use reduced matrix if available
+  mx_for_topo <- if (!is.null(mx_topo)) mx_topo else mx
   segments <- make.segments.fast(
-    mx,
+    mx_for_topo,
     cut.off = cut.off,
     mode = mode,
     delete.upper.tri = delete.upper.tri,
@@ -673,8 +692,16 @@ moneca_fast <- function(
     symmetric_method = symmetric_method
   )
 
+  # Aggregation: ALWAYS from original
   mx.2g <- segment.matrix.fast(mx, segments)
   mat.list[[2]] <- mx.2g
+
+  # Track reduced aggregation for next level topology
+  if (!is.null(mx_topo)) {
+    mx_topo.2g <- segment.matrix.fast(mx_topo, segments)
+  } else {
+    mx_topo.2g <- NULL
+  }
 
   out.put <- list()
   out.put[[1]] <- list(segments = segments, mat = mx.2g)
@@ -755,8 +782,9 @@ moneca_fast <- function(
   # Continue segmentation
   if (segment.levels > 1) {
     for (i in 2:segment.levels) {
+      mx_for_level_topo <- if (!is.null(mx_topo.2g)) mx_topo.2g else mx.2g
       segments <- make.segments.fast(
-        mx.2g,
+        mx_for_level_topo,
         cut.off = cut.off,
         mode = mode,
         delete.upper.tri = delete.upper.tri,
@@ -767,6 +795,10 @@ moneca_fast <- function(
       mx.2g <- segment.matrix.fast(mx.2g, segments)
       mat.list[[i + 1]] <- mx.2g
       out.put[[i]] <- list(segments = segments, mat = mx.2g)
+
+      if (!is.null(mx_topo.2g)) {
+        mx_topo.2g <- segment.matrix.fast(mx_topo.2g, segments)
+      }
 
       # Stop if only one segment remains or density too low
       if (length(segments$cliques) <= 1) {

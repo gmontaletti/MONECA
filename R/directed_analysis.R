@@ -102,7 +102,9 @@
 #' @param level Integer. Hierarchical level to evaluate (default 2).
 #' @param method Character. Aggregation method per segment:
 #'   * `"max_pair"` (default): maximum pairwise asymmetry.
-#'   * `"mean_pair"`: mean pairwise asymmetry weighted by flow volume.
+#'   * `"mean_pair"`: mean pairwise asymmetry weighted by the sum of the
+#'     bidirectional relative risks (`rr_ij + rr_ji`). Note: this weights
+#'     pairs by combined RR intensity, not by raw flow counts.
 #'
 #' @return A `data.frame` with one row per segment and columns:
 #'   \describe{
@@ -198,7 +200,7 @@ compute_asymmetry_scores <- function(segments, level = 2, method = "max_pair") {
     if (method == "max_pair") {
       out$asymmetry_score[s] <- pw$asym[max_idx]
     } else {
-      # Weighted mean: weight by total flow volume
+      # Weighted mean: weight by combined bidirectional RR
       weights <- pw$rr_ij + pw$rr_ji
       total_w <- sum(weights)
       if (total_w == 0) {
@@ -455,11 +457,52 @@ refine_segments <- function(
   }
 
   segments$segment.list[[level]] <- new_seg_list
+
+  # Rebuild mat.list[[level]] from mat.list[[1]] using the new partition.
+  # Splitting a segment changes the number of groups at `level`, so the
+  # previously stored mat.list[[level]] has stale dimensions. Downstream
+  # consumers (e.g. segment.quality) assume
+  # length(segment.list[[L]]) == nrow(mat.list[[L]]) - 1.
+  orig_mat <- segments$mat.list[[1]]
+  n_cats <- nrow(orig_mat) - 1L
+  membership <- integer(n_cats)
+  for (s in seq_along(new_seg_list)) {
+    membership[new_seg_list[[s]]] <- s
+  }
+  groups <- c(membership, length(new_seg_list) + 1L)
+  agg_rows <- rowsum(as.matrix(orig_mat), groups)
+  agg <- t(rowsum(t(agg_rows), groups))
+  segments$mat.list[[level]] <- agg
+
+  # Higher levels were derived from the pre-split partition and cannot
+  # be trusted after a refine; drop them rather than silently propagate
+  # stale structure.
+  n_levels <- length(segments$segment.list)
+  if (level < n_levels) {
+    message(
+      "refine_segments(): truncating segment.list/mat.list above level ",
+      level,
+      " (higher-level structure invalidated by the split)."
+    )
+    segments$segment.list <- segments$segment.list[seq_len(level)]
+    segments$mat.list <- segments$mat.list[seq_len(level)]
+  } else if (length(segments$mat.list) > level) {
+    segments$mat.list <- segments$mat.list[seq_len(level)]
+  }
+
   segments$asymmetry_refinement <- list(
     scores = flags$scores,
     threshold = threshold,
     splits_performed = splits_performed
   )
+
+  # Refresh derived metadata if present
+  if (!is.null(segments$segment_metadata)) {
+    segments$segment_metadata <- tryCatch(
+      moneca_segments(segments),
+      error = function(e) segments$segment_metadata
+    )
+  }
 
   segments
 }
@@ -541,11 +584,15 @@ refine_segments <- function(
 #'     \item{jaccard}{A numeric matrix of Jaccard indices, rows correspond
 #'       to seg1 segments and columns to seg2 segments.}
 #'     \item{ari}{Numeric scalar, the Adjusted Rand Index.}
-#'     \item{quality_delta}{A `data.frame` of quality metric differences
-#'       (seg2 minus seg1), or `NULL` if quality computation fails.}
-#'     \item{asymmetry_delta}{A `data.frame` with columns
-#'       `segment_id_1`, `asymmetry_1`, `segment_id_2`, `asymmetry_2`,
-#'       or `NULL` if computation fails.}
+#'     \item{quality_delta}{A one-row `data.frame` with columns `metric`,
+#'       `label_1`, `mean_within_mobility_1`, `label_2`,
+#'       `mean_within_mobility_2`. Values are means of the
+#'       `within.mobility` column of [segment.quality()] across segments.
+#'       `NULL` if quality computation fails.}
+#'     \item{asymmetry_delta}{A list with components `asymmetry_1`,
+#'       `asymmetry_2` (each the full `data.frame` returned by
+#'       [compute_asymmetry_scores()]) and `mean_asym_1`, `mean_asym_2`
+#'       (the mean asymmetry scores), or `NULL` if computation fails.}
 #'   }
 #'
 #' @examples
@@ -642,27 +689,29 @@ compare_moneca_results <- function(
   ari <- .adjusted_rand_index(mem1, mem2)
 
   # 8e. Quality comparison -----
+  # segment.quality() returns columns named "<level>: within.mobility",
+  # "<level>: Segment", etc. Select within.mobility columns by name to
+  # avoid picking the Segment-ID column (see: within-mobility is a rate,
+  # not an integer segment index).
+  mean_within_mobility <- function(q) {
+    wm_cols <- grep("within\\.mobility$", names(q), value = TRUE)
+    if (length(wm_cols) == 0) {
+      return(NA_real_)
+    }
+    vals <- unlist(lapply(wm_cols, function(nm) q[[nm]]))
+    mean(vals, na.rm = TRUE)
+  }
+
   quality_delta <- tryCatch(
     {
       q1 <- segment.quality(seg1)
       q2 <- segment.quality(seg2)
-      # Extract numeric columns shared between both
-      num_cols1 <- vapply(q1, is.numeric, logical(1))
-      num_cols2 <- vapply(q2, is.numeric, logical(1))
       data.frame(
         metric = "segment_quality",
         label_1 = labels[1],
-        mean_within_mobility_1 = if (any(num_cols1)) {
-          mean(q1[[which(num_cols1)[1]]], na.rm = TRUE)
-        } else {
-          NA_real_
-        },
+        mean_within_mobility_1 = mean_within_mobility(q1),
         label_2 = labels[2],
-        mean_within_mobility_2 = if (any(num_cols2)) {
-          mean(q2[[which(num_cols2)[1]]], na.rm = TRUE)
-        } else {
-          NA_real_
-        },
+        mean_within_mobility_2 = mean_within_mobility(q2),
         stringsAsFactors = FALSE
       )
     },
@@ -710,6 +759,7 @@ compare_moneca_results <- function(
 #'
 #' @return Invisibly returns `x`.
 #'
+#' @exportS3Method print moneca_comparison
 #' @keywords internal
 print.moneca_comparison <- function(x, ...) {
   cat("=== MONECA Comparison ===\n")

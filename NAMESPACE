@@ -3,6 +3,7 @@
 S3method(print,density_reduced)
 S3method(print,first_level_summary)
 S3method(print,moneca)
+S3method(print,moneca_comparison)
 S3method(print,moneca_loglinear)
 S3method(print,moneca_model_comparison)
 S3method(print,moneca_segments)

@@ -133,6 +133,7 @@ test_that("auto k selection respects variance_target", {
 
   reduced_low <- reduce_density(
     data,
+    method = "svd",
     k = "auto",
     variance_target = 0.50,
     verbose = FALSE
@@ -140,6 +141,7 @@ test_that("auto k selection respects variance_target", {
 
   reduced_high <- reduce_density(
     data,
+    method = "svd",
     k = "auto",
     variance_target = 0.90,
     verbose = FALSE
@@ -155,9 +157,9 @@ test_that("auto k selection respects variance_target", {
 test_that("auto k selection works with default variance_target", {
   data <- get_medium_large_test_data(n_classes = 20)
 
-  reduced <- reduce_density(data, k = "auto", verbose = FALSE)
+  reduced <- reduce_density(data, method = "svd", k = "auto", verbose = FALSE)
 
-  # Should achieve default 75% variance target
+  # Should achieve default 75% variance target (SVD only)
   expect_true(attr(reduced, "variance_explained") >= 0.75)
 
   # k should be reasonable (between 5 and matrix size)

@@ -31,11 +31,15 @@ An S3 object of class `"moneca_comparison"` (a list) with:
     \item{jaccard}{A numeric matrix of Jaccard indices, rows correspond
       to seg1 segments and columns to seg2 segments.}
     \item{ari}{Numeric scalar, the Adjusted Rand Index.}
-    \item{quality_delta}{A `data.frame` of quality metric differences
-      (seg2 minus seg1), or `NULL` if quality computation fails.}
-    \item{asymmetry_delta}{A `data.frame` with columns
-      `segment_id_1`, `asymmetry_1`, `segment_id_2`, `asymmetry_2`,
-      or `NULL` if computation fails.}
+    \item{quality_delta}{A one-row `data.frame` with columns `metric`,
+      `label_1`, `mean_within_mobility_1`, `label_2`,
+      `mean_within_mobility_2`. Values are means of the
+      `within.mobility` column of [segment.quality()] across segments.
+      `NULL` if quality computation fails.}
+    \item{asymmetry_delta}{A list with components `asymmetry_1`,
+      `asymmetry_2` (each the full `data.frame` returned by
+      [compute_asymmetry_scores()]) and `mean_asym_1`, `mean_asym_2`
+      (the mean asymmetry scores), or `NULL` if computation fails.}
   }
 }
 \description{

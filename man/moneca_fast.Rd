@@ -115,7 +115,7 @@ Default is FALSE.}
 
 \item{density_params}{Named list of additional parameters passed to
 \code{\link{reduce_density}}. For example:
-\code{list(method = "svd", normalization = "ppmi", k = 20)}. See
+\code{list(method = "nmf", normalization = "ppmi", k = 20)}. See
 \code{\link{reduce_density}} for all available parameters.}
 
 \item{symmetric_method}{Character string controlling how the asymmetric relative
@@ -215,6 +215,12 @@ the original algorithm behavior. The \code{"min"} method uses min-reciprocity
 (\code{pmin(mx, t(mx)) * 2}), which down-weights one-way bridges where
 only one direction has high relative risk. This can produce tighter clusters
 in matrices with strong directional asymmetry.
+
+\strong{Dual-Matrix System:} When density reduction is active, the reduced
+matrix determines cluster topology (which categories group together), while
+the original unreduced matrix is used for all aggregation, storage in
+\code{mat.list}, and downstream metrics. This preserves count totals across
+all segmentation levels.
 
 \strong{Produces identical results to} \code{\link{moneca}} when using default parameters
 and \code{reduce_density = FALSE}.

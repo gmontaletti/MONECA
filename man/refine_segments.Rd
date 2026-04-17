@@ -23,7 +23,9 @@ strictly above this value are flagged (default 0.5).}
 
 \item{method}{Character. Aggregation method per segment:
 * `"max_pair"` (default): maximum pairwise asymmetry.
-* `"mean_pair"`: mean pairwise asymmetry weighted by flow volume.}
+* `"mean_pair"`: mean pairwise asymmetry weighted by the sum of the
+  bidirectional relative risks (`rr_ij + rr_ji`). Note: this weights
+  pairs by combined RR intensity, not by raw flow counts.}
 
 \item{max_splits_per_segment}{Integer. Maximum number of sub-segments
 allowed per split (default 2).}
