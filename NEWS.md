@@ -1,3 +1,22 @@
+# moneca (development version)
+
+## Bug Fixes
+
+* Fixed memory blow-up in `moneca_fast(use.sparse = TRUE)`: the sparse path now
+  preserves `dgCMatrix` sparsity end-to-end via new internal helpers (weight
+  matrix, segment aggregation, edge extraction, and `pmin` symmetrization).
+  Memory now scales with the number of non-zero mobility cells rather than
+  `n^2`.
+
+## New Features
+
+* Sparse mobility matrices (`dgCMatrix`) are now auto-detected and routed
+  through the sparse path without setting `use.sparse = TRUE`.
+
+## Internal
+
+* Removed unused internal `weight_matrix_optimized()` helper.
+
 # moneca 1.3.0
 
 ## New Features

@@ -65,7 +65,14 @@ a significant tie. Default is 1.}
 
 \item{small.cell.reduction}{Numeric value to handle small cell counts. Default is 0.}
 
-\item{use.sparse}{Logical indicating whether to use sparse matrices for large data. Default is FALSE.}
+\item{use.sparse}{Logical. Default \code{FALSE}. When \code{TRUE}, the entire
+pipeline (weight matrix, symmetrization, segment aggregation, edge
+extraction) stays in sparse \code{dgCMatrix} form, so memory scales with
+\code{nnz(mx)} rather than \code{n^2}. Requires the \code{Matrix} package
+(listed in Suggests). Sparse input (\code{dgCMatrix}) is auto-detected and
+routed through the sparse path without setting this flag. On the sparse
+path, "no edge" is stored as a structural zero, so entries of
+\code{mat.list} may be \code{dgCMatrix} objects rather than base matrices.}
 
 \item{min.density}{Minimum strength-based density to continue processing.
 Calculated as mean(strength)/max(strength). Default is 0 (disabled for algorithmic
@@ -231,6 +238,12 @@ and \code{reduce_density = FALSE}.
   \item Small to large datasets
   \item When you want explicit control over optimization parameters
 }
+}
+\note{
+Setting \code{use.sparse = TRUE} (or passing a \code{dgCMatrix}, which
+  triggers the sparse path automatically) requires the \code{Matrix} package
+  to be installed; otherwise the function errors. The default dense path does
+  not depend on \code{Matrix} at all.
 }
 \examples{
 # Generate synthetic mobility data

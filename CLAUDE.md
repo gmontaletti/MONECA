@@ -304,3 +304,4 @@ devtools::build_vignettes()
 - Added directed asymmetry diagnostics (`compute_asymmetry_scores()`, `flag_asymmetric_segments()`)
 - Demoted `refine_segments()` and `compare_moneca_results()` to internal after evaluation on real data
 - 23 exported functions across core analysis, visualization, analysis tools, directed analysis, and legacy compatibility
+- Sparse-matrix support in `moneca_fast(use.sparse = TRUE)` now preserves sparsity end-to-end through dedicated helpers in `R/sparse_helpers.R`; memory scales with `nnz(mx)`.
