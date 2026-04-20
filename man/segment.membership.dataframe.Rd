@@ -4,7 +4,11 @@
 \alias{segment.membership.dataframe}
 \title{Generate Segment Membership Dataframe from MONECA Results}
 \usage{
-segment.membership.dataframe(moneca_results, names = TRUE)
+segment.membership.dataframe(
+  moneca_results,
+  names = TRUE,
+  label_strategy = c("strength", "mass")
+)
 }
 \arguments{
 \item{moneca_results}{A moneca object returned by \code{\link{moneca}} or \code{moneca_fast}.}
@@ -12,6 +16,21 @@ segment.membership.dataframe(moneca_results, names = TRUE)
 \item{names}{Logical indicating whether to generate descriptive labels for each level
 (default TRUE). When TRUE, creates additional columns with segment labels showing
 the representative node name and count of other members.}
+
+\item{label_strategy}{Character scalar selecting how the representative member
+of each segment is chosen when building descriptive labels. One of:
+\itemize{
+  \item \code{"strength"} (default, backward-compatible): the member with the
+    highest row-sum of the relative-risk weight matrix computed from
+    \code{mat.list[[1]]} with \code{small.cell.reduction = 0} and the default
+    \code{cut.off = 1}.
+  \item \code{"mass"}: the member with the largest mobility volume, computed
+    as the sum of its row and column margins in \code{mat.list[[1]]}
+    (outflow + inflow). Independent of \code{cut.off} and
+    \code{small.cell.reduction}, and therefore more robust when label
+    semantics should match the raw data rather than the thresholded
+    network.
+}}
 }
 \value{
 A dataframe with:
@@ -36,7 +55,10 @@ mx <- generate_mobility_data(n_classes = 5, immobility_strength = 0.7)
 # Run moneca analysis
 seg <- moneca_fast(mx, segment.levels = 3)
 
-# Generate membership dataframe
+# Generate membership dataframe (default strength-based labels)
 membership_df <- segment.membership.dataframe(seg)
 print(membership_df)
+
+# Mass-based labels: representative is the largest member
+membership_df_mass <- segment.membership.dataframe(seg, label_strategy = "mass")
 }

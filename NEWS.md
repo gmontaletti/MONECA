@@ -12,10 +12,20 @@
 
 * Sparse mobility matrices (`dgCMatrix`) are now auto-detected and routed
   through the sparse path without setting `use.sparse = TRUE`.
+* `segment.membership.dataframe()` gains a `label_strategy` parameter
+  (`"strength"` default, preserving backward compatibility; `"mass"` new).
+  Mass-based labels pick the segment member with the largest mobility volume
+  (row + column margins of `mat.list[[1]]`) and are independent of `cut.off`
+  and `small.cell.reduction`.
 
 ## Internal
 
 * Removed unused internal `weight_matrix_optimized()` helper.
+* `segment.membership.dataframe()` now precomputes the representative-score
+  vector once per call instead of recomputing `weight.matrix()` for every
+  multi-member entity. This also removes a latent bug where an error inside
+  the former `tryCatch` fallback silently left the representative index
+  undefined or stale.
 
 # moneca 1.3.0
 
