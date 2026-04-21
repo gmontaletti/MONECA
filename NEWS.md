@@ -1,3 +1,17 @@
+# moneca 1.7.2
+
+## Bug Fixes
+
+* `plot_moneca_dendrogram()`: v1.7.1's label-space fix over-corrected,
+  expanding the data y-scale so far downward that the tree
+  collapsed into a thin band at the top with vast empty space below
+  the labels. The scale is no longer expanded; space is reserved via
+  `plot.margin` (sized in millimetres from the longest label and
+  `sin(leaf_angle)`) together with `coord_cartesian(clip = "off")`,
+  which lets `geom_text` render outside the panel into that margin.
+  The tree now occupies the full panel and labels sit in the
+  reserved margin below.
+
 # moneca 1.7.1
 
 ## Bug Fixes

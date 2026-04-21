@@ -2501,30 +2501,30 @@ plot_moneca_dendrogram <- function(
 
   # Leaf labels
   #
-  # Space allocation for below-the-row labels: the y-scale is expanded
-  # downward by an amount proportional to the longest label, the font
-  # size, and sin(leaf_angle). Without this expansion, labels clip at
-  # the panel boundary. The same expansion works for vertical = FALSE
-  # because coord_flip() preserves data coordinates (only axis mapping
-  # swaps).
-  leaf_bottom_pad <- 0
+  # Space allocation: rely on clip = "off" + plot.margin (below) to
+  # reserve physical space for rotated labels OUTSIDE the panel. Do
+  # NOT expand the data y-scale — that would dead-zone the tree into
+  # a sliver at the top of the plot.
+  label_margin_mm <- 0
   if (show_labels %in% c("leaves", "both")) {
     leaf_names_ordered <- cat_names[leaf_order]
     max_label_chars <- max(nchar(leaf_names_ordered), 1L)
     angle_rad <- leaf_angle * pi / 180
-    # One character at label_size_leaf ~ label_size_leaf * 0.04 in data
-    # units on the level axis. Multiply by sin(angle) because only the
-    # vertical projection of the rotated label eats into the y-scale.
-    char_unit <- label_size_leaf * 0.04
-    projected_height <- if (leaf_angle == 0) {
-      char_unit
+    # Approximate text extent: at ggplot `size = s`, one char is
+    # roughly s * .pt ~= s * 2.8 pt wide (~s * 1 mm). At angle = 90
+    # the full string length projects vertically. At angle = 0 only
+    # a single line height does.
+    char_width_mm <- label_size_leaf * 1.0
+    line_height_mm <- label_size_leaf * 1.2
+    projected_mm <- if (leaf_angle == 0) {
+      line_height_mm
     } else {
-      max_label_chars * char_unit * abs(sin(angle_rad))
+      (max_label_chars * char_width_mm) *
+        abs(sin(angle_rad)) +
+        line_height_mm * abs(cos(angle_rad))
     }
-    leaf_bottom_pad <- projected_height *
-      diff(range(heights)) +
-      0.02 *
-        diff(range(heights))
+    # Small safety cushion.
+    label_margin_mm <- projected_mm + 3
 
     leaf_label_df <- data.frame(
       x = seq_len(n_leaves),
@@ -2574,32 +2574,23 @@ plot_moneca_dendrogram <- function(
     }
   }
 
-  # Y-axis (level labels) with bottom expansion to fit leaf labels.
-  # When level_axis_labels = FALSE we still apply the expansion via a
-  # plain scale_y_continuous.
-  y_expand <- ggplot2::expansion(
-    add = c(leaf_bottom_pad, 0.05 * diff(range(heights)))
-  )
+  # Y-axis (level labels). Keep default expansion — labels render
+  # in the margin via clip = "off", not by distorting the data scale.
   if (level_axis_labels) {
     lvl_labels <- paste0("L", seq_len(top_level))
     p <- p +
       ggplot2::scale_y_continuous(
         breaks = heights,
         labels = lvl_labels,
-        expand = y_expand,
         sec.axis = ggplot2::dup_axis()
       )
-  } else if (leaf_bottom_pad > 0) {
-    p <- p + ggplot2::scale_y_continuous(expand = y_expand)
   }
 
-  # Theme adjustments. Extend the bottom (or right, when vertical =
-  # FALSE so coord_flip maps it) margin based on the computed
-  # leaf_bottom_pad so clipping never truncates rotated labels. The
-  # pad is reported in data units on the y-axis; translate with a
-  # generous conversion factor so short padding still gives real
-  # millimetres of margin.
-  margin_pad_mm <- max(6, leaf_bottom_pad * 40)
+  # Theme adjustments. Extend the bottom (or right, under coord_flip)
+  # margin to fit rotated leaf labels. Size is computed in mm from the
+  # longest label; coord_cartesian(clip = "off") lets geom_text escape
+  # the panel into this margin.
+  margin_pad_mm <- max(6, label_margin_mm)
   plot_margin <- if (vertical) {
     ggplot2::margin(t = 6, r = 10, b = margin_pad_mm, l = 10)
   } else {
