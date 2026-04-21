@@ -1,3 +1,32 @@
+# moneca 1.7.0
+
+## Breaking Changes (opt-out available)
+
+* `plot_moneca_dendrogram()` has been redesigned for readability. The
+  default rendering now uses classic L-shaped dendrogram elbows (no more
+  smooth curves) so that the level at which two nodes merge is visible
+  as an explicit horizontal bar. The new default `height_method =
+  "level"` puts y on an integer "Level k" scale so you can read joins
+  directly from the axis. Segment colours now propagate down each
+  subtree from its top-level ancestor (previously intermediate edges
+  were all black). Internal-node segment labels, computed from
+  `meta$levels[[k]]$map$label`, are now actually rendered when
+  `show_labels = "both"` or `"internal"`.
+* The previous curved renderer is still reachable via `style = "curved"`
+  and emits a `.Deprecated()` message. Plan to remove it in v2.0.0.
+
+## New Features
+
+* `plot_moneca_dendrogram()` gains: `top_level` (highest level to
+  render), `style` (`"elbow"`/`"curved"`), `color_by`
+  (`"top_segment"`/`"level"`/`"none"`), `show_labels`
+  (`"leaves"`/`"both"`/`"internal"`/`"none"`), `highlight` (leaf name
+  or index to draw a bold path to the root), `level_guides`,
+  `level_axis_labels`, `leaf_angle`, `leaf_label_position`
+  (`"below"`/`"on_axis"`), `label_size_leaf`, `label_size_internal`,
+  `highlight_width`. Leaf angle auto-rotates for wide hierarchies
+  (90° when n > 20, 45° when n > 10).
+
 # moneca 1.6.0
 
 ## New Features
