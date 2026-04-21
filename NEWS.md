@@ -1,3 +1,16 @@
+# moneca 1.7.1
+
+## Bug Fixes
+
+* `plot_moneca_dendrogram()`: leaf labels placed below the leaf row
+  could clip at the panel boundary, especially at `leaf_angle = 90`
+  and for long node names. The y-scale now expands downward by an
+  amount proportional to `max(nchar(leaf_names)) * label_size_leaf *
+  abs(sin(leaf_angle))`, and `coord_cartesian(clip = "off")` is
+  applied with a matching `plot.margin` so labels render fully into
+  the expanded margin. Affects both `vertical = TRUE` (bottom margin)
+  and `vertical = FALSE` (right margin under `coord_flip`).
+
 # moneca 1.7.0
 
 ## Breaking Changes (opt-out available)
