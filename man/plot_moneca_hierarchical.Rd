@@ -15,6 +15,7 @@ plot_moneca_hierarchical(
   region_radius = c("sqrt", "linear", "equal"),
   show_edges = c("leaf", "top", "none"),
   show_node_labels = FALSE,
+  label_levels = NULL,
   label_size_top = 6,
   label_size_sub = 3.5,
   label_size_leaf = 2,
@@ -76,13 +77,27 @@ Default `"sqrt"`.}
 Default `"leaf"`.}
 
 \item{show_node_labels}{Logical. Whether to draw base-node name labels
-(leaf tier). Default `FALSE`.}
+(leaf tier). Default `FALSE`. When `TRUE`, level 1 is added to
+`label_levels` (if `label_levels` is `NULL`).}
 
-\item{label_size_top}{Numeric. Font size for top-tier labels. Default `6`.}
+\item{label_levels}{Integer vector, character (`"all"` / `"none"`), or
+`NULL`. Selects which segment-hierarchy levels receive labels.
+`NULL` (default) preserves prior behaviour: top tier (`top_level`) +
+sub tier (`top_level - 1`), with leaf tier added when
+`show_node_labels = TRUE`. `"all"` is shorthand for
+`seq_len(top_level)`. `"none"` suppresses every label. An explicit
+integer vector like `c(top_level, top_level - 2L)` lets you skip
+intermediate tiers. Sizes for intermediate levels interpolate
+linearly between `label_size_sub` and `label_size_leaf`.}
 
-\item{label_size_sub}{Numeric. Font size for sub-tier labels. Default `3.5`.}
+\item{label_size_top}{Numeric. Font size for top-tier labels (level
+`top_level`). Default `6`.}
 
-\item{label_size_leaf}{Numeric. Font size for leaf-tier labels. Default `2`.}
+\item{label_size_sub}{Numeric. Font size for sub-tier labels (level
+`top_level - 1`). Default `3.5`.}
+
+\item{label_size_leaf}{Numeric. Font size for leaf-tier labels (level 1
+base nodes). Default `2`.}
 
 \item{node_size}{Character or numeric. `"total"` sizes nodes by marginal
 total from the mobility matrix; `"mobility"` by off-diagonal mobility

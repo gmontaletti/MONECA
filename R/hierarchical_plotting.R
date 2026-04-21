@@ -88,10 +88,23 @@ if (getRversion() >= "2.15.1") {
 #'   `"none"` suppresses edges entirely.
 #'   Default `"leaf"`.
 #' @param show_node_labels Logical. Whether to draw base-node name labels
-#'   (leaf tier). Default `FALSE`.
-#' @param label_size_top Numeric. Font size for top-tier labels. Default `6`.
-#' @param label_size_sub Numeric. Font size for sub-tier labels. Default `3.5`.
-#' @param label_size_leaf Numeric. Font size for leaf-tier labels. Default `2`.
+#'   (leaf tier). Default `FALSE`. When `TRUE`, level 1 is added to
+#'   `label_levels` (if `label_levels` is `NULL`).
+#' @param label_levels Integer vector, character (`"all"` / `"none"`), or
+#'   `NULL`. Selects which segment-hierarchy levels receive labels.
+#'   `NULL` (default) preserves prior behaviour: top tier (`top_level`) +
+#'   sub tier (`top_level - 1`), with leaf tier added when
+#'   `show_node_labels = TRUE`. `"all"` is shorthand for
+#'   `seq_len(top_level)`. `"none"` suppresses every label. An explicit
+#'   integer vector like `c(top_level, top_level - 2L)` lets you skip
+#'   intermediate tiers. Sizes for intermediate levels interpolate
+#'   linearly between `label_size_sub` and `label_size_leaf`.
+#' @param label_size_top Numeric. Font size for top-tier labels (level
+#'   `top_level`). Default `6`.
+#' @param label_size_sub Numeric. Font size for sub-tier labels (level
+#'   `top_level - 1`). Default `3.5`.
+#' @param label_size_leaf Numeric. Font size for leaf-tier labels (level 1
+#'   base nodes). Default `2`.
 #' @param node_size Character or numeric. `"total"` sizes nodes by marginal
 #'   total from the mobility matrix; `"mobility"` by off-diagonal mobility
 #'   rate; a single number uses a fixed size. Default `"total"`.
@@ -179,6 +192,7 @@ plot_moneca_hierarchical <- function(
   region_radius = c("sqrt", "linear", "equal"),
   show_edges = c("leaf", "top", "none"),
   show_node_labels = FALSE,
+  label_levels = NULL,
   label_size_top = 6,
   label_size_sub = 3.5,
   label_size_leaf = 2,
@@ -226,6 +240,40 @@ plot_moneca_hierarchical <- function(
   if (is.null(levels_to_show)) {
     levels_to_show <- seq_len(top_level)
   }
+
+  # 5b. Resolve label_levels -----
+  #     NULL preserves prior behaviour: top-tier (top_level) + sub-tier
+  #     (top_level - 1), plus level 1 when show_node_labels is TRUE.
+  #     "all" / "none" are convenience strings; an integer vector picks
+  #     exact levels (e.g., c(top_level, top_level - 2L) to skip a tier).
+  if (is.null(label_levels)) {
+    label_levels <- if (top_level >= 2L) {
+      c(top_level, top_level - 1L)
+    } else {
+      top_level
+    }
+    if (isTRUE(show_node_labels)) {
+      label_levels <- union(label_levels, 1L)
+    }
+  } else if (is.character(label_levels)) {
+    label_levels <- switch(
+      label_levels[1],
+      all = seq_len(top_level),
+      none = integer(0),
+      stop(
+        "label_levels must be NULL, an integer vector, 'all', or 'none'.",
+        call. = FALSE
+      )
+    )
+  } else if (!is.numeric(label_levels)) {
+    stop(
+      "label_levels must be NULL, an integer vector, 'all', or 'none'.",
+      call. = FALSE
+    )
+  }
+  label_levels <- as.integer(label_levels)
+  label_levels <- label_levels[label_levels >= 1L & label_levels <= top_level]
+  label_levels <- sort(unique(label_levels), decreasing = TRUE)
 
   # 6. Base weight matrix -----
   base_weights <- weight.matrix(
@@ -335,6 +383,7 @@ plot_moneca_hierarchical <- function(
     region_shape = region_shape,
     show_edges = show_edges,
     show_node_labels = show_node_labels,
+    label_levels = label_levels,
     label_size_top = label_size_top,
     label_size_sub = label_size_sub,
     label_size_leaf = label_size_leaf,
@@ -1326,128 +1375,132 @@ plot_moneca_hierarchical <- function(
     )
 
   # ---- Layer 4: Labels ----
-  # Top-tier labels at top-level region centroids
-  top_regions_L <- regions[regions$level == top_level, , drop = FALSE]
-  if (nrow(top_regions_L) > 0) {
-    top_label_df <- data.frame(
-      x = top_regions_L$cx,
-      y = top_regions_L$cy,
-      label = vapply(
-        seq_len(nrow(top_regions_L)),
-        function(i) {
-          sid <- top_regions_L$segment_id[i]
-          if (sid >= 1 && sid <= nrow(top_map)) top_map$label[sid] else ""
-        },
-        character(1)
-      ),
-      stringsAsFactors = FALSE
-    )
-    top_label_df <- top_label_df[nchar(top_label_df$label) > 0, , drop = FALSE]
+  # Render labels for every level in params$label_levels. Sizes/styles
+  # are anchored on label_size_top (at top_level), label_size_sub (at
+  # top_level - 1), and label_size_leaf (at level 1); intermediate
+  # levels interpolate linearly between label_size_sub and label_size_leaf
+  # by their depth below the sub-tier. Level 1 always uses the leaf
+  # rendering path (per-node names from node_df) so node identity is
+  # preserved instead of duplicating the level-1 segment label.
+  label_levels_eff <- sort(
+    unique(as.integer(params$label_levels)),
+    decreasing = TRUE
+  )
 
-    if (nrow(top_label_df) > 0) {
-      if (requireNamespace("ggrepel", quietly = TRUE)) {
-        p <- p +
-          ggrepel::geom_text_repel(
-            data = top_label_df,
-            ggplot2::aes(x = x, y = y, label = label),
-            size = params$label_size_top,
-            fontface = "bold",
-            color = "grey15",
-            box.padding = 0.6,
-            inherit.aes = FALSE,
-            max.overlaps = Inf
-          )
-      } else {
-        p <- p +
-          ggplot2::geom_text(
-            data = top_label_df,
-            ggplot2::aes(x = x, y = y, label = label),
-            size = params$label_size_top,
-            fontface = "bold",
-            color = "grey15",
-            vjust = -0.5,
-            inherit.aes = FALSE
-          )
-      }
+  .hp_size_for_level <- function(L) {
+    if (L == top_level) {
+      return(params$label_size_top)
+    }
+    if (L == top_level - 1L) {
+      return(params$label_size_sub)
+    }
+    if (L == 1L) {
+      return(params$label_size_leaf)
+    }
+    if (top_level <= 2L) {
+      return(params$label_size_sub)
+    }
+    # Interpolate between sub (at top_level - 1) and leaf (at 1)
+    frac <- (L - 1L) / max(1L, (top_level - 2L))
+    params$label_size_leaf +
+      frac * (params$label_size_sub - params$label_size_leaf)
+  }
+
+  .hp_style_for_level <- function(L) {
+    if (L == top_level) {
+      list(fontface = "bold", color = "grey15", box.padding = 0.6, vjust = -0.5)
+    } else if (L == 1L) {
+      list(
+        fontface = "plain",
+        color = "grey35",
+        box.padding = 0.2,
+        vjust = -0.3
+      )
+    } else {
+      list(fontface = "plain", color = "grey25", box.padding = 0.4, vjust = 1.2)
     }
   }
 
-  # Sub-tier labels (top_level - 1) at sub-region centroids
-  sub_level <- top_level - 1L
-  if (sub_level >= 1) {
-    sub_regions <- regions[regions$level == sub_level, , drop = FALSE]
-    sub_map <- meta$levels[[sub_level]]$map
+  for (L in label_levels_eff) {
+    sty <- .hp_style_for_level(L)
+    sz <- .hp_size_for_level(L)
 
-    if (nrow(sub_regions) > 0) {
-      sub_label_df <- data.frame(
-        x = sub_regions$cx,
-        y = sub_regions$cy,
-        label = vapply(
-          seq_len(nrow(sub_regions)),
-          function(i) {
-            sid <- sub_regions$segment_id[i]
-            if (sid >= 1 && sid <= nrow(sub_map)) sub_map$label[sid] else ""
-          },
-          character(1)
-        ),
-        stringsAsFactors = FALSE
-      )
-      sub_label_df <- sub_label_df[
-        nchar(sub_label_df$label) > 0,
-        ,
-        drop = FALSE
-      ]
-
-      if (nrow(sub_label_df) > 0) {
+    if (L == 1L) {
+      # Leaf tier: use base-node names from node_df (preserve identity).
+      if (nrow(node_df) > 0) {
         if (requireNamespace("ggrepel", quietly = TRUE)) {
           p <- p +
             ggrepel::geom_text_repel(
-              data = sub_label_df,
-              ggplot2::aes(x = x, y = y, label = label),
-              size = params$label_size_sub,
-              fontface = "plain",
-              color = "grey25",
-              box.padding = 0.4,
+              data = node_df,
+              ggplot2::aes(x = x, y = y, label = name),
+              size = sz,
+              fontface = sty$fontface,
+              color = sty$color,
+              box.padding = sty$box.padding,
               inherit.aes = FALSE,
               max.overlaps = Inf
             )
         } else {
           p <- p +
             ggplot2::geom_text(
-              data = sub_label_df,
-              ggplot2::aes(x = x, y = y, label = label),
-              size = params$label_size_sub,
-              fontface = "plain",
-              color = "grey25",
-              vjust = 1.2,
+              data = node_df,
+              ggplot2::aes(x = x, y = y, label = name),
+              size = sz,
+              fontface = sty$fontface,
+              color = sty$color,
+              vjust = sty$vjust,
               inherit.aes = FALSE
             )
         }
       }
+      next
     }
-  }
 
-  # Leaf-tier labels (opt-in)
-  if (params$show_node_labels && nrow(node_df) > 0) {
+    regs_L <- regions[regions$level == L, , drop = FALSE]
+    if (nrow(regs_L) == 0) {
+      next
+    }
+    map_L <- meta$levels[[L]]$map
+
+    label_df_L <- data.frame(
+      x = regs_L$cx,
+      y = regs_L$cy,
+      label = vapply(
+        seq_len(nrow(regs_L)),
+        function(i) {
+          sid <- regs_L$segment_id[i]
+          if (sid >= 1 && sid <= nrow(map_L)) map_L$label[sid] else ""
+        },
+        character(1)
+      ),
+      stringsAsFactors = FALSE
+    )
+    label_df_L <- label_df_L[nchar(label_df_L$label) > 0, , drop = FALSE]
+    if (nrow(label_df_L) == 0) {
+      next
+    }
+
     if (requireNamespace("ggrepel", quietly = TRUE)) {
       p <- p +
         ggrepel::geom_text_repel(
-          data = node_df,
-          ggplot2::aes(x = x, y = y, label = name),
-          size = params$label_size_leaf,
-          color = "grey35",
-          box.padding = 0.2,
+          data = label_df_L,
+          ggplot2::aes(x = x, y = y, label = label),
+          size = sz,
+          fontface = sty$fontface,
+          color = sty$color,
+          box.padding = sty$box.padding,
           inherit.aes = FALSE,
           max.overlaps = Inf
         )
     } else {
       p <- p +
         ggplot2::geom_text(
-          data = node_df,
-          ggplot2::aes(x = x, y = y, label = name),
-          size = params$label_size_leaf,
-          color = "grey35",
-          vjust = -0.3,
+          data = label_df_L,
+          ggplot2::aes(x = x, y = y, label = label),
+          size = sz,
+          fontface = sty$fontface,
+          color = sty$color,
+          vjust = sty$vjust,
           inherit.aes = FALSE
         )
     }

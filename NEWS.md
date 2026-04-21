@@ -1,3 +1,17 @@
+# moneca 1.6.0
+
+## New Features
+
+* `plot_moneca_hierarchical()` gains a `label_levels` parameter for
+  fine-grained control over which segment-hierarchy levels receive
+  labels. `NULL` (default) preserves the prior behaviour (top tier +
+  sub tier, plus leaf when `show_node_labels = TRUE`). `"all"` labels
+  every level from 1 to `top_level`; `"none"` suppresses every label.
+  An explicit integer vector like `c(top_level, top_level - 2L)` lets
+  you label intermediate tiers and skip others. Sizes for
+  intermediate levels interpolate linearly between `label_size_sub`
+  and `label_size_leaf`.
+
 # moneca 1.5.1
 
 ## Bug Fixes

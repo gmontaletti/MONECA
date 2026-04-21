@@ -240,6 +240,62 @@ test_that("text layers expose at least 2 distinct font sizes (label tiers)", {
   expect_true(length(unique(all_sizes)) >= 2)
 })
 
+# 9b. label_levels controls which levels get labels -----
+test_that("label_levels selects which levels receive labels", {
+  skip_if_not_installed("ggraph")
+  skip_if_not_installed("tidygraph")
+  skip_if_not_installed("dplyr")
+  skip_if_not_installed("ggforce")
+  skip_if_not_installed("ggrepel")
+
+  seg <- .hp_fixture(n_classes = 30, segment.levels = 4, seed = 42)
+
+  count_label_layers <- function(p) {
+    sum(vapply(
+      ggplot2::ggplot_build(p)$data,
+      function(d) "label" %in% names(d) && nrow(d) > 0,
+      logical(1)
+    ))
+  }
+
+  # Default (NULL) -> 2 tiers (top + sub)
+  p_default <- plot_moneca_hierarchical(seg, top_level = 4, seed = 1)
+  expect_equal(count_label_layers(p_default), 2L)
+
+  # "all" -> one layer per level (4)
+  p_all <- plot_moneca_hierarchical(
+    seg,
+    top_level = 4,
+    label_levels = "all",
+    seed = 1
+  )
+  expect_equal(count_label_layers(p_all), 4L)
+
+  # "none" -> zero layers
+  p_none <- plot_moneca_hierarchical(
+    seg,
+    top_level = 4,
+    label_levels = "none",
+    seed = 1
+  )
+  expect_equal(count_label_layers(p_none), 0L)
+
+  # Explicit subset c(top, top - 2) -> 2 layers, sub-tier skipped
+  p_skip <- plot_moneca_hierarchical(
+    seg,
+    top_level = 4,
+    label_levels = c(4L, 2L),
+    seed = 1
+  )
+  expect_equal(count_label_layers(p_skip), 2L)
+
+  # Invalid string errors
+  expect_error(
+    plot_moneca_hierarchical(seg, label_levels = "bogus"),
+    "label_levels"
+  )
+})
+
 # 10. region_shape variants -----
 test_that("region_shape variants 'hull', 'circle', 'auto' all return a ggplot", {
   skip_if_not_installed("ggraph")
