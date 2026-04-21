@@ -22,10 +22,19 @@ test_that("moneca and moneca_fast produce identical results on small dataset", {
   )
 
   # Run both implementations
-  result_original <- moneca(test_data, segment.levels = 2, cut.off = 1,
-                            use_maximal_cliques = FALSE)
-  result_fast <- moneca_fast(test_data, segment.levels = 2, cut.off = 1,
-                             progress = FALSE, use_maximal_cliques = FALSE)
+  result_original <- moneca(
+    test_data,
+    segment.levels = 2,
+    cut.off = 1,
+    use_maximal_cliques = FALSE
+  )
+  result_fast <- moneca_fast(
+    test_data,
+    segment.levels = 2,
+    cut.off = 1,
+    progress = FALSE,
+    use_maximal_cliques = FALSE
+  )
 
   # Use helper function for comparison
   expect_moneca_equivalent(
@@ -48,10 +57,19 @@ test_that("moneca and moneca_fast produce identical results on medium dataset", 
   )
 
   # Run both implementations
-  result_original <- moneca(test_data, segment.levels = 3, cut.off = 1,
-                            use_maximal_cliques = FALSE)
-  result_fast <- moneca_fast(test_data, segment.levels = 3, cut.off = 1,
-                             progress = FALSE, use_maximal_cliques = FALSE)
+  result_original <- moneca(
+    test_data,
+    segment.levels = 3,
+    cut.off = 1,
+    use_maximal_cliques = FALSE
+  )
+  result_fast <- moneca_fast(
+    test_data,
+    segment.levels = 3,
+    cut.off = 1,
+    progress = FALSE,
+    use_maximal_cliques = FALSE
+  )
 
   # Use helper function for comparison
   expect_moneca_equivalent(
@@ -68,10 +86,17 @@ test_that("use_maximal_cliques parameter works consistently across implementatio
   test_data <- get_custom_test_data(n_classes = 10, seed = 11111)
 
   # Run with maximal cliques enabled
-  result_original_max <- moneca(test_data, segment.levels = 2,
-                                use_maximal_cliques = TRUE)
-  result_fast_max <- moneca_fast(test_data, segment.levels = 2, progress = FALSE,
-                                 use_maximal_cliques = TRUE)
+  result_original_max <- moneca(
+    test_data,
+    segment.levels = 2,
+    use_maximal_cliques = TRUE
+  )
+  result_fast_max <- moneca_fast(
+    test_data,
+    segment.levels = 2,
+    progress = FALSE,
+    use_maximal_cliques = TRUE
+  )
 
   # With maximal cliques, both should produce same results
   expect_moneca_equivalent(
@@ -95,21 +120,30 @@ test_that("Maximal cliques produce different results than all cliques", {
   )
 
   # Run with both settings
-  result_all_cliques <- moneca(test_data, segment.levels = 2,
-                               use_maximal_cliques = FALSE)
-  result_max_cliques <- moneca(test_data, segment.levels = 2,
-                               use_maximal_cliques = TRUE)
+  result_all_cliques <- moneca(
+    test_data,
+    segment.levels = 2,
+    use_maximal_cliques = FALSE
+  )
+  result_max_cliques <- moneca(
+    test_data,
+    segment.levels = 2,
+    use_maximal_cliques = TRUE
+  )
 
   # The results SHOULD be different (maximal is more restrictive)
   # Check across all levels to see if there's any difference
   all_levels_same <- TRUE
-  min_levels <- min(length(result_all_cliques$segment.list),
-                    length(result_max_cliques$segment.list))
+  min_levels <- min(
+    length(result_all_cliques$segment.list),
+    length(result_max_cliques$segment.list)
+  )
 
-  for(level in 2:min_levels) {  # Start from level 2 (level 1 is always individual nodes)
+  for (level in 2:min_levels) {
+    # Start from level 2 (level 1 is always individual nodes)
     n_all <- length(result_all_cliques$segment.list[[level]])
     n_max <- length(result_max_cliques$segment.list[[level]])
-    if(n_all != n_max) {
+    if (n_all != n_max) {
       all_levels_same <- FALSE
       break
     }
@@ -141,6 +175,46 @@ test_that("Default behavior uses all cliques for all implementations", {
   )
 })
 
+test_that("use_maximal_cliques = 'auto' routes by density", {
+  # Below the 0.12 graph-density threshold, auto must fall back to the
+  # all-cliques path so parity with moneca() is preserved. On a low-density
+  # synthetic fixture, FALSE and "auto" should return identical segment.list.
+  skip_on_cran()
+  set.seed(2026)
+  test_data <- generate_mobility_data(n_classes = 50, seed = 2026)
+
+  r_false <- moneca_fast(
+    test_data,
+    segment.levels = 3,
+    progress = FALSE,
+    use_maximal_cliques = FALSE
+  )
+  r_auto <- moneca_fast(
+    test_data,
+    segment.levels = 3,
+    progress = FALSE,
+    use_maximal_cliques = "auto"
+  )
+
+  expect_identical(r_false$segment.list, r_auto$segment.list)
+})
+
+test_that("use_maximal_cliques validates bogus string values", {
+  skip_on_cran()
+  set.seed(2026)
+  test_data <- generate_mobility_data(n_classes = 20, seed = 2026)
+
+  expect_error(
+    moneca_fast(
+      test_data,
+      segment.levels = 2,
+      progress = FALSE,
+      use_maximal_cliques = "bogus"
+    ),
+    regexp = "must be TRUE, FALSE, or 'auto'"
+  )
+})
+
 test_that("Multiple scenarios ensure full equivalence", {
   # Test with multiple scenarios to ensure full equivalence across various data patterns
 
@@ -149,7 +223,11 @@ test_that("Multiple scenarios ensure full equivalence", {
   test_data_1 <- get_custom_test_data(n_classes = 8, seed = 12345)
 
   result_original_1 <- moneca(test_data_1, segment.levels = 2)
-  result_fast_1 <- moneca_fast(test_data_1, segment.levels = 2, progress = FALSE)
+  result_fast_1 <- moneca_fast(
+    test_data_1,
+    segment.levels = 2,
+    progress = FALSE
+  )
 
   expect_moneca_equivalent(
     result_original_1,
@@ -162,7 +240,11 @@ test_that("Multiple scenarios ensure full equivalence", {
   test_data_2 <- get_custom_test_data(n_classes = 10, seed = 456)
 
   result_original_2 <- moneca(test_data_2, segment.levels = 3)
-  result_fast_2 <- moneca_fast(test_data_2, segment.levels = 3, progress = FALSE)
+  result_fast_2 <- moneca_fast(
+    test_data_2,
+    segment.levels = 3,
+    progress = FALSE
+  )
 
   expect_moneca_equivalent(
     result_original_2,
@@ -175,7 +257,11 @@ test_that("Multiple scenarios ensure full equivalence", {
   test_data_3 <- get_test_data("small")
 
   result_original_3 <- moneca(test_data_3, segment.levels = 2)
-  result_fast_3 <- moneca_fast(test_data_3, segment.levels = 2, progress = FALSE)
+  result_fast_3 <- moneca_fast(
+    test_data_3,
+    segment.levels = 2,
+    progress = FALSE
+  )
 
   expect_moneca_equivalent(
     result_original_3,
@@ -188,7 +274,11 @@ test_that("Multiple scenarios ensure full equivalence", {
   test_data_4 <- get_custom_test_data(n_classes = 6, seed = 111)
 
   result_original_4 <- moneca(test_data_4, segment.levels = 1)
-  result_fast_4 <- moneca_fast(test_data_4, segment.levels = 1, progress = FALSE)
+  result_fast_4 <- moneca_fast(
+    test_data_4,
+    segment.levels = 1,
+    progress = FALSE
+  )
 
   expect_moneca_equivalent(
     result_original_4,

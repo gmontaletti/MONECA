@@ -1,4 +1,4 @@
-# moneca (development version)
+# moneca 1.4.0
 
 ## Bug Fixes
 
@@ -7,16 +7,45 @@
   matrix, segment aggregation, edge extraction, and `pmin` symmetrization).
   Memory now scales with the number of non-zero mobility cells rather than
   `n^2`.
+* Fixed sparse-vs-dense parity regression in `moneca_fast()` at segmentation
+  level 2+ on inputs with `n >= 300`. The dense path produces `NaN` at
+  positions where core = 0 and expected count = 0 (0/0), which propagates
+  through `rr + t(rr)` and drops the edge; the sparse path previously treated
+  the missing reciprocal as a silent zero and kept those edges, diverging from
+  `moneca()`. `weight_matrix_sparse()` now detects reciprocal-NaN positions
+  and drops them to match the dense contract. Inf values (x/0 with x > 0,
+  arising from inconsistent margins) are now preserved on the sparse path
+  instead of being dropped, again matching the dense path.
 
 ## New Features
 
 * Sparse mobility matrices (`dgCMatrix`) are now auto-detected and routed
   through the sparse path without setting `use.sparse = TRUE`.
+* `moneca_fast()` `use_maximal_cliques` argument accepts `"auto"`: uses
+  `igraph::edge_density` of the post-cut-off weight graph to choose between
+  all-cliques and maximal-cliques per level. On the 127x127 Lombardy real
+  fixture (density > 0.12), auto routes to maximal and produces a ~12x
+  wall-time speedup; on sparse synthetic fixtures it stays on the
+  all-cliques path and preserves bit-exact parity with `moneca()`. Default
+  remains `FALSE`.
+* `moneca_fast(use.sparse = TRUE)` on a dense base matrix with > 50% non-zero
+  density now emits an informational message and falls back to the dense
+  path (no wall-time benefit from sparse storage on dense data, ~20% memory
+  overhead). Passing an explicit `sparseMatrix` still forces the sparse path.
 * `segment.membership.dataframe()` gains a `label_strategy` parameter
   (`"strength"` default, preserving backward compatibility; `"mass"` new).
   Mass-based labels pick the segment member with the largest mobility volume
   (row + column margins of `mat.list[[1]]`) and are independent of `cut.off`
   and `small.cell.reduction`.
+
+## Performance
+
+* Vectorised the node-to-clique precomputation in `find.segments.fast()`.
+  Replaces a nested R-level scatter-write loop (≈35% of non-GC self-time on
+  the real 127x127 fixture per profiling sec. 10.3) with an
+  `unlist`/`rep.int`/`split` idiom. No change to output. Measured ~23%
+  wall-time reduction on `symmetric_method = "min"` and ~36% on
+  `use_maximal_cliques = TRUE`.
 
 ## Internal
 

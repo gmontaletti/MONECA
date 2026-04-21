@@ -98,9 +98,26 @@ weight_matrix_sparse <- function(
     (o.c.s[trip$j] / total.total) *
     total.mobility
 
-  # Relative risk; positions with zero expectation become Inf/NaN -> drop
+  # Relative risk at triplet positions. By construction trip$x > 0
+  # (structural non-zeros), so rr_x is finite when exp_ij > 0 and Inf when
+  # exp_ij == 0. Inf is a legitimate value: weight.matrix() produces Inf at
+  # these positions and keeps them as strong edges after symmetrization.
   rr_x <- trip$x / exp_ij
-  keep <- is.finite(rr_x)
+
+  # Parity with dense weight.matrix():
+  # In the dense path, rr(p,q) = core(p,q) / exp(p,q); when core(p,q) == 0
+  # AND exp(p,q) == 0 the result is NaN. After sym = rr + t(rr) (or pmin),
+  # a NaN reciprocal turns sym(i,j) into NaN, which find.segments drops via
+  # !is.na(mat). The sparse path only materializes positions where core > 0,
+  # so it never "sees" the reciprocal NaN and instead treats the absent
+  # reciprocal as a silent zero, leaving the edge in place -- a divergence
+  # from dense. Detect reciprocal-NaN cases explicitly and drop them here.
+  #
+  # Reciprocal (j, i) is NaN in dense iff core(j, i) == 0 AND exp(j, i) == 0.
+  # exp(j, i) == 0 iff o.r.s[j] == 0 OR o.c.s[i] == 0.
+  recip_core_zero <- as.numeric(core[cbind(trip$j, trip$i)]) == 0
+  recip_exp_zero <- (o.r.s[trip$j] == 0) | (o.c.s[trip$i] == 0)
+  keep <- !(recip_core_zero & recip_exp_zero) & !is.nan(rr_x)
 
   rr <- Matrix::sparseMatrix(
     i = trip$i[keep],
