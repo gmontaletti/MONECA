@@ -87,8 +87,9 @@ The package exports 23 functions organized into functional groups:
 #### Data Generation (1)
 - generate_mobility_data() - Synthetic data generator
 
-#### Modern Visualization (5)
+#### Modern Visualization (6)
 - plot_moneca_ggraph() - Main network plots
+- plot_moneca_hierarchical() - Top-down non-overlapping nested plot
 - plot_ego_ggraph() - Ego network analysis
 - plot_stair_ggraph() - Multi-level visualization
 - plot_moneca_dendrogram() - Hierarchical tree plots

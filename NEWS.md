@@ -1,3 +1,33 @@
+# moneca 1.5.1
+
+## Bug Fixes
+
+* `plot_moneca_hierarchical()`: fixed an off-by-one in the recursion that
+  caused the outermost regions to be drawn at level `top_level - 1`
+  instead of the requested `top_level`. With `top_level = k` the
+  outermost partition now corresponds exactly to
+  `meta$levels[[k]]$groups`. The recursion is now seeded at a virtual
+  root one level above `top_level`; the synthetic root region is
+  filtered out before rendering and before the public
+  `attr(p, "moneca_regions")` is attached. A regression test asserts
+  the outer-region count equals the segment count at the requested
+  level for every `top_level` in `2:n_levels`.
+
+# moneca 1.5.0
+
+## New Features
+
+* `plot_moneca_hierarchical()` — new top-down recursive renderer for nested
+  MONECA segments. Solves the hull-overlap problem of `plot_moneca_ggraph()`
+  at levels > 1 by partitioning the canvas into non-overlapping circular
+  regions at the chosen anchor level (default: the most aggregated level)
+  and recursively packing sub-segments inside their parent region. Each
+  region carries two labels — the current level (large, bold) and the
+  preceding level (smaller) — making the hierarchy readable at a glance.
+  Supports `circle_pack` (via the optional `packcircles` package),
+  `fr_pack`, and `stress_pack` meta-layouts. Returns a single `ggplot`
+  object. See `?plot_moneca_hierarchical`.
+
 # moneca 1.4.0
 
 ## Bug Fixes
