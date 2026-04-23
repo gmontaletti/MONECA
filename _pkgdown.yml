@@ -20,8 +20,6 @@ reference:
     contents:
       - moneca
       - moneca_fast
-      - moneca_sbm
-      - moneca_sbm_install_graphtool
       - weight.matrix
 
   - title: "Segment Metadata"
@@ -114,10 +112,6 @@ articles:
     contents:
       - loglinear-models
       - loglinear-profession-mobility
-  - title: "Scalable Backends"
-    desc: "Hierarchical DC-SBM alternative for large mobility matrices"
-    contents:
-      - moneca-sbm
   - title: "Density Reduction (Italian)"
     desc: "Guida alla riduzione della densità delle matrici"
     contents:

@@ -37,12 +37,13 @@ moneca (Mobility Network Clustering Analysis) is a comprehensive R package for a
 - **Network-based clustering** of mobility tables using graph theory
 - **Hierarchical segmentation** at multiple analytical levels
 - **Fast implementation** with moneca_fast() for large datasets
-- **Hierarchical DC-SBM backend** (`moneca_sbm`) for matrices beyond classification scale, with automatic level selection via MDL
 - **Auto-tuning** capabilities for automatic parameter optimization
 - **Modern visualization** with ggplot2 and ggraph
 - **Synthetic data generation** for testing and demonstrations
 - **Comprehensive testing suite** and documentation
 - **igraph compatibility layer** supporting versions 1.3.0+
+
+For scalable clustering backends (hierarchical DC-SBM, with bipartite / flow / NMF / DuckDB directions planned), see the sister package [`monecascale`](https://github.com/gmontaletti/monecascale).
 
 ## Installation
 
@@ -90,13 +91,11 @@ print(membership)
 
 ## Core Functions
 
-The moneca API includes 25 exported functions organized into functional groups:
+The moneca API includes 23 exported functions organized into functional groups:
 
 ### Core Analysis Functions
 - **moneca()** - Main clustering algorithm with hierarchical segmentation
 - **moneca_fast()** - Fast implementation for large datasets (identical results)
-- **moneca_sbm()** - Hierarchical DC-SBM backend (greed / graph-tool); scalable alternative to clique enumeration
-- **moneca_sbm_install_graphtool()** - Set up the Python graph-tool backend via conda-forge
 - **weight.matrix()** - Convert mobility tables to relative risk matrices
 
 ### Data Generation
@@ -212,7 +211,7 @@ If you use moneca in your research, please cite:
 ```
 # Current package:
 Montaletti, G. (2026). moneca: Mobility Network Clustering Analysis.
-R package version 1.8.0. https://github.com/gmontaletti/moneca
+R package version 1.7.2. https://github.com/gmontaletti/moneca
 
 # Original algorithm and methodology:
 Touboel, J., & Larsen, A. G. (2017). Mapping the Social Class Structure:

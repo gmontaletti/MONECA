@@ -1,43 +1,25 @@
-# moneca 1.8.0.9000
+# moneca 1.7.2.9000 (development)
 
-## New Features
+## Notes
 
-* `moneca_sbm()`: new clustering entry point that replaces MONECA's
-  clique-enumeration step with hierarchical degree-corrected stochastic
-  block model (DC-SBM) inference. The theoretical bridge (MONECA's
-  `RR = O / E` is the DC-SBM residual under identity block interaction)
-  makes SBM a principled drop-in that scales well beyond classification-
-  level matrices. Two backends are supported:
-    * `"greed"` (default, R-native via `greed::DcSbm`): hierarchical
-      dendrogram, Poisson likelihood, sparse `dgCMatrix` end-to-end,
-      portable parallel via `future`. Scales to ~10^4-10^5 nodes.
-    * `"graphtool"` (opt-in, Python via `reticulate`): Peixoto's
-      `minimize_nested_blockmodel_dl()` for 10^6+ nodes with automatic
-      MDL-based level selection. Requires conda-forge install;
-      `moneca_sbm_install_graphtool()` wraps the setup.
-  The returned object is a standard `"moneca"` S3 object consumed
-  unchanged by the existing `segment.*()` and `plot_moneca_*()` stack,
-  plus an extra `$sbm_diagnostics` slot recording backend, MDL/ICL per
-  level, and K per level.
+* Scalable clustering backends (hierarchical DC-SBM via `moneca_sbm()`,
+  plus future bipartite / flow / NMF / DuckDB directions) now live in
+  the sister package
+  [`monecascale`](https://github.com/gmontaletti/monecascale). The work
+  was briefly developed inside `moneca` on branch `new_directions`
+  (v1.8.0.9000 dev line) before being extracted to keep `moneca`'s
+  `Suggests` surface light and the clique-based core focused. See
+  `reference/moneca/SCALING_ROADMAP.md` for the full roadmap.
 
-* `moneca_sbm_install_graphtool()`: convenience wrapper around
-  `reticulate::conda_install()` for setting up the graph-tool Python
-  environment on first use of the `"graphtool"` backend.
+## Bug Fixes
 
-## Empirical Validation
-
-* On a 20-class synthetic fixture (`generate_mobility_data(n_classes=20,
-  immobility_strength=0.5, class_clustering=0.75, seed=2026)`),
-  best-match agreement between `moneca_sbm(backend="greed")` and
-  `moneca_fast()` reaches **ARI = 0.671, NMI = 0.905** — validating
-  the theoretical RR ≡ DC-SBM residual equivalence as an empirical
-  reality on well-structured mobility data.
-
-## Dependencies
-
-* `greed (>= 0.6.2)` and `reticulate (>= 1.30)` added to `Suggests`.
-  Both are lazy-gated via `requireNamespace`; users who never call
-  `moneca_sbm()` pay no weight. Neither enters `Imports`.
+* `vignettes/moneca-introduction.Rmd`: updated a stale
+  `plot_moneca_dendrogram()` call that used pre-v1.4 parameter names
+  (`color_segments`, `show_labels = TRUE`, `label_size`). The arguments
+  partial-matched on the post-v1.4 signature, breaking the pkgdown CI
+  with "argument 5 matches multiple formal arguments". Now uses
+  `color_by = "top_segment"`, `show_labels = "leaves"`, and
+  `label_size_leaf`.
 
 # moneca 1.7.2
 
