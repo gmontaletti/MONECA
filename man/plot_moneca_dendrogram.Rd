@@ -2,102 +2,171 @@
 % Please edit documentation in R/modern_plotting.R
 \name{plot_moneca_dendrogram}
 \alias{plot_moneca_dendrogram}
-\title{Plot MONECA Results as Dendrogram}
+\title{Plot MONECA Results as a Dendrogram}
 \usage{
 plot_moneca_dendrogram(
   segments,
-  height_method = "uniform",
-  color_segments = TRUE,
-  show_labels = TRUE,
-  label_size = 3,
-  branch_width = 1,
-  title = "MONECA Hierarchical Clustering",
-  subtitle = NULL,
+  top_level = NULL,
+  height_method = c("level", "uniform", "mobility", "segments"),
+  style = c("elbow", "curved"),
+  color_by = c("top_segment", "level", "none"),
+  show_labels = c("leaves", "both", "internal", "none"),
+  highlight = NULL,
+  label_size_leaf = 2.8,
+  label_size_internal = 3,
+  leaf_angle = NULL,
+  leaf_label_position = c("below", "on_axis"),
+  level_guides = TRUE,
+  level_axis_labels = TRUE,
+  branch_width = 0.7,
+  highlight_width = 1.6,
   color_palette = "okabe-ito",
-  theme_style = "minimal",
-  vertical = TRUE
+  theme_style = c("minimal", "void", "classic"),
+  title = NULL,
+  subtitle = NULL,
+  vertical = TRUE,
+  ...
 )
 }
 \arguments{
-\item{segments}{A moneca object returned by \code{\link{moneca}}.}
+\item{segments}{A `moneca` object returned by [moneca()] or [moneca_fast()].}
 
-\item{height_method}{Character string specifying how to calculate dendrogram heights:
-\itemize{
-  \item "uniform" (default): Equal spacing between levels
-  \item "mobility": Height based on mobility reduction between levels
-  \item "segments": Height based on number of segments at each level
+\item{top_level}{Integer. The highest segmentation level to include. Defaults
+to `meta$n_levels`. Must be `>= 2`.}
+
+\item{height_method}{Character. How to assign y-axis positions to levels.
+One of:
+\describe{
+  \item{`"level"`}{Default. Integer level number (1, 2, ...). Makes "at
+    level k" directly readable on the axis.}
+  \item{`"uniform"`}{Equally spaced positions in [0, 1].}
+  \item{`"mobility"`}{Heights derived from mobility-reduction rates.}
+  \item{`"segments"`}{Heights derived from the log count of segments.}
 }}
 
-\item{color_segments}{Logical indicating whether to color branches by final
-segment membership. Default is TRUE.}
+\item{style}{Character. Branch style. One of `"elbow"` (default,
+L-shaped branches) or `"curved"` (deprecated legacy curves).}
 
-\item{show_labels}{Logical indicating whether to show category labels at the
-bottom. Default is TRUE.}
+\item{color_by}{Character. How to colour branches. One of:
+\describe{
+  \item{`"top_segment"`}{Default. Every branch inherits the colour of its
+    top-level ancestor cluster.}
+  \item{`"level"`}{Each segmentation level gets a distinct colour.}
+  \item{`"none"`}{All branches in neutral grey.}
+}}
 
-\item{label_size}{Numeric size for labels. Default is 3.}
+\item{show_labels}{Character. Which text labels to render. One of:
+\describe{
+  \item{`"leaves"`}{Default. Labels for base nodes only.}
+  \item{`"both"`}{Labels for both leaves and internal join points.}
+  \item{`"internal"`}{Labels for internal join points only.}
+  \item{`"none"`}{No labels.}
+}}
 
-\item{branch_width}{Numeric width for dendrogram branches. Default is 1.}
+\item{highlight}{Character or integer. Name or 1-based index of a leaf whose
+path to the root should be highlighted in a thicker, dark stroke. `NULL`
+(default) disables highlighting.}
 
-\item{title}{Character string for plot title. Default is "MONECA Hierarchical Clustering".}
+\item{label_size_leaf}{Numeric. Font size for leaf labels. Default `2.8`.}
 
-\item{subtitle}{Character string for plot subtitle. Default is NULL.}
+\item{label_size_internal}{Numeric. Font size for internal-node labels.
+Default `3`.}
 
-\item{color_palette}{Character string specifying the color palette for segment
-colors. Default is \code{"okabe-ito"} (CVD-safe). Also accepts RColorBrewer
-palette names (e.g., \code{"Set3"}) or viridis options.}
+\item{leaf_angle}{Numeric or `NULL`. Rotation angle for leaf labels in
+degrees. When `NULL` (default), automatically set to 90 if `n > 20`,
+45 if `n > 10`, else 0.}
 
-\item{theme_style}{Character string specifying the plot theme. Options are
-"minimal" (default), "classic", or "void".}
+\item{leaf_label_position}{Character. One of `"below"` (default, `geom_text`
+below the leaf row) or `"on_axis"` (axis tick labels instead of
+`geom_text`).}
 
-\item{vertical}{Logical indicating whether to plot vertically (TRUE, default)
-or horizontally (FALSE).}
+\item{level_guides}{Logical. Whether to draw dashed horizontal guide lines
+at each level height. Default `TRUE`.}
+
+\item{level_axis_labels}{Logical. Whether to replace numeric axis ticks with
+level labels (`L1`, `L2`, ...) on both sides of the y-axis. Default `TRUE`.}
+
+\item{branch_width}{Numeric. `linewidth` for normal branches. Default `0.7`.}
+
+\item{highlight_width}{Numeric. `linewidth` for the highlighted path.
+Default `1.6`.}
+
+\item{color_palette}{Character. CVD-safe palette name. Default
+`"okabe-ito"`. Also accepts RColorBrewer names or viridis options.}
+
+\item{theme_style}{Character. ggplot2 base theme. One of `"minimal"`
+(default), `"void"`, or `"classic"`.}
+
+\item{title}{Character. Plot title. Default `NULL`.}
+
+\item{subtitle}{Character. Plot subtitle. Default `NULL`.}
+
+\item{vertical}{Logical. When `TRUE` (default), leaves are on the x-axis and
+levels grow upward. When `FALSE`, `coord_flip()` is applied.}
+
+\item{...}{Reserved for future use.}
 }
 \value{
-A ggplot2 object representing the dendrogram.
+A `ggplot` object.
 }
 \description{
-Creates a dendrogram-like visualization of the hierarchical clustering results
-from moneca analysis. This function shows how categories are progressively
-aggregated across segmentation levels, making the hierarchical structure clear.
+Creates a dendrogram visualization of the hierarchical clustering produced by
+[moneca()] or [moneca_fast()]. The default `style = "elbow"` renders classic
+L-shaped branches, making it straightforward to read: (a) each leaf's
+horizontal position, (b) the exact level at which two nodes merge, and (c)
+the path from any leaf up to its top-level cluster.
+
+The legacy curved-branch look is still reachable via `style = "curved"`, but
+that style is deprecated and will emit a warning.
 }
 \details{
-This function creates a dendrogram visualization that clearly shows:
-\itemize{
-  \item How individual categories (leaves) are grouped at each level
-  \item The hierarchical relationships between segments
-  \item The progressive aggregation from individual categories to larger segments
-}
+## Elbow algorithm
+For each parent–child pair the function emits two line segments: a vertical
+leg from the child's x-position up to the parent's y-height, and one
+horizontal bar at the parent's y-height spanning the full x-range of its
+children. Every edge satisfies `x == xend OR y == yend`; no diagonal lines
+are produced.
 
-The dendrogram branches show merging points where categories or segments are
-combined based on the MONECA algorithm's clique detection. Unlike traditional
-hierarchical clustering, MONECA can create non-binary trees where multiple
-categories merge simultaneously.
+## Leaf ordering
+A DFS from the top level assigns x-positions so that every top-level
+cluster's leaves occupy a contiguous, crossing-free x-range.
 
-\strong{Visual Features:}
-\itemize{
-  \item \strong{Curved branches}: Uses smooth curves instead of angular segments for better aesthetics
-  \item \strong{Horizontal layout}: Levels progress horizontally (left to right) with categories arranged vertically
-  \item \strong{No-Crossing Layout}: Categories are automatically ordered using a hierarchical algorithm that completely eliminates line crossings between all levels
-}
+## Colour continuity
+When `color_by = "top_segment"`, every branch on the path from a leaf to
+its top ancestor is painted with the ancestor's colour, giving full visual
+continuity from root to leaf.
 
-The algorithm processes segments from the most aggregated level down,
-ensuring that at each level, categories are grouped optimally to prevent any
-crossing lines. This creates the clearest possible visualization of the
-hierarchical structure.
+## Large hierarchies
+For `n > 40` nodes consider setting `leaf_angle = 90` and
+`leaf_label_position = "on_axis"`. Beyond ~60 nodes the layout may become
+crowded; [plot_moneca_hierarchical()] offers a circle-packing alternative.
 }
 \examples{
 \dontrun{
-# Generate synthetic data and run MONECA
-mobility_data <- generate_mobility_data(n_classes = 8, seed = 123)
-seg <- moneca(mobility_data, segment.levels = 3)
+library(moneca)
+mob <- generate_mobility_data(n_classes = 10, seed = 42)
+seg <- moneca(mob, segment.levels = 3)
 
-# Basic dendrogram
+# Default elbow dendrogram
 plot_moneca_dendrogram(seg)
+
+# Level-number y-axis, both labels, highlight one leaf
+plot_moneca_dendrogram(
+  seg,
+  height_method = "level",
+  show_labels = "both",
+  highlight = "Class_3"
+)
+
+# Horizontal orientation, coloured by level
+plot_moneca_dendrogram(seg, vertical = FALSE, color_by = "level")
+
+# Legacy curved style (deprecated)
+plot_moneca_dendrogram(seg, style = "curved")
 }
 
 }
 \seealso{
-\code{\link{moneca}} for the main analysis function,
-\code{\link{plot_moneca_ggraph}} for network visualization,
-\code{\link{plot_stair_ggraph}} for multi-level visualization
+[moneca()], [moneca_fast()], [plot_moneca_ggraph()],
+[plot_stair_ggraph()], [plot_moneca_hierarchical()]
 }

@@ -1,3 +1,161 @@
+# moneca 1.7.2
+
+## Bug Fixes
+
+* `plot_moneca_dendrogram()`: v1.7.1's label-space fix over-corrected,
+  expanding the data y-scale so far downward that the tree
+  collapsed into a thin band at the top with vast empty space below
+  the labels. The scale is no longer expanded; space is reserved via
+  `plot.margin` (sized in millimetres from the longest label and
+  `sin(leaf_angle)`) together with `coord_cartesian(clip = "off")`,
+  which lets `geom_text` render outside the panel into that margin.
+  The tree now occupies the full panel and labels sit in the
+  reserved margin below.
+
+# moneca 1.7.1
+
+## Bug Fixes
+
+* `plot_moneca_dendrogram()`: leaf labels placed below the leaf row
+  could clip at the panel boundary, especially at `leaf_angle = 90`
+  and for long node names. The y-scale now expands downward by an
+  amount proportional to `max(nchar(leaf_names)) * label_size_leaf *
+  abs(sin(leaf_angle))`, and `coord_cartesian(clip = "off")` is
+  applied with a matching `plot.margin` so labels render fully into
+  the expanded margin. Affects both `vertical = TRUE` (bottom margin)
+  and `vertical = FALSE` (right margin under `coord_flip`).
+
+# moneca 1.7.0
+
+## Breaking Changes (opt-out available)
+
+* `plot_moneca_dendrogram()` has been redesigned for readability. The
+  default rendering now uses classic L-shaped dendrogram elbows (no more
+  smooth curves) so that the level at which two nodes merge is visible
+  as an explicit horizontal bar. The new default `height_method =
+  "level"` puts y on an integer "Level k" scale so you can read joins
+  directly from the axis. Segment colours now propagate down each
+  subtree from its top-level ancestor (previously intermediate edges
+  were all black). Internal-node segment labels, computed from
+  `meta$levels[[k]]$map$label`, are now actually rendered when
+  `show_labels = "both"` or `"internal"`.
+* The previous curved renderer is still reachable via `style = "curved"`
+  and emits a `.Deprecated()` message. Plan to remove it in v2.0.0.
+
+## New Features
+
+* `plot_moneca_dendrogram()` gains: `top_level` (highest level to
+  render), `style` (`"elbow"`/`"curved"`), `color_by`
+  (`"top_segment"`/`"level"`/`"none"`), `show_labels`
+  (`"leaves"`/`"both"`/`"internal"`/`"none"`), `highlight` (leaf name
+  or index to draw a bold path to the root), `level_guides`,
+  `level_axis_labels`, `leaf_angle`, `leaf_label_position`
+  (`"below"`/`"on_axis"`), `label_size_leaf`, `label_size_internal`,
+  `highlight_width`. Leaf angle auto-rotates for wide hierarchies
+  (90° when n > 20, 45° when n > 10).
+
+# moneca 1.6.0
+
+## New Features
+
+* `plot_moneca_hierarchical()` gains a `label_levels` parameter for
+  fine-grained control over which segment-hierarchy levels receive
+  labels. `NULL` (default) preserves the prior behaviour (top tier +
+  sub tier, plus leaf when `show_node_labels = TRUE`). `"all"` labels
+  every level from 1 to `top_level`; `"none"` suppresses every label.
+  An explicit integer vector like `c(top_level, top_level - 2L)` lets
+  you label intermediate tiers and skip others. Sizes for
+  intermediate levels interpolate linearly between `label_size_sub`
+  and `label_size_leaf`.
+
+# moneca 1.5.1
+
+## Bug Fixes
+
+* `plot_moneca_hierarchical()`: fixed an off-by-one in the recursion that
+  caused the outermost regions to be drawn at level `top_level - 1`
+  instead of the requested `top_level`. With `top_level = k` the
+  outermost partition now corresponds exactly to
+  `meta$levels[[k]]$groups`. The recursion is now seeded at a virtual
+  root one level above `top_level`; the synthetic root region is
+  filtered out before rendering and before the public
+  `attr(p, "moneca_regions")` is attached. A regression test asserts
+  the outer-region count equals the segment count at the requested
+  level for every `top_level` in `2:n_levels`.
+
+# moneca 1.5.0
+
+## New Features
+
+* `plot_moneca_hierarchical()` — new top-down recursive renderer for nested
+  MONECA segments. Solves the hull-overlap problem of `plot_moneca_ggraph()`
+  at levels > 1 by partitioning the canvas into non-overlapping circular
+  regions at the chosen anchor level (default: the most aggregated level)
+  and recursively packing sub-segments inside their parent region. Each
+  region carries two labels — the current level (large, bold) and the
+  preceding level (smaller) — making the hierarchy readable at a glance.
+  Supports `circle_pack` (via the optional `packcircles` package),
+  `fr_pack`, and `stress_pack` meta-layouts. Returns a single `ggplot`
+  object. See `?plot_moneca_hierarchical`.
+
+# moneca 1.4.0
+
+## Bug Fixes
+
+* Fixed memory blow-up in `moneca_fast(use.sparse = TRUE)`: the sparse path now
+  preserves `dgCMatrix` sparsity end-to-end via new internal helpers (weight
+  matrix, segment aggregation, edge extraction, and `pmin` symmetrization).
+  Memory now scales with the number of non-zero mobility cells rather than
+  `n^2`.
+* Fixed sparse-vs-dense parity regression in `moneca_fast()` at segmentation
+  level 2+ on inputs with `n >= 300`. The dense path produces `NaN` at
+  positions where core = 0 and expected count = 0 (0/0), which propagates
+  through `rr + t(rr)` and drops the edge; the sparse path previously treated
+  the missing reciprocal as a silent zero and kept those edges, diverging from
+  `moneca()`. `weight_matrix_sparse()` now detects reciprocal-NaN positions
+  and drops them to match the dense contract. Inf values (x/0 with x > 0,
+  arising from inconsistent margins) are now preserved on the sparse path
+  instead of being dropped, again matching the dense path.
+
+## New Features
+
+* Sparse mobility matrices (`dgCMatrix`) are now auto-detected and routed
+  through the sparse path without setting `use.sparse = TRUE`.
+* `moneca_fast()` `use_maximal_cliques` argument accepts `"auto"`: uses
+  `igraph::edge_density` of the post-cut-off weight graph to choose between
+  all-cliques and maximal-cliques per level. On the 127x127 Lombardy real
+  fixture (density > 0.12), auto routes to maximal and produces a ~12x
+  wall-time speedup; on sparse synthetic fixtures it stays on the
+  all-cliques path and preserves bit-exact parity with `moneca()`. Default
+  remains `FALSE`.
+* `moneca_fast(use.sparse = TRUE)` on a dense base matrix with > 50% non-zero
+  density now emits an informational message and falls back to the dense
+  path (no wall-time benefit from sparse storage on dense data, ~20% memory
+  overhead). Passing an explicit `sparseMatrix` still forces the sparse path.
+* `segment.membership.dataframe()` gains a `label_strategy` parameter
+  (`"strength"` default, preserving backward compatibility; `"mass"` new).
+  Mass-based labels pick the segment member with the largest mobility volume
+  (row + column margins of `mat.list[[1]]`) and are independent of `cut.off`
+  and `small.cell.reduction`.
+
+## Performance
+
+* Vectorised the node-to-clique precomputation in `find.segments.fast()`.
+  Replaces a nested R-level scatter-write loop (≈35% of non-GC self-time on
+  the real 127x127 fixture per profiling sec. 10.3) with an
+  `unlist`/`rep.int`/`split` idiom. No change to output. Measured ~23%
+  wall-time reduction on `symmetric_method = "min"` and ~36% on
+  `use_maximal_cliques = TRUE`.
+
+## Internal
+
+* Removed unused internal `weight_matrix_optimized()` helper.
+* `segment.membership.dataframe()` now precomputes the representative-score
+  vector once per call instead of recomputing `weight.matrix()` for every
+  multi-member entity. This also removes a latent bug where an error inside
+  the former `tryCatch` fallback silently left the representative index
+  undefined or stale.
+
 # moneca 1.3.0
 
 ## New Features

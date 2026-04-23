@@ -1,0 +1,224 @@
+- The project is out-of-sync -- use `renv::status()` for details.
+moneca source: 1.3.0
+Fixtures:
+  scale       dim core_nnz core_density
+  small   61 x 61      990        0.275
+ medium 121 x 121     1407        0.098
+  large 301 x 301     2187        0.024
+
+--- profvis runs ---
+  profvis small_baseline ... 0.47s
+  profvis small_sparse ... 0.37s
+  profvis small_maximal ... 0.45s
+  profvis small_min_sym ... 0.45s
+  profvis small_density_off ... 0.46s
+  profvis small_deep ... 0.54s
+  profvis medium_baseline ... 0.49s
+  profvis medium_sparse ... 0.26s
+  profvis medium_maximal ... 0.49s
+  profvis medium_min_sym ... 0.46s
+  profvis medium_density_off ... 0.48s
+  profvis medium_deep ... 0.65s
+  profvis large_baseline ... 0.59s
+  profvis large_sparse ... 0.36s
+  profvis large_maximal ... 0.60s
+  profvis large_min_sym ... 0.52s
+  profvis large_density_off ... 0.63s
+  profvis large_deep ... 0.75s
+
+--- bench::mark grid ---
+  small    baseline      median= 0.302s  mem=   1.7MB
+  small    sparse        median= 0.087s  mem=   1.4MB
+  small    maximal       median= 0.311s  mem=   1.6MB
+  small    min_sym       median= 0.297s  mem=   1.7MB
+  small    density_off   median= 0.298s  mem=   1.6MB
+  small    deep          median= 0.374s  mem=   1.7MB
+  medium   baseline      median= 0.333s  mem=   7.8MB
+  medium   sparse        median= 0.125s  mem=   5.5MB
+  medium   maximal       median= 0.335s  mem=   7.7MB
+  medium   min_sym       median= 0.312s  mem=   6.3MB
+  medium   density_off   median= 0.337s  mem=   7.6MB
+  medium   deep          median= 0.483s  mem=   8.0MB
+  large    baseline      median= 0.433s  mem=  43.2MB
+  large    sparse        median= 0.220s  mem=  24.8MB
+  large    maximal       median= 0.442s  mem=  43.0MB
+  large    min_sym       median= 0.363s  mem=  39.1MB
+  large    density_off   median= 0.434s  mem=  42.1MB
+  large    deep          median= 0.607s  mem=  43.8MB
+
+--- Correctness guard: sparse vs dense parity ---
+  small: sparse == dense -> TRUE
+  medium: sparse == dense -> TRUE
+  large: sparse == dense -> FALSE
+
+--- Top self-time frames (per profvis run) ---
+
+[large_baseline]  41 samples
+   70.7%  <GC>
+    4.9%  as.character
+    2.4%  $<-.data.frame
+    2.4%  all
+    2.4%  any
+    2.4%  array
+    2.4%  as.list
+    2.4%  edge_idx <- which(!is.na(mat) & mat > cut.off, arr.ind = TRUE)
+
+[large_deep]  56 samples
+   78.6%  <GC>
+    3.6%  order
+    3.6%  vapply
+    1.8%  all
+    1.8%  as.character
+    1.8%  eval
+    1.8%  logical
+    1.8%  paste0
+
+[large_density_off]  44 samples
+   68.2%  <GC>
+    4.5%  order
+    4.5%  table
+    2.3%  $<-.data.frame
+    2.3%  edge_idx <- which(!is.na(mat) & mat > cut.off, arr.ind = TRUE)
+    2.3%  eval
+    2.3%  list
+    2.3%  list.names
+
+[large_maximal]  41 samples
+   65.9%  <GC>
+    7.3%  table
+    4.9%  vapply
+    2.4%  group.assigned <- as.numeric(names(group.size))[which.max(group.size)[
+    2.4%  lapply
+    2.4%  Ops.factor
+    2.4%  paste
+    2.4%  structure
+
+[large_min_sym]  34 samples
+   82.4%  <GC>
+    5.9%  to_merge <- which(vapply(
+    2.9%  .doSortWrap
+    2.9%  FUN
+    2.9%  is_igraph
+    2.9%  vapply
+
+[large_sparse]  20 samples
+   40.0%  <GC>
+   10.0%  as.character
+    5.0%  %in%
+    5.0%  colSums
+    5.0%  group.members <- which(group %in% group.candidates)
+    5.0%  igraph.match.arg
+    5.0%  is
+    5.0%  match.arg
+
+[large]  10 samples
+   80.0%  <GC>
+   20.0%  apply
+
+[medium_baseline]  32 samples
+   87.5%  <GC>
+    3.1%  %in%
+    3.1%  match.arg
+    3.1%  names
+    3.1%  vapply
+
+[medium_deep]  46 samples
+   87.0%  <GC>
+    2.2%  ensure_igraph
+    2.2%  gc
+    2.2%  group.size <- table(group[group.members])
+    2.2%  is.list
+    2.2%  map_df$segment[i] <- i
+    2.2%  unique.default
+
+[medium_density_off]  31 samples
+   90.3%  <GC>
+    3.2%  %in%
+    3.2%  names
+    3.2%  warn_version
+
+[medium_maximal]  32 samples
+   90.6%  <GC>
+    3.1%  eval
+    3.1%  factor
+    3.1%  warn_version
+
+[medium_min_sym]  29 samples
+   86.2%  <GC>
+    6.9%  gc
+    3.4%  as.character
+    3.4%  to_merge <- which(vapply(
+
+[medium_sparse]  11 samples
+   63.6%  <GC>
+    9.1%  eval
+    9.1%  group.assigned <- as.numeric(names(group.size))[which.max(group.size)[
+    9.1%  group.candidates <- group[max.ind]
+    9.1%  tryCatchOne
+
+[medium]  8 samples
+   87.5%  <GC>
+   12.5%  FUN
+
+[small_baseline]  29 samples
+   82.8%  <GC>
+    3.4%  $
+    3.4%  as.list
+    3.4%  findLocals1
+    3.4%  nsName
+    3.4%  putconst
+
+[small_deep]  36 samples
+   97.2%  <GC>
+    2.8%  order
+
+[small_density_off]  29 samples
+   93.1%  <GC>
+    3.4%  is_igraph
+    3.4%  vapply
+
+[small_maximal]  28 samples
+  100.0%  <GC>
+
+[small_min_sym]  29 samples
+   93.1%  <GC>
+    3.4%  unique
+    3.4%  unlist
+
+[small_sparse]  20 samples
+   35.0%  <GC>
+   10.0%  cb$putcode
+   10.0%  findCenvVar
+   10.0%  putconst
+    5.0%  .doSortWrap
+    5.0%  cmp
+    5.0%  constantFoldCall
+    5.0%  constantFoldSym
+
+[small]  8 samples
+  100.0%  <GC>
+
+--- Summary: median time per (scale, scenario) ---
+  scale    scenario median_s mem_alloc_mb
+  large      sparse   0.2198        24.76
+  large     min_sym   0.3629        39.12
+  large    baseline   0.4334        43.16
+  large density_off   0.4344        42.13
+  large     maximal   0.4424        43.03
+  large        deep   0.6072        43.79
+ medium      sparse   0.1254         5.52
+ medium     min_sym   0.3124         6.33
+ medium    baseline   0.3329         7.77
+ medium     maximal   0.3353         7.69
+ medium density_off   0.3373         7.61
+ medium        deep   0.4831         7.99
+  small      sparse   0.0869         1.36
+  small     min_sym   0.2972         1.69
+  small density_off   0.2982         1.62
+  small    baseline   0.3023         1.66
+  small     maximal   0.3109         1.62
+  small        deep   0.3740         1.70
+
+Done. Artifacts:
+  tests/profiling/results/
+  reference/moneca/ (profvis_moneca_fast_*.html)

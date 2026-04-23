@@ -32,7 +32,9 @@ create_union_find <- function(n) {
     px <- env$find(x)
     py <- env$find(y)
 
-    if (px == py) return(FALSE)
+    if (px == py) {
+      return(FALSE)
+    }
 
     if (env$rank[px] < env$rank[py]) {
       env$parent[px] <- py
@@ -75,8 +77,12 @@ create_union_find <- function(n) {
 #' @param progress Show progress bar
 #' @return List with membership and cliques
 #' @keywords internal
-find_segments_optimized <- function(mat, cliques, cut.off = 1, progress = FALSE) {
-
+find_segments_optimized <- function(
+  mat,
+  cliques,
+  cut.off = 1,
+  progress = FALSE
+) {
   n <- nrow(mat)
 
   # Handle trivial cases
@@ -111,7 +117,9 @@ find_segments_optimized <- function(mat, cliques, cut.off = 1, progress = FALSE)
 
   # Create fast lookup: for each node, which cliques contain it
   node_to_cliques <- vector("list", n)
-  for (i in seq_len(n)) node_to_cliques[[i]] <- integer(0)
+  for (i in seq_len(n)) {
+    node_to_cliques[[i]] <- integer(0)
+  }
 
   for (ci in seq_along(clique_nodes)) {
     for (node in clique_nodes[[ci]]) {
@@ -122,15 +130,22 @@ find_segments_optimized <- function(mat, cliques, cut.off = 1, progress = FALSE)
   # 3. Fast clique membership test function
   # Tests if a set of nodes forms a subset of any clique
   is_in_clique <- function(nodes) {
-    if (length(nodes) < 2) return(TRUE)
+    if (length(nodes) < 2) {
+      return(TRUE)
+    }
 
     # Find cliques that contain ALL nodes
     # Start with cliques containing first node, then intersect
     candidate_cliques <- node_to_cliques[[nodes[1]]]
-    if (length(candidate_cliques) == 0) return(FALSE)
+    if (length(candidate_cliques) == 0) {
+      return(FALSE)
+    }
 
     for (i in 2:length(nodes)) {
-      candidate_cliques <- intersect(candidate_cliques, node_to_cliques[[nodes[i]]])
+      candidate_cliques <- intersect(
+        candidate_cliques,
+        node_to_cliques[[nodes[i]]]
+      )
       if (length(candidate_cliques) == 0) return(FALSE)
     }
 
@@ -146,7 +161,9 @@ find_segments_optimized <- function(mat, cliques, cut.off = 1, progress = FALSE)
   }
 
   for (i in seq_len(nrow(edges))) {
-    if (progress && i %% 100 == 0) setTxtProgressBar(pb, i)
+    if (progress && i %% 100 == 0) {
+      setTxtProgressBar(pb, i)
+    }
 
     node_a <- edges[i, 1]
     node_b <- edges[i, 2]
@@ -155,7 +172,9 @@ find_segments_optimized <- function(mat, cliques, cut.off = 1, progress = FALSE)
     root_b <- uf$find(node_b)
 
     # Skip if already in same group
-    if (root_a == root_b) next
+    if (root_a == root_b) {
+      next
+    }
 
     # Get all nodes in both groups
     group_a <- uf$get_group(node_a)
@@ -189,64 +208,6 @@ find_segments_optimized <- function(mat, cliques, cut.off = 1, progress = FALSE)
   )
 }
 
-#' Optimized Weight Matrix Calculation
-#'
-#' Vectorized computation of relative risk weight matrix with optional
-#' data.table acceleration for very large matrices.
-#'
-#' @param mx Mobility matrix with totals
-#' @param cut.off Minimum relative risk threshold
-#' @param small.cell.reduction Minimum cell count
-#' @param symmetric Whether to symmetrize the matrix
-#' @return Weight matrix with NA for values below cutoff
-#' @keywords internal
-weight_matrix_optimized <- function(mx, cut.off = 1, small.cell.reduction = 0,
-                                   symmetric = TRUE) {
-
-  l <- nrow(mx)
-  if (l < 2) stop("Matrix must have at least 2 rows")
-
-  # Extract totals
-  row_totals <- mx[-l, l]
-  col_totals <- mx[l, -l]
-  grand_total <- mx[l, l]
-
-  # Calculate shares (vectorized)
-  row_share <- row_totals / grand_total
-  col_share <- col_totals / grand_total
-
-  # Core matrix without totals
-  core <- mx[-l, -l]
-
-  # Expected values (outer product)
-  total_mobility <- sum(core)
-  expected <- outer(row_share, col_share) * total_mobility
-
-  # Apply small cell reduction
-  if (small.cell.reduction > 0) {
-    core[core < small.cell.reduction] <- 0
-    expected[expected < small.cell.reduction] <- small.cell.reduction
-  }
-
-  # Relative risk (vectorized division)
-  rr <- core / expected
-
-  # Symmetrize if requested
-  if (symmetric) {
-    rr <- rr + t(rr)
-  }
-
-  # Apply cutoff
-  rr[rr < cut.off] <- NA
-  diag(rr) <- NA
-
-  # Preserve row/column names
-  rownames(rr) <- rownames(mx)[-l]
-  colnames(rr) <- colnames(mx)[-l]
-
-  rr
-}
-
 #' Fast Segment Matrix Aggregation
 #'
 #' Aggregates mobility matrix by segment membership using optimized
@@ -257,7 +218,6 @@ weight_matrix_optimized <- function(mx, cut.off = 1, small.cell.reduction = 0,
 #' @return Aggregated matrix by segments
 #' @keywords internal
 segment_matrix_optimized <- function(mx, membership) {
-
   # Add total row/column membership
   groups <- c(as.integer(membership), max(as.integer(membership)) + 1L)
 
@@ -280,7 +240,6 @@ segment_matrix_optimized <- function(mx, membership) {
 #' @return Data frame with timing results
 #' @keywords internal
 benchmark_implementations <- function(mx, n_runs = 3, segment.levels = 3) {
-
   results <- data.frame(
     implementation = character(),
     run = integer(),
@@ -298,24 +257,34 @@ benchmark_implementations <- function(mx, n_runs = 3, segment.levels = 3) {
     t1 <- Sys.time()
     seg_orig <- moneca(mx, segment.levels = segment.levels)
     t2 <- Sys.time()
-    results <- rbind(results, data.frame(
-      implementation = "moneca",
-      run = i,
-      time_seconds = as.numeric(difftime(t2, t1, units = "secs"))
-    ))
+    results <- rbind(
+      results,
+      data.frame(
+        implementation = "moneca",
+        run = i,
+        time_seconds = as.numeric(difftime(t2, t1, units = "secs"))
+      )
+    )
   }
 
   # Benchmark moneca_fast
   cat("Testing moneca_fast()...\n")
   for (i in seq_len(n_runs)) {
     t1 <- Sys.time()
-    seg_fast <- moneca_fast(mx, segment.levels = segment.levels, progress = FALSE)
+    seg_fast <- moneca_fast(
+      mx,
+      segment.levels = segment.levels,
+      progress = FALSE
+    )
     t2 <- Sys.time()
-    results <- rbind(results, data.frame(
-      implementation = "moneca_fast",
-      run = i,
-      time_seconds = as.numeric(difftime(t2, t1, units = "secs"))
-    ))
+    results <- rbind(
+      results,
+      data.frame(
+        implementation = "moneca_fast",
+        run = i,
+        time_seconds = as.numeric(difftime(t2, t1, units = "secs"))
+      )
+    )
   }
 
   # Verify results match
@@ -336,13 +305,14 @@ benchmark_implementations <- function(mx, n_runs = 3, segment.levels = 3) {
   cat("\n--- Summary ---\n")
   for (impl in unique(results$implementation)) {
     times <- results$time_seconds[results$implementation == impl]
-    cat(sprintf("%s: mean=%.3fs, sd=%.3fs\n",
-                impl, mean(times), sd(times)))
+    cat(sprintf("%s: mean=%.3fs, sd=%.3fs\n", impl, mean(times), sd(times)))
   }
 
   # Speedup calculation
   mean_orig <- mean(results$time_seconds[results$implementation == "moneca"])
-  mean_fast <- mean(results$time_seconds[results$implementation == "moneca_fast"])
+  mean_fast <- mean(results$time_seconds[
+    results$implementation == "moneca_fast"
+  ])
   cat(sprintf("\nSpeedup: %.1fx\n", mean_orig / mean_fast))
 
   invisible(results)

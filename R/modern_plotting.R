@@ -41,7 +41,15 @@ if (getRversion() >= "2.15.1") {
     "y2",
     "node_id",
     "label",
-    "segment_label"
+    "segment_label",
+    "xend",
+    "yend",
+    "edge_color",
+    "level_child",
+    "orientation",
+    "label_y",
+    "pt_y",
+    "seg_label"
   ))
 }
 
@@ -1541,109 +1549,297 @@ plot_stair_ggraph <- function(
   return(plots)
 }
 
-#' Plot MONECA Results as Dendrogram
-#'
-#' Creates a dendrogram-like visualization of the hierarchical clustering results
-#' from moneca analysis. This function shows how categories are progressively
-#' aggregated across segmentation levels, making the hierarchical structure clear.
-#'
-#' @param segments A moneca object returned by \code{\link{moneca}}.
-#' @param height_method Character string specifying how to calculate dendrogram heights:
-#'   \itemize{
-#'     \item "uniform" (default): Equal spacing between levels
-#'     \item "mobility": Height based on mobility reduction between levels
-#'     \item "segments": Height based on number of segments at each level
-#'   }
-#' @param color_segments Logical indicating whether to color branches by final
-#'   segment membership. Default is TRUE.
-#' @param show_labels Logical indicating whether to show category labels at the
-#'   bottom. Default is TRUE.
-#' @param label_size Numeric size for labels. Default is 3.
-#' @param branch_width Numeric width for dendrogram branches. Default is 1.
-#' @param title Character string for plot title. Default is "MONECA Hierarchical Clustering".
-#' @param subtitle Character string for plot subtitle. Default is NULL.
-#' @param color_palette Character string specifying the color palette for segment
-#'   colors. Default is \code{"okabe-ito"} (CVD-safe). Also accepts RColorBrewer
-#'   palette names (e.g., \code{"Set3"}) or viridis options.
-#' @param theme_style Character string specifying the plot theme. Options are
-#'   "minimal" (default), "classic", or "void".
-#' @param vertical Logical indicating whether to plot vertically (TRUE, default)
-#'   or horizontally (FALSE).
-#'
-#' @return A ggplot2 object representing the dendrogram.
-#'
-#' @details
-#' This function creates a dendrogram visualization that clearly shows:
-#' \itemize{
-#'   \item How individual categories (leaves) are grouped at each level
-#'   \item The hierarchical relationships between segments
-#'   \item The progressive aggregation from individual categories to larger segments
-#' }
-#'
-#' The dendrogram branches show merging points where categories or segments are
-#' combined based on the MONECA algorithm's clique detection. Unlike traditional
-#' hierarchical clustering, MONECA can create non-binary trees where multiple
-#' categories merge simultaneously.
-#'
-#' \strong{Visual Features:}
-#' \itemize{
-#'   \item \strong{Curved branches}: Uses smooth curves instead of angular segments for better aesthetics
-#'   \item \strong{Horizontal layout}: Levels progress horizontally (left to right) with categories arranged vertically
-#'   \item \strong{No-Crossing Layout}: Categories are automatically ordered using a hierarchical algorithm that completely eliminates line crossings between all levels
-#' }
-#'
-#' The algorithm processes segments from the most aggregated level down,
-#' ensuring that at each level, categories are grouped optimally to prevent any
-#' crossing lines. This creates the clearest possible visualization of the
-#' hierarchical structure.
-#'
-#' @examples
-#' \dontrun{
-#' # Generate synthetic data and run MONECA
-#' mobility_data <- generate_mobility_data(n_classes = 8, seed = 123)
-#' seg <- moneca(mobility_data, segment.levels = 3)
-#'
-#' # Basic dendrogram
-#' plot_moneca_dendrogram(seg)
-#' }
-#'
-#' @seealso
-#' \code{\link{moneca}} for the main analysis function,
-#' \code{\link{plot_moneca_ggraph}} for network visualization,
-#' \code{\link{plot_stair_ggraph}} for multi-level visualization
-#'
-#' @export
-plot_moneca_dendrogram <- function(
-  segments,
-  height_method = "uniform",
-  color_segments = TRUE,
-  show_labels = TRUE,
-  label_size = 3,
-  branch_width = 1,
-  title = "MONECA Hierarchical Clustering",
-  subtitle = NULL,
-  color_palette = "okabe-ito",
-  theme_style = "minimal",
-  vertical = TRUE
-) {
-  # Input validation
-  if (!inherits(segments, "moneca")) {
-    stop("segments must be a moneca object created by the moneca() function")
+# ==============================================================================
+# Private helpers for plot_moneca_dendrogram (elbow style)
+# ==============================================================================
+
+# .dend_parent_map -----
+# Returns a list `parent_of` of length top_level - 1.
+# parent_of[[k]] is an integer vector of length
+# length(meta$levels[[k]]$groups) where element j is the segment_id at level
+# k+1 that contains group j, or NA if the group has no parent in [1, top_level].
+.dend_parent_map <- function(meta, top_level) {
+  parent_of <- vector("list", top_level - 1L)
+  for (k in seq_len(top_level - 1L)) {
+    child_groups <- meta$levels[[k]]$groups
+    parent_groups <- meta$levels[[k + 1L]]$groups
+    parent_of[[k]] <- vapply(
+      child_groups,
+      function(g) {
+        idx <- which(vapply(
+          parent_groups,
+          function(parent) length(g) > 0L && all(g %in% parent),
+          logical(1L)
+        ))
+        if (length(idx) == 0L) NA_integer_ else idx[[1L]]
+      },
+      integer(1L)
+    )
+  }
+  parent_of
+}
+
+# .dend_leaf_order -----
+# Recursive DFS from top_level down to level 1. Returns an integer vector of
+# base-node (level-1) indices in their left-to-right display order.
+.dend_leaf_order <- function(meta, top_level, parent_of) {
+  .recurse <- function(k, seg_id) {
+    if (k == 1L) {
+      # Base case: the group members are the leaf indices
+      return(meta$levels[[1L]]$groups[[seg_id]])
+    }
+    children <- which(parent_of[[k - 1L]] == seg_id)
+    if (length(children) == 0L) {
+      # No children recorded; fall back to raw members
+      return(meta$levels[[k]]$groups[[seg_id]])
+    }
+    unlist(
+      lapply(children, function(child) .recurse(k - 1L, child)),
+      use.names = FALSE
+    )
   }
 
-  # Canonical metadata (cached or computed once)
-  meta <- .get_metadata(segments)
+  n_top <- length(meta$levels[[top_level]]$groups)
+  order_vec <- unlist(
+    lapply(seq_len(n_top), function(s) .recurse(top_level, s)),
+    use.names = FALSE
+  )
+  order_vec
+}
 
-  # Extract segment list and original names
+# .dend_node_positions -----
+# Returns a data.frame(level, segment_id, x) where leaves get their given
+# leaf_x and internal segments get the mean x of their leaf descendants.
+# leaf_x: named numeric vector, names = base-node original names (or indices).
+.dend_node_positions <- function(meta, top_level, leaf_x) {
+  rows <- vector("list", top_level)
+
+  # Level 1: leaves
+  n_leaves <- length(leaf_x)
+  rows[[1L]] <- data.frame(
+    level = 1L,
+    segment_id = seq_len(n_leaves),
+    x = as.numeric(leaf_x),
+    stringsAsFactors = FALSE
+  )
+
+  # Levels 2..top_level: mean of leaf descendants
+  for (k in 2L:top_level) {
+    grps <- meta$levels[[k]]$groups
+    x_vals <- vapply(
+      grps,
+      function(g) {
+        mean(leaf_x[g])
+      },
+      numeric(1L)
+    )
+    rows[[k]] <- data.frame(
+      level = k,
+      segment_id = seq_along(grps),
+      x = x_vals,
+      stringsAsFactors = FALSE
+    )
+  }
+  do.call(rbind, rows)
+}
+
+# .dend_heights -----
+# Returns a numeric vector of length top_level giving the y-axis height of
+# each level. levels[[1]] is always the lowest (leaves).
+.dend_heights <- function(meta, top_level, method, segments_obj) {
+  seg_list <- segments_obj$segment.list
+  n_lvl <- meta$n_levels
+
+  raw <- switch(
+    method,
+    "level" = seq_len(top_level),
+    "uniform" = {
+      h <- seq(0, top_level - 1L)
+      if (length(h) > 1L && max(h) > min(h)) {
+        (h - min(h)) / (max(h) - min(h))
+      } else {
+        h
+      }
+    },
+    "mobility" = {
+      mob_rates <- vapply(
+        seq_len(n_lvl),
+        function(i) {
+          mat <- segments_obj$mat.list[[i]]
+          l <- nrow(mat)
+          if (l <= 1L) {
+            return(1)
+          }
+          diag_sum <- sum(diag(mat)[-l])
+          total_sum <- sum(mat[-l, -l])
+          if (total_sum == 0) {
+            return(1)
+          }
+          diag_sum / total_sum
+        },
+        numeric(1L)
+      )
+      h <- cumsum(c(0, diff(mob_rates)))[seq_len(top_level)]
+      if (length(h) > 1L && max(h) > min(h)) {
+        (h - min(h)) / (max(h) - min(h))
+      } else {
+        seq_len(top_level) - 1L
+      }
+    },
+    "segments" = {
+      n_segs <- vapply(seg_list, length, integer(1L))
+      h <- cumsum(c(0, -diff(log(n_segs + 1))))[seq_len(top_level)]
+      if (length(h) > 1L && max(h) > min(h)) {
+        (h - min(h)) / (max(h) - min(h))
+      } else {
+        seq_len(top_level) - 1L
+      }
+    },
+    stop(
+      "Invalid height_method. Choose 'level', 'uniform', 'mobility', or 'segments'.",
+      call. = FALSE
+    )
+  )
+  raw
+}
+
+# .dend_build_edges -----
+# Constructs an elbow edge data.frame from parent_of + positions + heights.
+# Every row satisfies: x == xend  OR  y == yend  (pure L-shape, no diagonals).
+# Columns: x, xend, y, yend, edge_color (NA placeholder), level_child,
+#          segment_id_child, segment_id_parent, orientation.
+.dend_build_edges <- function(parent_of, positions, heights, top_level) {
+  rows <- vector("list", (top_level - 1L) * 4L) # generous pre-alloc
+  ri <- 0L
+
+  pos_lookup <- function(k, seg_id) {
+    sub_df <- positions[positions$level == k & positions$segment_id == seg_id, ]
+    sub_df$x[[1L]]
+  }
+
+  for (k in seq_len(top_level - 1L)) {
+    parent_ids <- parent_of[[k]]
+    y_child <- heights[k]
+    y_parent <- heights[k + 1L]
+
+    # Group children by parent
+    unique_parents <- unique(parent_ids[!is.na(parent_ids)])
+    for (p_id in unique_parents) {
+      child_ids <- which(parent_ids == p_id)
+      x_parent <- pos_lookup(k + 1L, p_id)
+      x_children <- vapply(
+        child_ids,
+        function(cid) pos_lookup(k, cid),
+        numeric(1L)
+      )
+
+      for (ci in seq_along(child_ids)) {
+        cid <- child_ids[[ci]]
+        x_c <- x_children[[ci]]
+        # Vertical leg: child's x, from y_child up to y_parent
+        ri <- ri + 1L
+        rows[[ri]] <- data.frame(
+          x = x_c,
+          xend = x_c,
+          y = y_child,
+          yend = y_parent,
+          edge_color = NA_character_,
+          level_child = k,
+          segment_id_child = cid,
+          segment_id_parent = p_id,
+          orientation = "vertical",
+          stringsAsFactors = FALSE
+        )
+      }
+
+      # Horizontal bar at y_parent spanning min to max x of children
+      x_lo <- min(x_children)
+      x_hi <- max(x_children)
+      if (x_hi > x_lo) {
+        ri <- ri + 1L
+        rows[[ri]] <- data.frame(
+          x = x_lo,
+          xend = x_hi,
+          y = y_parent,
+          yend = y_parent,
+          edge_color = NA_character_,
+          level_child = k,
+          segment_id_child = NA_integer_,
+          segment_id_parent = p_id,
+          orientation = "horizontal",
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+  }
+  do.call(rbind, rows[seq_len(ri)])
+}
+
+# .dend_path_to_root -----
+# Returns an integer vector of segment_ids from leaf (level 1) up to top_level.
+# Result[k] = segment_id at level k for the path.
+.dend_path_to_root <- function(parent_of, leaf_idx, top_level) {
+  path <- integer(top_level)
+  path[1L] <- leaf_idx
+  for (k in seq_len(top_level - 1L)) {
+    p <- parent_of[[k]][path[k]]
+    path[k + 1L] <- if (is.na(p)) path[k] else p
+  }
+  path
+}
+
+# .dend_color_paths -----
+# Returns a named character vector of colours, one per (level, segment_id) key.
+# Key format: "L<level>_S<segment_id>".
+# Each segment on the path from a leaf to its top-level ancestor gets the
+# colour of its top ancestor.
+.dend_color_paths <- function(
+  parent_of,
+  leaf_top_segment,
+  top_map_labels,
+  segment_colors,
+  top_level
+) {
+  n_leaves <- length(leaf_top_segment)
+  key_color <- character(0)
+
+  for (leaf_idx in seq_len(n_leaves)) {
+    top_seg <- leaf_top_segment[[leaf_idx]]
+    col <- segment_colors[[top_map_labels[top_seg]]]
+    if (is.null(col) || is.na(col)) {
+      col <- "grey50"
+    }
+
+    path <- .dend_path_to_root(parent_of, leaf_idx, top_level)
+    for (k in seq_len(top_level)) {
+      key <- paste0("L", k, "_S", path[k])
+      key_color[key] <- col
+    }
+  }
+  key_color
+}
+
+# .dend_legacy_curved -----
+# Preserves the original curved-branch renderer verbatim.
+# Called when style = "curved" (deprecated).
+.dend_legacy_curved <- function(
+  segments,
+  height_method,
+  color_palette,
+  show_labels,
+  label_size,
+  branch_width,
+  title,
+  subtitle,
+  theme_style,
+  vertical
+) {
+  meta <- .get_metadata(segments)
   seg_list <- segments$segment.list
   n_levels <- meta$n_levels
-
-  # Get original category names from metadata
   cat_names <- meta$original_names
   n_categories <- length(cat_names)
 
-  # Initialize data structures for dendrogram
-  # Note: x and y are flipped - x represents height (levels), y represents position
   edges <- data.frame(
     from = character(),
     to = character(),
@@ -1656,12 +1852,11 @@ plot_moneca_dendrogram <- function(
     stringsAsFactors = FALSE
   )
 
-  # Calculate heights for each level
   heights <- switch(
     height_method,
     "uniform" = seq(0, n_levels - 1),
+    "level" = seq(0, n_levels - 1),
     "mobility" = {
-      # Calculate mobility reduction at each level
       mob_rates <- sapply(seq_len(n_levels), function(i) {
         mat <- segments$mat.list[[i]]
         l <- nrow(mat)
@@ -1678,146 +1873,101 @@ plot_moneca_dendrogram <- function(
       cumsum(c(0, diff(mob_rates)))
     },
     "segments" = {
-      # Height based on number of segments
       n_segs <- sapply(seg_list, length)
       cumsum(c(0, -diff(log(n_segs + 1))))
     },
-    stop("Invalid height_method. Choose 'uniform', 'mobility', or 'segments'")
+    seq(0, n_levels - 1)
   )
 
-  # Normalize heights to 0-1 range
   if (length(heights) > 1 && max(heights) > min(heights)) {
     heights <- (heights - min(heights)) / (max(heights) - min(heights))
   }
 
-  # Create node positions for each level
   node_positions <- list()
 
-  # Determine optimal x-axis ordering to completely eliminate line crossings
-  # Algorithm: Process levels from most aggregated to least aggregated,
-  # grouping categories by their segment membership at each level
-  # This guarantees no crossing lines between any adjacent levels
+  ordered_cats <- seq_len(n_categories)
   if (n_levels > 1) {
-    # Start with the highest level (most aggregated) and work down
-    ordered_cats <- seq_len(n_categories)
-
-    # Process levels from most aggregated to least aggregated
     for (level in n_levels:2) {
       segments_at_level <- seg_list[[level]]
-
       if (length(segments_at_level) == 0) {
         next
       }
-
-      # Create new ordering based on this level's segments
       new_order <- integer(0)
-
-      # Add categories in segment order
       for (seg_idx in seq_along(segments_at_level)) {
         segment_members <- segments_at_level[[seg_idx]]
-        # Sort members within segment by their current order
         segment_members_ordered <- segment_members[order(match(
           segment_members,
           ordered_cats
         ))]
         new_order <- c(new_order, segment_members_ordered)
       }
-
-      # Add any missing categories (those not in any segment at this level) at the end
       missing_cats <- setdiff(ordered_cats, new_order)
       if (length(missing_cats) > 0) {
-        # Sort missing categories by their current order
         missing_cats_ordered <- missing_cats[order(match(
           missing_cats,
           ordered_cats
         ))]
         new_order <- c(new_order, missing_cats_ordered)
       }
-
-      # Update the ordering
       ordered_cats <- new_order
     }
-  } else {
-    # If only one level, keep original order
-    ordered_cats <- seq_len(n_categories)
   }
 
-  # Level 1: Individual categories with optimized positions
-  # Note: coordinates flipped - x is now height (level), y is position
   node_positions[[1]] <- data.frame(
     node_id = paste0("L1_", seq_len(n_categories)),
     label = cat_names,
-    x = heights[1], # Height (level) - now on x-axis
-    y = match(seq_len(n_categories), ordered_cats), # Position - now on y-axis
+    x = heights[1],
+    y = match(seq_len(n_categories), ordered_cats),
     level = 1,
     segment_id = seq_len(n_categories),
-    original_index = seq_len(n_categories), # Keep track of original indices
+    original_index = seq_len(n_categories),
     stringsAsFactors = FALSE
   )
 
-  # Process each subsequent level
   for (level in 2:n_levels) {
     segments_at_level <- seg_list[[level]]
     n_segments <- length(segments_at_level)
-
     if (n_segments == 0) {
       next
     }
-
-    # Calculate y positions as centers of constituent nodes
-    # Note: coordinates flipped - y positions are now the main positioning axis
     y_positions <- numeric(n_segments)
     segment_labels <- character(n_segments)
-
     for (i in seq_len(n_segments)) {
       members <- segments_at_level[[i]]
-      # Find y positions of members from level 1
       member_y <- node_positions[[1]]$y[members]
       y_positions[i] <- mean(member_y)
-
-      # Use canonical label from metadata
       segment_labels[i] <- meta$levels[[level]]$map$label[i]
     }
-
     node_positions[[level]] <- data.frame(
       node_id = paste0("L", level, "_", seq_len(n_segments)),
       label = segment_labels,
-      x = heights[level], # Height (level) - now on x-axis
-      y = y_positions, # Position - now on y-axis
+      x = heights[level],
+      y = y_positions,
       level = level,
       segment_id = seq_len(n_segments),
-      original_index = NA, # Add consistent column structure
+      original_index = NA,
       stringsAsFactors = FALSE
     )
-
-    # Create edges from previous level to current level
     for (i in seq_len(n_segments)) {
       members <- segments_at_level[[i]]
-
-      # Find which nodes from previous level map to this segment
       if (level == 2) {
-        # Direct mapping from categories
         prev_nodes <- node_positions[[1]][members, ]
       } else {
-        # Find which previous segments contain these members
         prev_segments <- seg_list[[level - 1]]
         prev_indices <- which(sapply(prev_segments, function(ps) {
           any(members %in% ps)
         }))
         prev_nodes <- node_positions[[level - 1]][prev_indices, ]
       }
-
       current_node <- node_positions[[level]][i, ]
-
-      # Create edges with flipped coordinates
       for (j in seq_len(nrow(prev_nodes))) {
         new_edge <- data.frame(
           from = prev_nodes$node_id[j],
           to = current_node$node_id,
-          x1 = prev_nodes$x[j], # Previous level height
-          y1 = prev_nodes$y[j], # Previous node position
-          x2 = current_node$x, # Current level height
-          y2 = current_node$y, # Current node position
+          x1 = prev_nodes$x[j],
+          y1 = prev_nodes$y[j],
+          x2 = current_node$x,
+          y2 = current_node$y,
           level = level,
           segment = paste0("S", level, ".", i),
           stringsAsFactors = FALSE
@@ -1827,55 +1977,37 @@ plot_moneca_dendrogram <- function(
     }
   }
 
-  # Combine all node positions
   all_nodes <- do.call(rbind, node_positions)
 
-  # Assign colors based on final segment membership
-  if (color_segments && n_levels > 1) {
-    final_segments <- seg_list[[n_levels]]
-    n_final_segments <- length(final_segments)
+  final_segments <- seg_list[[n_levels]]
+  n_final_segments <- length(final_segments)
+  segment_colors <- .resolve_palette_colors(n_final_segments, color_palette)
 
-    # Get colors from palette
-    segment_colors <- .resolve_palette_colors(n_final_segments, color_palette)
-
-    # Assign colors to edges based on final segment membership
-    edge_colors <- character(nrow(edges))
-    for (i in seq_len(nrow(edges))) {
-      # Find which final segment this edge belongs to
-      edge_level <- edges$level[i]
-      if (edge_level == n_levels) {
-        # Direct assignment for final level
-        seg_idx <- as.numeric(gsub("S\\d+\\.(\\d+)", "\\1", edges$segment[i]))
-        edge_colors[i] <- segment_colors[seg_idx]
-      } else {
-        # Trace forward to find final segment
-        # For simplicity, use black for intermediate levels
-        edge_colors[i] <- "black"
-      }
+  edge_colors <- character(nrow(edges))
+  for (i in seq_len(nrow(edges))) {
+    edge_level <- edges$level[i]
+    if (edge_level == n_levels) {
+      seg_idx <- as.numeric(gsub("S\\d+\\.(\\d+)", "\\1", edges$segment[i]))
+      edge_colors[i] <- segment_colors[seg_idx]
+    } else {
+      edge_colors[i] <- "black"
     }
-    edges$color <- edge_colors
-  } else {
-    edges$color <- "black"
   }
+  edges$color <- edge_colors
 
-  # Create the plot
   p <- ggplot2::ggplot()
-
-  # Add edges (dendrogram branches) using curves
   if (nrow(edges) > 0) {
     p <- p +
       ggplot2::geom_curve(
         data = edges,
         ggplot2::aes(x = x1, y = y1, xend = x2, yend = y2, color = color),
         linewidth = branch_width,
-        curvature = 0.2, # Moderate curve
-        angle = 90, # Curve angle
-        ncp = 5, # Number of control points
+        curvature = 0.2,
+        angle = 90,
+        ncp = 5,
         lineend = "round"
       )
   }
-
-  # Add node points
   p <- p +
     ggplot2::geom_point(
       data = all_nodes,
@@ -1883,27 +2015,24 @@ plot_moneca_dendrogram <- function(
       size = 3,
       color = "black"
     )
-
-  # Add labels for bottom level (in optimized order)
-  if (show_labels) {
+  if (
+    isTRUE(show_labels) ||
+      identical(show_labels, "leaves") ||
+      identical(show_labels, "both")
+  ) {
     bottom_nodes <- all_nodes[all_nodes$level == 1, ]
-    # Sort by y position to ensure labels appear in the correct order (coordinates flipped)
     bottom_nodes <- bottom_nodes[order(bottom_nodes$y), ]
-    # Update labels to show categories in their new positions
     bottom_nodes$label <- cat_names[ordered_cats]
-
     p <- p +
       ggplot2::geom_text(
         data = bottom_nodes,
         ggplot2::aes(x = x, y = y, label = label),
-        hjust = -0.1, # Position to the left of the leftmost points (since x is now height)
+        hjust = -0.1,
         size = label_size,
-        angle = if (vertical) 0 else 45, # Adjust angles for flipped orientation
+        angle = if (vertical) 0 else 45,
         vjust = 0.5
       )
   }
-
-  # Apply theme
   p <- p +
     switch(
       theme_style,
@@ -1912,8 +2041,6 @@ plot_moneca_dendrogram <- function(
       "void" = ggplot2::theme_void(),
       ggplot2::theme_minimal()
     )
-
-  # Customize theme
   p <- p +
     ggplot2::theme(
       legend.position = "none",
@@ -1924,35 +2051,581 @@ plot_moneca_dendrogram <- function(
       plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
       plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5)
     )
-
-  # Add titles
   p <- p + ggplot2::labs(title = title, subtitle = subtitle)
-
-  # Set scale to use actual colors
-  if (color_segments) {
-    p <- p + ggplot2::scale_color_identity()
-  }
-
-  # Since coordinates are now flipped by default (x=height, y=position),
-  # the vertical parameter behavior is reversed
+  p <- p + ggplot2::scale_color_identity()
   if (vertical) {
     p <- p + ggplot2::coord_flip()
-  }
-
-  # Expand limits slightly (adjust for flipped coordinates)
-  if (vertical) {
     p <- p +
-      ggplot2::expand_limits(
-        x = c(min(heights) - 0.1, max(heights) + 0.1)
-      )
+      ggplot2::expand_limits(x = c(min(heights) - 0.1, max(heights) + 0.1))
   } else {
     p <- p +
-      ggplot2::expand_limits(
-        y = c(min(heights) - 0.1, max(heights) + 0.1)
+      ggplot2::expand_limits(y = c(min(heights) - 0.1, max(heights) + 0.1))
+  }
+  p
+}
+
+# ==============================================================================
+# Public function
+# ==============================================================================
+
+#' Plot MONECA Results as a Dendrogram
+#'
+#' @description
+#' Creates a dendrogram visualization of the hierarchical clustering produced by
+#' [moneca()] or [moneca_fast()]. The default `style = "elbow"` renders classic
+#' L-shaped branches, making it straightforward to read: (a) each leaf's
+#' horizontal position, (b) the exact level at which two nodes merge, and (c)
+#' the path from any leaf up to its top-level cluster.
+#'
+#' The legacy curved-branch look is still reachable via `style = "curved"`, but
+#' that style is deprecated and will emit a warning.
+#'
+#' @param segments A `moneca` object returned by [moneca()] or [moneca_fast()].
+#' @param top_level Integer. The highest segmentation level to include. Defaults
+#'   to `meta$n_levels`. Must be `>= 2`.
+#' @param height_method Character. How to assign y-axis positions to levels.
+#'   One of:
+#'   \describe{
+#'     \item{`"level"`}{Default. Integer level number (1, 2, ...). Makes "at
+#'       level k" directly readable on the axis.}
+#'     \item{`"uniform"`}{Equally spaced positions in [0, 1].}
+#'     \item{`"mobility"`}{Heights derived from mobility-reduction rates.}
+#'     \item{`"segments"`}{Heights derived from the log count of segments.}
+#'   }
+#' @param style Character. Branch style. One of `"elbow"` (default,
+#'   L-shaped branches) or `"curved"` (deprecated legacy curves).
+#' @param color_by Character. How to colour branches. One of:
+#'   \describe{
+#'     \item{`"top_segment"`}{Default. Every branch inherits the colour of its
+#'       top-level ancestor cluster.}
+#'     \item{`"level"`}{Each segmentation level gets a distinct colour.}
+#'     \item{`"none"`}{All branches in neutral grey.}
+#'   }
+#' @param show_labels Character. Which text labels to render. One of:
+#'   \describe{
+#'     \item{`"leaves"`}{Default. Labels for base nodes only.}
+#'     \item{`"both"`}{Labels for both leaves and internal join points.}
+#'     \item{`"internal"`}{Labels for internal join points only.}
+#'     \item{`"none"`}{No labels.}
+#'   }
+#' @param highlight Character or integer. Name or 1-based index of a leaf whose
+#'   path to the root should be highlighted in a thicker, dark stroke. `NULL`
+#'   (default) disables highlighting.
+#' @param label_size_leaf Numeric. Font size for leaf labels. Default `2.8`.
+#' @param label_size_internal Numeric. Font size for internal-node labels.
+#'   Default `3`.
+#' @param leaf_angle Numeric or `NULL`. Rotation angle for leaf labels in
+#'   degrees. When `NULL` (default), automatically set to 90 if `n > 20`,
+#'   45 if `n > 10`, else 0.
+#' @param leaf_label_position Character. One of `"below"` (default, `geom_text`
+#'   below the leaf row) or `"on_axis"` (axis tick labels instead of
+#'   `geom_text`).
+#' @param level_guides Logical. Whether to draw dashed horizontal guide lines
+#'   at each level height. Default `TRUE`.
+#' @param level_axis_labels Logical. Whether to replace numeric axis ticks with
+#'   level labels (`L1`, `L2`, ...) on both sides of the y-axis. Default `TRUE`.
+#' @param branch_width Numeric. `linewidth` for normal branches. Default `0.7`.
+#' @param highlight_width Numeric. `linewidth` for the highlighted path.
+#'   Default `1.6`.
+#' @param color_palette Character. CVD-safe palette name. Default
+#'   `"okabe-ito"`. Also accepts RColorBrewer names or viridis options.
+#' @param theme_style Character. ggplot2 base theme. One of `"minimal"`
+#'   (default), `"void"`, or `"classic"`.
+#' @param title Character. Plot title. Default `NULL`.
+#' @param subtitle Character. Plot subtitle. Default `NULL`.
+#' @param vertical Logical. When `TRUE` (default), leaves are on the x-axis and
+#'   levels grow upward. When `FALSE`, `coord_flip()` is applied.
+#' @param ... Reserved for future use.
+#'
+#' @return A `ggplot` object.
+#'
+#' @details
+#' ## Elbow algorithm
+#' For each parent–child pair the function emits two line segments: a vertical
+#' leg from the child's x-position up to the parent's y-height, and one
+#' horizontal bar at the parent's y-height spanning the full x-range of its
+#' children. Every edge satisfies `x == xend OR y == yend`; no diagonal lines
+#' are produced.
+#'
+#' ## Leaf ordering
+#' A DFS from the top level assigns x-positions so that every top-level
+#' cluster's leaves occupy a contiguous, crossing-free x-range.
+#'
+#' ## Colour continuity
+#' When `color_by = "top_segment"`, every branch on the path from a leaf to
+#' its top ancestor is painted with the ancestor's colour, giving full visual
+#' continuity from root to leaf.
+#'
+#' ## Large hierarchies
+#' For `n > 40` nodes consider setting `leaf_angle = 90` and
+#' `leaf_label_position = "on_axis"`. Beyond ~60 nodes the layout may become
+#' crowded; [plot_moneca_hierarchical()] offers a circle-packing alternative.
+#'
+#' @examples
+#' \dontrun{
+#' library(moneca)
+#' mob <- generate_mobility_data(n_classes = 10, seed = 42)
+#' seg <- moneca(mob, segment.levels = 3)
+#'
+#' # Default elbow dendrogram
+#' plot_moneca_dendrogram(seg)
+#'
+#' # Level-number y-axis, both labels, highlight one leaf
+#' plot_moneca_dendrogram(
+#'   seg,
+#'   height_method = "level",
+#'   show_labels = "both",
+#'   highlight = "Class_3"
+#' )
+#'
+#' # Horizontal orientation, coloured by level
+#' plot_moneca_dendrogram(seg, vertical = FALSE, color_by = "level")
+#'
+#' # Legacy curved style (deprecated)
+#' plot_moneca_dendrogram(seg, style = "curved")
+#' }
+#'
+#' @seealso
+#' [moneca()], [moneca_fast()], [plot_moneca_ggraph()],
+#' [plot_stair_ggraph()], [plot_moneca_hierarchical()]
+#'
+#' @export
+plot_moneca_dendrogram <- function(
+  segments,
+  top_level = NULL,
+  height_method = c("level", "uniform", "mobility", "segments"),
+  style = c("elbow", "curved"),
+  color_by = c("top_segment", "level", "none"),
+  show_labels = c("leaves", "both", "internal", "none"),
+  highlight = NULL,
+  label_size_leaf = 2.8,
+  label_size_internal = 3,
+  leaf_angle = NULL,
+  leaf_label_position = c("below", "on_axis"),
+  level_guides = TRUE,
+  level_axis_labels = TRUE,
+  branch_width = 0.7,
+  highlight_width = 1.6,
+  color_palette = "okabe-ito",
+  theme_style = c("minimal", "void", "classic"),
+  title = NULL,
+  subtitle = NULL,
+  vertical = TRUE,
+  ...
+) {
+  # 1. Validate & coerce enums -----
+  if (!inherits(segments, "moneca")) {
+    stop(
+      "segments must be a moneca object created by the moneca() function.",
+      call. = FALSE
+    )
+  }
+  height_method <- match.arg(height_method)
+  style <- match.arg(style)
+  color_by <- match.arg(color_by)
+  show_labels <- match.arg(show_labels)
+  leaf_label_position <- match.arg(leaf_label_position)
+  theme_style <- match.arg(theme_style)
+
+  # 2. Deprecated curved path -----
+  if (style == "curved") {
+    .Deprecated(
+      msg = paste0(
+        "style = 'curved' is deprecated; use the new default style = 'elbow'."
+      ),
+      old = "style = 'curved'"
+    )
+    # Map legacy booleans that callers may have passed
+    show_lbl <- !identical(show_labels, "none")
+    lbl_size <- label_size_leaf
+    return(.dend_legacy_curved(
+      segments = segments,
+      height_method = height_method,
+      color_palette = color_palette,
+      show_labels = show_lbl,
+      label_size = lbl_size,
+      branch_width = branch_width,
+      title = title,
+      subtitle = subtitle,
+      theme_style = theme_style,
+      vertical = vertical
+    ))
+  }
+
+  # 3. Metadata -----
+  meta <- .get_metadata(segments)
+
+  if (is.null(top_level)) {
+    top_level <- meta$n_levels
+  }
+  top_level <- as.integer(top_level)
+  if (top_level < 2L) {
+    stop(
+      "Dendrogram requires at least 2 levels; this segments object has only 1.",
+      call. = FALSE
+    )
+  }
+  top_level <- min(top_level, meta$n_levels)
+
+  cat_names <- meta$original_names
+  n_leaves <- length(cat_names)
+
+  # 4. Auto leaf_angle -----
+  if (is.null(leaf_angle)) {
+    leaf_angle <- if (n_leaves > 20L) {
+      90
+    } else if (n_leaves > 10L) {
+      45
+    } else {
+      0
+    }
+  }
+
+  # 5. Tree topology helpers -----
+  parent_of <- .dend_parent_map(meta, top_level)
+  leaf_order <- .dend_leaf_order(meta, top_level, parent_of)
+
+  # leaf_x: leaf_order[i] = original index of the leaf at position i
+  leaf_x <- numeric(n_leaves)
+  for (pos in seq_len(n_leaves)) {
+    leaf_x[leaf_order[pos]] <- pos
+  }
+
+  positions <- .dend_node_positions(meta, top_level, leaf_x)
+  heights <- .dend_heights(meta, top_level, height_method, segments)
+
+  # 6. Colour map -----
+  top_groups <- meta$levels[[top_level]]$groups
+  top_map_labels <- meta$levels[[top_level]]$map$label
+  n_top <- length(top_groups)
+
+  segment_colors <- setNames(
+    .resolve_palette_colors(n_top, color_palette),
+    top_map_labels
+  )
+
+  # For each leaf, find its top-level segment id
+  leaf_top_seg <- integer(n_leaves)
+  for (seg_id in seq_len(n_top)) {
+    for (idx in top_groups[[seg_id]]) {
+      leaf_top_seg[idx] <- seg_id
+    }
+  }
+
+  key_colors <- .dend_color_paths(
+    parent_of = parent_of,
+    leaf_top_segment = leaf_top_seg,
+    top_map_labels = top_map_labels,
+    segment_colors = segment_colors,
+    top_level = top_level
+  )
+
+  # 7. Build elbow edges -----
+  edge_df <- .dend_build_edges(parent_of, positions, heights, top_level)
+
+  if (!is.null(edge_df) && nrow(edge_df) > 0L) {
+    # Assign colours per edge
+    edge_df$edge_color <- vapply(
+      seq_len(nrow(edge_df)),
+      function(i) {
+        row_i <- edge_df[i, ]
+        if (color_by == "none") {
+          return("grey50")
+        }
+        if (color_by == "level") {
+          # Colour by the child level
+          lvl_palette <- .resolve_palette_colors(top_level, color_palette)
+          return(lvl_palette[row_i$level_child])
+        }
+        # color_by == "top_segment"
+        if (!is.na(row_i$segment_id_child)) {
+          key <- paste0("L", row_i$level_child, "_S", row_i$segment_id_child)
+        } else {
+          # Horizontal bar: use parent's colour via any of its children
+          key <- paste0(
+            "L",
+            row_i$level_child + 1L,
+            "_S",
+            row_i$segment_id_parent
+          )
+        }
+        col <- key_colors[key]
+        if (is.null(col) || is.na(col)) "grey50" else col
+      },
+      character(1L)
+    )
+  }
+
+  # 8. Highlight path -----
+  highlight_edge_df <- NULL
+  if (!is.null(highlight)) {
+    hl_idx <- if (is.character(highlight)) {
+      match(highlight, cat_names)
+    } else {
+      as.integer(highlight)
+    }
+    if (!is.na(hl_idx) && hl_idx >= 1L && hl_idx <= n_leaves) {
+      hl_path <- .dend_path_to_root(parent_of, hl_idx, top_level)
+      # Filter edge_df for edges on this path
+      if (!is.null(edge_df) && nrow(edge_df) > 0L) {
+        hl_mask <- vapply(
+          seq_len(nrow(edge_df)),
+          function(i) {
+            row_i <- edge_df[i, ]
+            k <- row_i$level_child
+            cid <- row_i$segment_id_child
+            pid <- row_i$segment_id_parent
+            if (!is.na(cid)) {
+              cid == hl_path[k]
+            } else {
+              pid == hl_path[k + 1L]
+            }
+          },
+          logical(1L)
+        )
+        highlight_edge_df <- edge_df[hl_mask, ]
+      }
+    }
+  }
+
+  # 9. Build plot -----
+  p <- ggplot2::ggplot()
+
+  # Theme
+  p <- p +
+    switch(
+      theme_style,
+      "minimal" = ggplot2::theme_minimal(),
+      "void" = ggplot2::theme_void(),
+      "classic" = ggplot2::theme_classic()
+    )
+
+  # Level guide lines
+  if (level_guides) {
+    guide_df <- data.frame(y = heights, stringsAsFactors = FALSE)
+    p <- p +
+      ggplot2::geom_hline(
+        data = guide_df,
+        ggplot2::aes(yintercept = y),
+        linetype = "dashed",
+        alpha = 0.2,
+        colour = "grey50"
       )
   }
 
-  return(p)
+  # Elbow edges
+  if (!is.null(edge_df) && nrow(edge_df) > 0L) {
+    p <- p +
+      ggplot2::geom_segment(
+        data = edge_df,
+        ggplot2::aes(
+          x = x,
+          xend = xend,
+          y = y,
+          yend = yend,
+          colour = edge_color
+        ),
+        linewidth = branch_width,
+        lineend = "round"
+      ) +
+      ggplot2::scale_colour_identity()
+  }
+
+  # Highlight path (overplotted)
+  if (!is.null(highlight_edge_df) && nrow(highlight_edge_df) > 0L) {
+    p <- p +
+      ggplot2::geom_segment(
+        data = highlight_edge_df,
+        ggplot2::aes(x = x, xend = xend, y = y, yend = yend),
+        colour = "grey10",
+        linewidth = highlight_width,
+        lineend = "round"
+      )
+  }
+
+  # Internal-node points and labels
+  if (show_labels %in% c("both", "internal")) {
+    internal_pos <- positions[positions$level > 1L, ]
+    # Merge labels from metadata
+    internal_pos$seg_label <- vapply(
+      seq_len(nrow(internal_pos)),
+      function(i) {
+        k <- internal_pos$level[i]
+        sid <- internal_pos$segment_id[i]
+        meta$levels[[k]]$map$label[sid]
+      },
+      character(1L)
+    )
+
+    internal_pos$pt_y <- heights[internal_pos$level]
+
+    p <- p +
+      ggplot2::geom_point(
+        data = internal_pos,
+        ggplot2::aes(x = x, y = pt_y),
+        size = 1.2,
+        color = "grey20"
+      )
+
+    if (requireNamespace("ggrepel", quietly = TRUE)) {
+      p <- p +
+        ggrepel::geom_text_repel(
+          data = internal_pos,
+          ggplot2::aes(x = x, y = pt_y, label = seg_label),
+          size = label_size_internal,
+          fontface = "plain",
+          min.segment.length = 0
+        )
+    } else {
+      p <- p +
+        ggplot2::geom_text(
+          data = internal_pos,
+          ggplot2::aes(x = x, y = pt_y, label = seg_label),
+          size = label_size_internal,
+          fontface = "plain",
+          vjust = -0.5
+        )
+    }
+  }
+
+  # Leaf points
+  leaf_pos <- positions[positions$level == 1L, ]
+  leaf_pos$pt_y <- heights[1L]
+  p <- p +
+    ggplot2::geom_point(
+      data = leaf_pos,
+      ggplot2::aes(x = x, y = pt_y),
+      size = 1.2,
+      color = "grey30"
+    )
+
+  # Leaf labels
+  #
+  # Space allocation: rely on clip = "off" + plot.margin (below) to
+  # reserve physical space for rotated labels OUTSIDE the panel. Do
+  # NOT expand the data y-scale — that would dead-zone the tree into
+  # a sliver at the top of the plot.
+  label_margin_mm <- 0
+  if (show_labels %in% c("leaves", "both")) {
+    leaf_names_ordered <- cat_names[leaf_order]
+    max_label_chars <- max(nchar(leaf_names_ordered), 1L)
+    angle_rad <- leaf_angle * pi / 180
+    # Approximate text extent: at ggplot `size = s`, one char is
+    # roughly s * .pt ~= s * 2.8 pt wide (~s * 1 mm). At angle = 90
+    # the full string length projects vertically. At angle = 0 only
+    # a single line height does.
+    char_width_mm <- label_size_leaf * 1.0
+    line_height_mm <- label_size_leaf * 1.2
+    projected_mm <- if (leaf_angle == 0) {
+      line_height_mm
+    } else {
+      (max_label_chars * char_width_mm) *
+        abs(sin(angle_rad)) +
+        line_height_mm * abs(cos(angle_rad))
+    }
+    # Small safety cushion.
+    label_margin_mm <- projected_mm + 3
+
+    leaf_label_df <- data.frame(
+      x = seq_len(n_leaves),
+      pt_y = heights[1L],
+      label = leaf_names_ordered,
+      stringsAsFactors = FALSE
+    )
+
+    if (leaf_label_position == "on_axis") {
+      p <- p +
+        ggplot2::scale_x_continuous(
+          breaks = seq_len(n_leaves),
+          labels = leaf_names_ordered,
+          expand = ggplot2::expansion(add = 0.5)
+        ) +
+        ggplot2::theme(
+          axis.text.x = ggplot2::element_text(
+            angle = leaf_angle,
+            hjust = if (leaf_angle > 0) 1 else 0.5
+          )
+        )
+    } else {
+      y_offset <- diff(range(heights)) * 0.03
+      if (y_offset == 0) {
+        y_offset <- 0.05
+      }
+      leaf_label_df$label_y <- heights[1L] - y_offset
+
+      h_just <- if (leaf_angle == 90) {
+        1
+      } else if (leaf_angle == 45) {
+        1
+      } else {
+        0.5
+      }
+      v_just <- if (leaf_angle == 45) 1 else 0.5
+
+      p <- p +
+        ggplot2::geom_text(
+          data = leaf_label_df,
+          ggplot2::aes(x = x, y = label_y, label = label),
+          angle = leaf_angle,
+          size = label_size_leaf,
+          hjust = h_just,
+          vjust = v_just
+        )
+    }
+  }
+
+  # Y-axis (level labels). Keep default expansion — labels render
+  # in the margin via clip = "off", not by distorting the data scale.
+  if (level_axis_labels) {
+    lvl_labels <- paste0("L", seq_len(top_level))
+    p <- p +
+      ggplot2::scale_y_continuous(
+        breaks = heights,
+        labels = lvl_labels,
+        sec.axis = ggplot2::dup_axis()
+      )
+  }
+
+  # Theme adjustments. Extend the bottom (or right, under coord_flip)
+  # margin to fit rotated leaf labels. Size is computed in mm from the
+  # longest label; coord_cartesian(clip = "off") lets geom_text escape
+  # the panel into this margin.
+  margin_pad_mm <- max(6, label_margin_mm)
+  plot_margin <- if (vertical) {
+    ggplot2::margin(t = 6, r = 10, b = margin_pad_mm, l = 10)
+  } else {
+    ggplot2::margin(t = 6, r = margin_pad_mm, b = 6, l = 10)
+  }
+
+  p <- p +
+    ggplot2::theme(
+      legend.position = "none",
+      axis.title = ggplot2::element_blank(),
+      panel.grid = ggplot2::element_blank(),
+      plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
+      plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5),
+      plot.margin = plot_margin
+    )
+  if (leaf_label_position == "below") {
+    p <- p +
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_blank(),
+        axis.ticks.x = ggplot2::element_blank()
+      )
+  }
+
+  # Titles
+  p <- p + ggplot2::labs(title = title, subtitle = subtitle)
+
+  # Orientation flip. clip = "off" ensures geom_text extending past the
+  # panel boundary still renders into the expanded margin.
+  if (vertical) {
+    p <- p + ggplot2::coord_cartesian(clip = "off")
+  } else {
+    p <- p + ggplot2::coord_flip(clip = "off")
+  }
+
+  p
 }
 
 #' Visualize Segment Quality Metrics

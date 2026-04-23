@@ -3101,6 +3101,20 @@ generate_segment_plot <- function(
 #' @param names Logical indicating whether to generate descriptive labels for each level
 #'   (default TRUE). When TRUE, creates additional columns with segment labels showing
 #'   the representative node name and count of other members.
+#' @param label_strategy Character scalar selecting how the representative member
+#'   of each segment is chosen when building descriptive labels. One of:
+#'   \itemize{
+#'     \item \code{"strength"} (default, backward-compatible): the member with the
+#'       highest row-sum of the relative-risk weight matrix computed from
+#'       \code{mat.list[[1]]} with \code{small.cell.reduction = 0} and the default
+#'       \code{cut.off = 1}.
+#'     \item \code{"mass"}: the member with the largest mobility volume, computed
+#'       as the sum of its row and column margins in \code{mat.list[[1]]}
+#'       (outflow + inflow). Independent of \code{cut.off} and
+#'       \code{small.cell.reduction}, and therefore more robust when label
+#'       semantics should match the raw data rather than the thresholded
+#'       network.
+#'   }
 #' @return A dataframe with:
 #'   \itemize{
 #'     \item name: The name of the row from the original matrix
@@ -3119,19 +3133,45 @@ generate_segment_plot <- function(
 #' # Run moneca analysis
 #' seg <- moneca_fast(mx, segment.levels = 3)
 #'
-#' # Generate membership dataframe
+#' # Generate membership dataframe (default strength-based labels)
 #' membership_df <- segment.membership.dataframe(seg)
 #' print(membership_df)
-segment.membership.dataframe <- function(moneca_results, names = TRUE) {
+#'
+#' # Mass-based labels: representative is the largest member
+#' membership_df_mass <- segment.membership.dataframe(seg, label_strategy = "mass")
+segment.membership.dataframe <- function(
+  moneca_results,
+  names = TRUE,
+  label_strategy = c("strength", "mass")
+) {
   # Validate input
   if (!inherits(moneca_results, "moneca")) {
     stop("Input must be a moneca object from moneca() or moneca_fast()")
   }
+  label_strategy <- match.arg(label_strategy)
 
   # Get the original matrix (excluding sum row/column)
   original_matrix <- moneca_results$mat.list[[1]]
   n_rows <- nrow(original_matrix) - 1 # Exclude sum row
   row_names <- rownames(original_matrix)[1:n_rows]
+
+  # Precompute per-node representative scores once (outside the level loop).
+  # Both strategies are deterministic; the inner loop just picks which.max.
+  node_scores <- switch(
+    label_strategy,
+    strength = {
+      L <- nrow(original_matrix)
+      wm <- weight.matrix(original_matrix, small.cell.reduction = 0)
+      rowSums(wm[1:(L - 1), 1:(L - 1), drop = FALSE], na.rm = TRUE)
+    },
+    mass = {
+      # Total mobility volume per class = outflow + inflow.
+      # Margins live in the last row/column of mat.list[[1]].
+      L <- nrow(original_matrix)
+      as.numeric(original_matrix[-L, L]) +
+        as.numeric(original_matrix[L, -L])
+    }
+  )
 
   # Determine digit width based on maximum possible entities
   # Consider max across all levels
@@ -3242,48 +3282,13 @@ segment.membership.dataframe <- function(moneca_results, names = TRUE) {
 
         # Generate descriptive label if names is TRUE
         if (names && length(entity_nodes) > 0) {
-          # Select representative based on node strength (network centrality)
+          # Select representative from precomputed per-node scores.
+          # which.max resolves ties by lowest index (matches prior behavior).
           if (length(entity_nodes) == 1) {
-            # Single node - use it as representative
             representative_idx <- entity_nodes[1]
           } else {
-            # Multiple nodes - select the one with highest strength
-            # Always use level 1 (original) matrix for strength calculation
-            # since higher levels have aggregated matrices where indices don't match
-            tryCatch(
-              {
-                # Get the original matrix (level 1)
-                original_matrix <- moneca_results$mat.list[[1]]
-                if (!is.null(original_matrix)) {
-                  # Calculate weight matrix using the same function MONECA uses
-                  weight_matrix <- weight.matrix(
-                    original_matrix,
-                    small.cell.reduction = 0
-                  )
-
-                  # Calculate node strengths (sum of edge weights) - exclude sum row/col
-                  weight_matrix_clean <- weight_matrix[
-                    1:(nrow(weight_matrix) - 1),
-                    1:(ncol(weight_matrix) - 1)
-                  ]
-                  node_strengths <- rowSums(weight_matrix_clean, na.rm = TRUE)
-
-                  # Get strengths for nodes in this entity
-                  entity_strengths <- node_strengths[entity_nodes]
-
-                  # Find node with maximum strength
-                  max_strength_idx <- which.max(entity_strengths)
-                  representative_idx <- entity_nodes[max_strength_idx]
-                } else {
-                  # Fallback: use first node if matrix unavailable
-                  representative_idx <- entity_nodes[1]
-                }
-              },
-              error = function(e) {
-                # Fallback on any error: use first node
-                representative_idx <- entity_nodes[1]
-              }
-            )
+            entity_scores <- node_scores[entity_nodes]
+            representative_idx <- entity_nodes[which.max(entity_scores)]
           }
 
           representative_name <- row_names[representative_idx]

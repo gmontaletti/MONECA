@@ -65,7 +65,19 @@ a significant tie. Default is 1.}
 
 \item{small.cell.reduction}{Numeric value to handle small cell counts. Default is 0.}
 
-\item{use.sparse}{Logical indicating whether to use sparse matrices for large data. Default is FALSE.}
+\item{use.sparse}{Logical. Default \code{FALSE}. When \code{TRUE}, the entire
+pipeline (weight matrix, symmetrization, segment aggregation, edge
+extraction) stays in sparse \code{dgCMatrix} form, so memory scales with
+\code{nnz(mx)} rather than \code{n^2}. Requires the \code{Matrix} package
+(listed in Suggests). Sparse input (\code{dgCMatrix}) is auto-detected and
+routed through the sparse path without setting this flag. On the sparse
+path, "no edge" is stored as a structural zero, so entries of
+\code{mat.list} may be \code{dgCMatrix} objects rather than base matrices.
+When \code{use.sparse = TRUE} is set on a dense base-R matrix input with
+density > 50\%, the function emits an informational message and falls back
+to the dense path (no speedup benefit from sparse storage on dense data,
+and ~20\% memory overhead). Pass a \code{sparseMatrix} explicitly to
+override this fallback.}
 
 \item{min.density}{Minimum strength-based density to continue processing.
 Calculated as mean(strength)/max(strength). Default is 0 (disabled for algorithmic
@@ -86,10 +98,17 @@ auto_tune is TRUE. Options are "stability" (default), "quality", or
 \item{tune_verbose}{Logical indicating whether to print verbose messages
 during auto-tuning. Default is FALSE.}
 
-\item{use_maximal_cliques}{Logical indicating whether to use maximal cliques
-(faster, fewer cliques) instead of all cliques (slower, more complete enumeration).
-Default is FALSE (use all cliques for algorithmic correctness). Set to TRUE for
-performance optimization on very dense graphs.}
+\item{use_maximal_cliques}{Controls clique enumeration. One of:
+\itemize{
+  \item \code{FALSE} (default): use all cliques via \code{igraph::cliques()}.
+    Required for bit-exact parity with \code{\link{moneca}}.
+  \item \code{TRUE}: use only maximal cliques via \code{igraph::max_cliques()}.
+    Much faster on dense graphs (7x+ on the 127x127 Lombardy fixture) but
+    does not guarantee identical clustering to \code{moneca()}.
+  \item \code{"auto"}: per-level dispatch. Computes \code{igraph::edge_density}
+    on the post-cut-off weight graph and selects maximal cliques when
+    density > 0.2; otherwise uses all cliques. Non-parity opt-in.
+}}
 
 \item{isolates}{Logical. If TRUE, returns additional summary information
 about isolates (categories not belonging to any multi-member segment at the
@@ -222,8 +241,11 @@ the original unreduced matrix is used for all aggregation, storage in
 \code{mat.list}, and downstream metrics. This preserves count totals across
 all segmentation levels.
 
-\strong{Produces identical results to} \code{\link{moneca}} when using default parameters
-and \code{reduce_density = FALSE}.
+\strong{Produces identical results to} \code{\link{moneca}} when using default
+parameters and \code{reduce_density = FALSE}, specifically with
+\code{use_maximal_cliques = FALSE} and \code{symmetric_method = "sum"}.
+The \code{"auto"} and \code{TRUE} settings of \code{use_maximal_cliques} are
+non-parity performance opt-ins for dense fixtures.
 
 \strong{When to use:}
 \itemize{
@@ -231,6 +253,12 @@ and \code{reduce_density = FALSE}.
   \item Small to large datasets
   \item When you want explicit control over optimization parameters
 }
+}
+\note{
+Setting \code{use.sparse = TRUE} (or passing a \code{dgCMatrix}, which
+  triggers the sparse path automatically) requires the \code{Matrix} package
+  to be installed; otherwise the function errors. The default dense path does
+  not depend on \code{Matrix} at all.
 }
 \examples{
 # Generate synthetic mobility data

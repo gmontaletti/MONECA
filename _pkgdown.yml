@@ -63,6 +63,7 @@ reference:
     desc: "Plotting functions using ggraph"
     contents:
       - plot_moneca_ggraph
+      - plot_moneca_hierarchical
       - plot_ego_ggraph
       - plot_stair_ggraph
       - plot_moneca_dendrogram

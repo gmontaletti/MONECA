@@ -1,0 +1,24 @@
+- The project is out-of-sync -- use `renv::status()` for details.
+moneca source: 1.3.0
+Fixture: 127 x 127  nnz=13193  density=0.818  total=7,440,166
+
+--- profvis runs (real 127x127) ---
+  profvis real_baseline ... 6.43s
+  profvis real_sparse ...reduce_density() requires a dense matrix; densifying only the topology matrix. The primary mobility matrix remains sparse.
+ 3.43s
+  profvis real_maximal ... 0.58s
+  profvis real_min_sym ... 1.40s
+  profvis real_density_off ...- The project is out-of-sync -- use `renv::status()` for details.
+moneca source: 1.3.0
+Fixture: 127 x 127  nnz=13193
+  already have profvis real_baseline -- skip
+  already have profvis real_sparse -- skip
+  already have profvis real_maximal -- skip
+  already have profvis real_min_sym -- skip
+  profvis real_density_off ...- The project is out-of-sync -- use `renv::status()` for details.
+  bench baseline ... median=  3.341s mem= 307.5MB gc=80 (elapsed 19.3s)
+  bench sparse ...reduce_density() requires a dense matrix; densifying only the topology matrix. The primary mobility matrix remains sparse.
+ median=  3.285s mem= 368.9MB gc=48 (elapsed 16.4s)
+  bench maximal ... median=  0.450s mem=  18.3MB gc=0 (elapsed 2.4s)
+  bench min_sym ... median=  1.337s mem= 109.9MB gc=12 (elapsed 7.1s)
+  bench density_off ...
