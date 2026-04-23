@@ -20,6 +20,8 @@ reference:
     contents:
       - moneca
       - moneca_fast
+      - moneca_sbm
+      - moneca_sbm_install_graphtool
       - weight.matrix
 
   - title: "Segment Metadata"

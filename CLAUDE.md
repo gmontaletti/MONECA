@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 moneca (Mobility Network Clustering Analysis) is an R package that creates weighted networks from mobility tables and uses cliques to create discrete and nested clusters. The package analyzes social mobility patterns through graph-theoretic approaches.
 
-**Current Status (v1.2.0.9000)**: The package has a focused API of 23 exported functions, organized into core analysis, data generation, modern visualization, analysis tools, directed analysis, and legacy compatibility functions. The `symmetric_method` parameter in `moneca_fast()` supports min-reciprocity clustering, and directed asymmetry diagnostics are available via `compute_asymmetry_scores()` and `flag_asymmetric_segments()`.
+**Current Status (v1.8.0.9000)**: The package exposes a focused API of 25 exported functions, organized into core analysis (including the SBM-based alternative `moneca_sbm()`), data generation, modern visualization, analysis tools, directed analysis, and legacy compatibility functions. The `symmetric_method` parameter in `moneca_fast()` supports min-reciprocity clustering; directed asymmetry diagnostics are available via `compute_asymmetry_scores()` and `flag_asymmetric_segments()`; and `moneca_sbm()` provides hierarchical degree-corrected SBM inference as a scalable alternative to clique enumeration (see `reference/moneca/SCALING_ROADMAP.md` direction D2).
 
 ## Package Development Commands
 
@@ -75,14 +75,16 @@ devtools::install_deps()
 - **mat.list**: Mobility matrices for each segmentation level
 - **small.cell.reduction**: Parameter controlling minimum cell sizes
 
-### Streamlined API (23 Exported Functions)
+### Streamlined API (25 Exported Functions)
 
-The package exports 23 functions organized into functional groups:
+The package exports 25 functions organized into functional groups:
 
-#### Core Analysis (3)
-- moneca() - Main algorithm
-- moneca_fast() - Fast implementation (supports `symmetric_method`)
-- weight.matrix() - Weight matrix conversion
+#### Core Analysis (5)
+- moneca() - Main algorithm (reference implementation; do not modify)
+- moneca_fast() - Fast clique-based implementation (supports `symmetric_method`)
+- moneca_sbm() - Hierarchical DC-SBM backend (greed / graph-tool); scalable alternative to clique enumeration
+- moneca_sbm_install_graphtool() - Set up the Python graph-tool backend via conda
+- weight.matrix() - Weight matrix conversion (RR = O/E)
 
 #### Data Generation (1)
 - generate_mobility_data() - Synthetic data generator
@@ -304,5 +306,5 @@ devtools::build_vignettes()
 - Added `symmetric_method` parameter to `moneca_fast()` for min-reciprocity clustering
 - Added directed asymmetry diagnostics (`compute_asymmetry_scores()`, `flag_asymmetric_segments()`)
 - Demoted `refine_segments()` and `compare_moneca_results()` to internal after evaluation on real data
-- 23 exported functions across core analysis, visualization, analysis tools, directed analysis, and legacy compatibility
+- 25 exported functions across core analysis, visualization, analysis tools, directed analysis, and legacy compatibility
 - Sparse-matrix support in `moneca_fast(use.sparse = TRUE)` now preserves sparsity end-to-end through dedicated helpers in `R/sparse_helpers.R`; memory scales with `nnz(mx)`.
