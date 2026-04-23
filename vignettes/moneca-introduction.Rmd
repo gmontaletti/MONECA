@@ -513,9 +513,9 @@ cat("Fluid system edge density:", round(fluid_edges / max_edges * 100, 1), "%\n"
 dendro_plot <- plot_moneca_dendrogram(
   seg,
   height_method = "uniform",          # Equal spacing between levels
-  color_segments = TRUE,              # Color branches by final segments
-  show_labels = TRUE,                 # Show category names
-  label_size = 3.5,
+  color_by = "top_segment",           # Color branches by final segments
+  show_labels = "leaves",             # Show category names at leaves
+  label_size_leaf = 3.5,
   branch_width = 1.2,
   title = "MONECA Hierarchical Structure",
   subtitle = "Shows progressive aggregation from individual categories to segments",
